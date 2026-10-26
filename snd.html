@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SANAD MRO | SAS Visual Investigator (Demonstration Mockup)</title>
+<title>SANAD MRO | SAS Visual Investigator</title>
 <style>
 :root{
   --hdr:#005B8F; --hdr-2:#004C78; --blue:#0378CD; --blue-2:#005B8F;
@@ -76,7 +76,7 @@ button,input,select,textarea{font-family:inherit;font-size:13px;color:inherit}
 .active-filters{color:var(--blue-2);font-size:12px;margin-left:auto}
 
 /* ---------- Table ---------- */
-.table-wrap{flex:45 1 0;min-height:140px;overflow:auto;border-bottom:1px solid var(--line);position:relative}
+.table-wrap{flex:0 0 calc(35vh - 42px);min-height:140px;overflow:auto;border-bottom:1px solid var(--line);position:relative}
 table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
 .grid th{position:sticky;top:0;z-index:2;background:var(--bg2);text-align:left;font-weight:600;color:var(--text2);font-size:12.5px;height:30px;padding:0 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line2);cursor:pointer;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .grid th:hover{background:#E9ECEF}
@@ -91,7 +91,8 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
 .grid input[type=checkbox]{width:14px;height:14px;margin:0;cursor:pointer;accent-color:var(--blue)}
 .score{display:inline-block;min-width:42px;text-align:center;font-weight:700;font-size:12.5px;padding:2px 6px;border-radius:2px;border-left:3px solid}
 .score.crit{background:var(--crit-bg);color:var(--crit);border-color:var(--crit)}
-.score.med{background:var(--med-bg);color:var(--med);border-color:var(--med)}
+.score.high,.score.hi{background:var(--med-bg);color:var(--med);border-color:var(--med)}
+.score.med{background:#FFF8D9;color:#8A6D00;border-color:#D9B100}
 .score.low{background:var(--low-bg);color:var(--low);border-color:var(--low)}
 .aid{color:var(--blue-2);font-weight:600}
 .status{display:inline-flex;align-items:center;gap:6px}
@@ -100,10 +101,10 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
 .empty{padding:30px;text-align:center;color:var(--text3)}
 
 /* ---------- Detail panels ---------- */
-.details{flex:55 1 0;min-height:260px;display:grid;grid-template-columns:0.92fr 1.18fr 1.25fr;gap:8px;padding:8px;background:var(--bg3)}
+.details{flex:1 1 0;min-height:300px;display:grid;grid-template-columns:1fr 1.2fr 1.15fr;gap:8px;padding:8px;background:var(--bg3)}
 .panel{background:#fff;border:1px solid var(--line);display:flex;flex-direction:column;min-height:0;min-width:0}
 .panel-head{height:34px;flex:none;display:flex;align-items:center;gap:8px;padding:0 10px;border-bottom:1px solid var(--line);background:var(--bg2)}
-.panel-head h3{margin:0;font-size:13.5px;font-weight:600}
+.panel-head h3{margin:0;font-size:13.5px;font-weight:600;white-space:nowrap}
 .panel-head .sub{color:var(--text3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .panel-head .right{margin-left:auto;display:flex;align-items:center;gap:4px}
 .panel-body{flex:1;min-height:0;overflow:auto;padding:10px 12px}
@@ -111,10 +112,11 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
 /* Scorecard */
 .sc-top{display:flex;align-items:flex-end;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line2);margin-bottom:10px}
 .sc-score{font-size:30px;font-weight:700;line-height:1}
-.sc-score.crit{color:var(--crit)} .sc-score.med{color:var(--med)} .sc-score.low{color:var(--low)}
+.sc-score.crit{color:var(--crit)} .sc-score.high{color:var(--med)} .sc-score.med{color:#8A6D00} .sc-score.low{color:var(--low)}
+.sc-of{font-size:14px;font-weight:600;color:var(--text3);margin-left:2px}
 .sc-meta{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--text2)}
 .sev{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:2px;text-transform:uppercase;letter-spacing:.3px}
-.sev.crit{background:var(--crit-bg);color:var(--crit)} .sev.med{background:var(--med-bg);color:var(--med)} .sev.low{background:var(--low-bg);color:var(--low)}
+.sev.crit{background:var(--crit-bg);color:var(--crit)} .sev.high{background:var(--med-bg);color:var(--med)} .sev.med{background:#FFF8D9;color:#8A6D00} .sev.low{background:var(--low-bg);color:var(--low)}
 .illus{font-size:11.5px;color:var(--text2);font-style:italic}
 .info-tip{position:relative;display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--text3);color:var(--text2);font-size:10.5px;font-weight:700;cursor:help;font-style:normal}
 .info-tip .tip{display:none;position:absolute;left:50%;top:22px;transform:translateX(-50%);width:270px;background:#26323D;color:#fff;font-weight:400;font-size:12px;line-height:1.4;padding:8px 10px;border-radius:2px;z-index:30;text-align:left}
@@ -135,13 +137,14 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
 .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
 .btn.primary:hover{background:#0266B0}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-da{height:28px;padding:0 14px;background:var(--blue);border:1px solid #0266B0;color:#fff;font-weight:600;border-radius:2px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 0 0 0 rgba(3,120,205,.45)}
+.btn-da{white-space:nowrap;flex:none;height:28px;padding:0 14px;background:var(--blue);border:1px solid #0266B0;color:#fff;font-weight:600;border-radius:2px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 0 0 0 rgba(3,120,205,.45)}
 .btn-da:hover{background:#0266B0}
 .btn-da:focus-visible{outline:2px solid #0B3B60;outline-offset:2px}
-.kv{display:grid;grid-template-columns:124px 1fr 124px 1fr;column-gap:10px;row-gap:0;font-size:12.5px}
+.kv{display:grid;grid-template-columns:118px 1fr 118px 1fr;column-gap:10px;row-gap:0;font-size:12.5px}
 .kv div{padding:5px 0;border-bottom:1px solid #F0F2F4;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kv .k{color:var(--text2)}
 .kv .v{font-weight:500;white-space:normal;line-height:1.35}
+.kv .k{white-space:normal;line-height:1.35}
 .kv-modal .k{white-space:normal;line-height:1.35}
 .kv .v.warn{color:var(--crit);font-weight:700}
 .desc{margin-top:10px;padding:8px 10px;background:var(--bg2);border-left:3px solid var(--blue);font-size:12.5px;line-height:1.45}
@@ -217,9 +220,9 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
 .rtable td.r,.rtable th.r{text-align:right}
 .t-red{color:var(--crit);font-weight:600} .t-amb{color:var(--med);font-weight:600} .t-grn{color:var(--ok);font-weight:600} .t-blu{color:var(--low);font-weight:600}
 .cbox{border:1px solid var(--line2);border-left:3px solid;padding:6px 10px;margin:6px 0;background:#FCFCFD}
-.cbox.conf{border-left-color:var(--ok)} .cbox.assm{border-left-color:var(--med)}
+.cbox.conf{border-left-color:var(--ok)} .cbox.assm{border-left-color:var(--med)} .cbox.known{border-left-color:var(--blue)} .cbox.act{border-left-color:#6B4FA0}
 .cbox .cb-h{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-bottom:3px}
-.cbox.conf .cb-h{color:var(--ok)} .cbox.assm .cb-h{color:var(--med)}
+.cbox.conf .cb-h{color:var(--ok)} .cbox.assm .cb-h{color:var(--med)} .cbox.known .cb-h{color:var(--blue-2)} .cbox.act .cb-h{color:#6B4FA0}
 .cbox ul,.bubble ol{margin:0;padding-left:18px}
 .cbox li,.bubble ol li{margin:2px 0}
 .ev{display:inline-flex;align-items:center;gap:4px;border:1px solid #B9D6EF;background:#F2F8FD;color:var(--blue-2);font-size:11.5px;padding:1px 7px;border-radius:2px;margin:2px 4px 2px 0;cursor:pointer}
@@ -264,12 +267,26 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
 .hist-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
 .hist-table td,.hist-table th{border:1px solid var(--line2);padding:5px 8px;text-align:left}
 .hist-table th{background:var(--bg2);color:var(--text2)}
+.rule-table{width:100%;border-collapse:collapse;font-size:12px}
+.rule-table th{background:var(--bg2);color:var(--text2);font-weight:600;text-align:left;padding:4px 6px;border:1px solid var(--line);white-space:nowrap}
+.rule-table td{padding:4px 6px;border:1px solid var(--line2);vertical-align:top}
+.rule-table .r{text-align:right}
+.rule-table tr.hit td{background:#FFF6F7}
+.rule-table tr.hit .rid,.rule-table tr.hit .pts{color:var(--crit);font-weight:700}
+.rule-table tr.miss td{color:var(--text3)}
+.rule-table tr.total td{font-weight:700;background:var(--bg2)}
+.rule-table.full{font-size:12.5px}
+.trig-line{margin-top:8px;font-size:12px;color:var(--text2);line-height:2}
+.rule-chip{display:inline-block;border:1px solid #F1C3CA;background:#FFF6F7;color:var(--crit);padding:0 7px;border-radius:2px;margin-right:4px;white-space:nowrap}
+.rule-chip b{margin-left:3px}
 .ind-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:31px;border-bottom:1px solid #F0F2F4;font-size:12.5px}
 .state{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:2px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 .state.crit{background:var(--crit-bg);color:var(--crit)} .state.med{background:var(--med-bg);color:var(--med)} .state.grn{background:var(--ok-bg);color:var(--ok)}
 .kv .state,.kv-modal .state{white-space:normal}
 .state.na{background:#F3F4F6;color:var(--text3);border:1px dashed #C3C9CF;font-weight:500;font-style:italic}
 .synth-banner{background:#FFF7E0;border:1px solid #F0D58C;color:#6E5100;font-size:11.5px;padding:5px 8px;line-height:1.4}
+.ill{display:inline-block;font-size:10px;color:var(--text3);border:1px solid var(--line);padding:0 4px;border-radius:2px;margin-left:3px;font-weight:400;font-style:normal;vertical-align:1px;text-transform:none;letter-spacing:0;white-space:nowrap}
+.sim-tag{display:inline-block;font-size:10.5px;color:#6E5100;background:#FFF7E0;border:1px solid #F0D58C;padding:1px 7px;border-radius:2px;font-weight:600}
 .demo-id{display:inline-block;font-size:10px;color:var(--text3);border:1px solid var(--line);padding:0 4px;border-radius:2px;margin-left:4px;font-weight:400;vertical-align:1px}
 .warn-txt{color:var(--crit);font-weight:600}
 .id-note{margin-top:8px;font-size:11.5px;color:var(--text3)}
@@ -308,11 +325,6 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
 </style>
 </head>
 <body>
-<!--
-  SANAD MRO | SAS Visual Investigator-inspired alert triage demonstration.
-  DEMONSTRATION MOCKUP: all data, identifiers, scores and assistant responses are illustrative.
-  Data lives in the DEMO object below. The assistant entry point is sendMessageToAssistant().
--->
 <div id="app">
   <header class="hdr">
     <div class="brand">
@@ -320,7 +332,6 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
       <span class="prod">Visual Investigator</span>
       <span class="divider"></span>
       <span class="app">SANAD MRO</span>
-      <span class="demo-chip" title="This application is a demonstration mockup. All records are illustrative.">Demonstration mockup</span>
     </div>
     <div class="spacer"></div>
     <div class="gsearch" title="Search alerts by ID, entity, aircraft or work order">
@@ -328,7 +339,7 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
       <input id="globalSearch" type="search" placeholder="Search alerts, entities, work orders" autocomplete="off">
     </div>
     <button class="hdr-link" id="btnAdvSearch">Advanced Search</button>
-    <button class="hdr-icon" id="btnHelp" title="Help and demonstration guide" aria-label="Help">
+    <button class="hdr-icon" id="btnHelp" title="Help" aria-label="Help">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.3-2.7 4"/><circle cx="12" cy="17.3" r=".6" fill="#fff"/></svg>
     </button>
     <button class="user" id="btnUser" aria-label="User menu">
@@ -336,20 +347,19 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
       <span style="font-size:12.5px">mro_analyst</span>
     </button>
     <div class="menu" id="userMenu" style="right:10px;top:42px">
-      <div class="mhead">Signed in as mro_analyst (demo)</div>
-      <button id="mnuResetDemo">Reset demonstration data</button>
-      <button id="mnuAbout">About this demonstration</button>
+      <div class="mhead">Signed in as mro_analyst</div>
+      <button id="mnuResetDemo">Reset workspace</button>
     </div>
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab disabled" data-tab="home" title="Not available in this demonstration">Home</button>
+    <button class="tab disabled" data-tab="home" title="You do not have access to this area">Home</button>
     <button class="tab active" data-tab="alerts">Alerts</button>
     <button class="tab" data-tab="investigations">Investigations<span class="cnt" id="invCount" style="display:none">0</span></button>
-    <button class="tab disabled" data-tab="search" title="Not available in this demonstration">Search</button>
-    <button class="tab disabled" data-tab="entities" title="Not available in this demonstration">Entities</button>
-    <button class="tab disabled" data-tab="analytics" title="Not available in this demonstration">Analytics</button>
-    <button class="tab disabled" data-tab="reports" title="Not available in this demonstration">Reports</button>
+    <button class="tab disabled" data-tab="search" title="You do not have access to this area">Search</button>
+    <button class="tab disabled" data-tab="entities" title="You do not have access to this area">Entities</button>
+    <button class="tab disabled" data-tab="analytics" title="You do not have access to this area">Analytics</button>
+    <button class="tab disabled" data-tab="reports" title="You do not have access to this area">Reports</button>
   </nav>
 
   <!-- ================= ALERTS VIEW ================= -->
@@ -360,7 +370,7 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
         <option value="mine">Alerts: My Alerts</option>
         <option value="critical">Alerts: Critical Alerts</option>
         <option value="open">Alerts: Open and Active</option>
-        <option value="review">Alerts: Review Required (incl. Engineering)</option>
+        <option value="review">Alerts: Review or Investigation Required</option>
       </select>
       <span class="tb-sep"></span>
       <button class="tb-btn" id="btnOpen" title="Open alert details"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Open</button>
@@ -425,7 +435,7 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
         </div>
         <div class="net-wrap" id="netWrap">
           <svg id="netSvg"><g id="netVp"></g></svg>
-          <div class="net-legend"><span><i style="background:#C8102E"></i>Finding path</span><span><i style="background:#9AA3AC;height:0;border-top:2px dashed #9AA3AC"></i>Not yet assessed</span><span><i style="background:#9AA6B2"></i>Related</span><span class="muted">Scroll to zoom, drag to pan</span></div>
+          <div class="net-legend"><span><i style="background:#C8102E"></i>Constraint</span><span><i style="background:#C96A00"></i>Attention</span><span><i style="background:#9AA6B2;height:0;border-top:2px dashed #9AA6B2"></i>Not yet assessed</span><span class="muted">Scroll to zoom, drag to pan</span></div>
           <div class="net-tip" id="netTip"></div>
         </div>
         <div class="net-detail" id="netDetail"></div>
@@ -437,7 +447,7 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
   <section class="view" id="viewInv">
     <div class="inv-view">
       <h2>Investigations</h2>
-      <p>Investigations created from alerts in this demonstration session (stored locally in this browser).</p>
+      <p>Investigations linked to MRO alerts.</p>
       <div id="invList"></div>
     </div>
   </section>
@@ -451,9 +461,8 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#005B8F" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01" stroke-width="2.6" stroke-linecap="round"/></svg>
         SANAD Digital Assistant
       </h2>
-      <span class="demo-label" title="Responses are deterministic mock responses built from local illustrative data.">Demonstration Data</span>
+      <span class="sim-tag" title="Responses in this page are generated locally from illustrative data. No live SANAD service is connected.">Simulated responses</span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-        <label id="scnWrap" class="scn-wrap" title="Scenario A is the baseline walkthrough. B, C and D are simulated scenario illustrations.">Scenario <span class="muted">(simulated illustration)</span> <select id="scnSel" class="scn"></select></label>
         <button class="btn" id="btnResetChat" title="Clear this conversation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/></svg>Reset conversation</button>
       </div>
     </div>
@@ -474,7 +483,7 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
           <textarea id="chatText" placeholder="Ask about this alert, or select the suggested next question"></textarea>
           <button class="btn primary" id="btnSend" style="height:40px;padding:0 18px">Send</button>
         </div>
-        <div class="chat-foot">Demonstration data. Responses are pre-defined mock responses based on illustrative records; they are not produced by a live AI service.</div>
+        <div class="chat-foot">Simulated assistant responses generated locally from illustrative data. Not connected to a live SANAD service or operational system.</div>
       </div>
       <div class="da-side da-ev">
         <div class="panel grow">
@@ -491,162 +500,126 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;table-layout:fix
 
 <script>
 /* =====================================================================
-   DEMONSTRATION DATA
-   All records, identifiers, scores, dates and scenario values are
-   ILLUSTRATIVE ONLY. They are not verified SANAD operational records.
-   Aircraft, engine, work-order and report identifiers are demonstration
-   identifiers and are not confirmed in the actual SANAD demo.
+   SANAD SCENARIO: SINGLE SOURCE OF TRUTH FOR THE PRIMARY ALERT
+   Values from the working SANAD demo take priority. Replace the values
+   below with those from the actual demo. Any value left as null is shown
+   as "Not Provided" or "Pending Assessment" and is never invented.
    ===================================================================== */
-const PRIMARY_ID = 'ED-2026-038';
-const DEMO = {
-  meta: {
-    disclaimer: 'All records, identifiers, scores and dates are illustrative demonstration data, not verified operational records.',
-    scoreNote: 'Alert scores are synthetic values produced for this demonstration only. They are not outputs of a validated predictive model.',
-    idNote: 'Aircraft, engine, work-order and report identifiers are demonstration identifiers and are not confirmed SANAD records.'
-  },
-  analysts: [
-    { id: 'mro_analyst', name: 'MRO Analyst (you)' },
-    { id: 'eng.review',  name: 'Engineering Review Board' },
-    { id: 'a.rahman',    name: 'A. Rahman, Materials Planning' },
-    { id: 'j.mendes',    name: 'J. Mendes, Shop Planning' },
-    { id: 'l.haddad',    name: 'L. Haddad, Quality Assurance' },
-    { id: 'r.nair',      name: 'R. Nair, Powerplant Engineering' }
+const SANAD_SCENARIO = {
+  alertId: 'SV-2026-001',
+  title: 'Engine Delivery Delay - Investigation Required',
+  alertType: 'Engine Delivery Delay',
+  shopVisitId: 'SV-38',
+  shopVisitName: 'Shop Visit 38',
+  workOrderId: 'WO-99231',          // illustrative identifier
+  aircraftId: 'A6-EXA',             // illustrative identifier
+  engineId: 'Trent 7000',           // illustrative identifier
+  engineSerial: '10-4471',          // illustrative identifier
+  identifiersIllustrative: true,    // set to false once replaced with SANAD demo identifiers
+  plannedDeliveryDate: null,        // e.g. '2026-12-14' from the SANAD demo
+  expectedDeliveryDate: null,       // e.g. '2026-12-26' from the SANAD demo
+  deliveryDeviationDays: null,      // e.g. 12 from the SANAD demo
+  detected: '2026-10-23T10:14',
+  score: 999, severity: 'Critical', scoreIllustrative: true,
+  status: 'Open',
+  triage: 'Investigation Required',
+  assignedTo: 'mro.planning',
+  deliveryStatus: 'Delayed',
+  rootCauseStatus: 'Under Investigation',
+  recoveryPlanStatus: 'Pending Assessment',
+  description: 'An engine maintenance order associated with Shop Visit 38 has experienced a delivery delay. Further investigation is required to identify the contributing factors, assess material and operational constraints, explore alternative parts and sourcing options, and determine potential recovery actions to minimize turnaround-time impact.',
+  indicators: [ // illustrative values for the scorecard bars
+    ['Delivery Schedule Deviation', 96], ['Material Availability Risk', 92], ['Maintenance Execution Constraints', 84],
+    ['Supplier Dependency', 78], ['Engineering Approval Dependency', 66], ['Recovery Complexity', 61], ['Turnaround-Time Exposure', 88]
   ],
-  statuses: ['Open', 'In Progress', 'Escalated', 'Closed'],
-  triage: ['Engineering Review Required', 'Review Required', 'Under Review', 'Validated', 'Dismissed'],
-  fleet: {
-    'A6-EXA': { type: 'A330-900', engine: 'Trent 7000', esn: '10-4471', pos: '#2' },
-    'A6-EXB': { type: 'A330-900', engine: 'Trent 7000', esn: '10-4502', pos: '#1' },
-    'A6-EXC': { type: 'A350-900', engine: 'Trent XWB',  esn: '20-1187', pos: '#1' },
-    'A6-EXD': { type: 'A350-900', engine: 'Trent XWB',  esn: '20-1210', pos: '#2' },
-    'A6-EXE': { type: 'B787-9',   engine: 'GEnx-1B',    esn: '95-6634', pos: '#1' },
-    'A6-EXF': { type: 'A321neo',  engine: 'LEAP-1A',    esn: '59-8821', pos: '#2' },
-    'A6-EXG': { type: 'B787-9',   engine: 'GEnx-1B',    esn: '95-6701', pos: '#2' },
-    'A6-EXH': { type: 'A320neo',  engine: 'PW1100G',    esn: 'P7-3390', pos: '#1' }
-  },
-  // [id, score, type, primaryEntity, entityType, aircraft, workOrder, shopVisit, detected, status, triage, owner, reference, finding]
-  alertRows: [
-    [PRIMARY_ID,    999, 'HPT Nozzle Crack - Engineering Disposition Required', 'HPT Nozzle', 'Part', 'A6-EXA', 'WO-99231', 'SV-38', '2026-10-23T10:14', 'Open', 'Engineering Review Required', 'mro_analyst', 'INSP-038-07', ''],
-    ['IF-2026-014', 884, 'HPT Nozzle Inspection Finding',       'HPT Nozzle Segment',        'Part',       'A6-EXB', 'WO-99238', 'SV-35', '2026-10-23T08:52', 'Open',        'Review Required', 'r.nair',      'INSP-035-04', 'Coating loss and oxidation recorded on HPT nozzle segment airfoils during borescope inspection.'],
-    ['CD-2026-007', 862, 'Component Damage Assessment',         'LPT Stage 3 Blades',        'Part',       'A6-EXG', 'WO-99271', 'SV-33', '2026-10-22T17:30', 'In Progress', 'Under Review',    'r.nair',      'INSP-033-11', 'Tip curl recorded on three LPT stage 3 blades; engineering assessment of blend or replacement required.'],
-    ['OD-2026-011', 841, 'Outstanding Engineering Disposition', 'Combustor Liner',           'Part',       'A6-EXD', 'WO-99263', 'SV-36', '2026-10-22T14:05', 'Escalated',   'Under Review',    'eng.review',  'INSP-036-02', 'Engineering disposition for combustor liner heat distress finding has exceeded the target response time.'],
-    ['RI-2026-019', 823, 'Repeated Inspection Finding',         'HPC Stage 3 Blades',        'Part',       'A6-EXC', 'WO-99245', 'SV-34', '2026-10-22T09:41', 'Open',        'Review Required', 'r.nair',      'INSP-034-06', 'Leading-edge nicks on HPC stage 3 blades recorded at a third consecutive inspection.'],
-    ['MA-2026-022', 796, 'Material Availability Exception',     'Module Seal Kit',           'Part',       'A6-EXE', 'WO-99280', 'SV-37', '2026-10-21T16:20', 'Open',        'Review Required', 'a.rahman',    'KIT-SEAL-37', 'Seal kit required for planned module assembly is not reserved against the work order.'],
-    ['RC-2026-011', 772, 'Repair-Cell Capacity Constraint',     'Blade Repair Cell',         'Facility',   'A6-EXF', 'WO-99296', 'SV-39', '2026-10-21T11:02', 'In Progress', 'Under Review',    'j.mendes',    'CELL-BLD-2',  'Blade repair cell utilisation exceeds planned capacity for the SV-39 repair window.'],
-    ['TR-2026-009', 748, 'Tooling Readiness Issue',             'Fan Module Lifting Fixture','Tooling',    'A6-EXB', 'WO-99238', 'SV-35', '2026-10-21T08:15', 'Open',        'Review Required', 'j.mendes',    'TL-FIX-12',   'Lifting fixture calibration expires before the planned fan module removal date.'],
-    ['QI-2026-016', 731, 'Quality Inspection Exception',        'FPI Inspection Record',     'Document',   'A6-EXD', 'WO-99263', 'SV-36', '2026-10-20T15:48', 'Open',        'Review Required', 'l.haddad',    'QR-036-19',   'Fluorescent penetrant inspection record is missing the second inspector sign-off.'],
-    ['WD-2026-020', 705, 'Work-Order Execution Delay',          'LPT Module Disassembly',    'Task',       'A6-EXG', 'WO-99271', 'SV-33', '2026-10-20T10:33', 'In Progress', 'Under Review',    'j.mendes',    'TC-LPT-031',  'LPT module disassembly task is running beyond its planned duration.'],
-    ['TA-2026-008', 688, 'Potential TAT Risk',                  'Shop Visit 34',             'Shop Visit', 'A6-EXC', 'WO-99245', 'SV-34', '2026-10-20T08:07', 'Open',        'Review Required', 'j.mendes',    'SV-34',       'Open findings and pending dispositions on SV-34 may affect the planned redelivery date.'],
-    ['IF-2026-015', 664, 'HPT Nozzle Inspection Finding',       'HPT Nozzle Guide Vane',     'Part',       'A6-EXH', 'WO-99284', 'SV-40', '2026-10-19T19:22', 'Open',        'Review Required', 'r.nair',      'INSP-040-03', 'Erosion recorded on HPT nozzle guide vane trailing edges; measurement review required.'],
-    ['CD-2026-008', 642, 'Component Damage Assessment',         'Fan Blade',                 'Part',       'A6-EXF', 'WO-99296', 'SV-39', '2026-10-19T13:10', 'Open',        'Under Review',    'r.nair',      'INSP-039-08', 'Leading-edge erosion on one fan blade may exceed blend limits; assessment required.'],
-    ['OD-2026-012', 618, 'Outstanding Engineering Disposition', 'No. 4 Bearing Housing',     'Part',       'A6-EXE', 'WO-99280', 'SV-37', '2026-10-19T07:55', 'Closed',      'Validated',       'eng.review',  'INSP-037-05', 'Disposition for bearing housing fretting finding was overdue; now dispositioned.'],
-    ['MA-2026-023', 597, 'Material Availability Exception',     'Gasket Set',                'Part',       'A6-EXB', 'WO-99238', 'SV-35', '2026-10-18T16:40', 'Open',        'Review Required', 'a.rahman',    'KIT-GSK-35',  'Gasket set quantity on hand is below the work-order requirement.'],
-    ['RC-2026-012', 573, 'Repair-Cell Capacity Constraint',     'NDT Inspection Bay',        'Facility',   'A6-EXD', 'WO-99263', 'SV-36', '2026-10-18T12:18', 'In Progress', 'Under Review',    'j.mendes',    'BAY-NDT-1',   'NDT inspection bay is fully booked during the SV-36 inspection window.'],
-    ['TR-2026-010', 548, 'Tooling Readiness Issue',             'Borescope Kit',             'Tooling',    'A6-EXH', 'WO-99284', 'SV-40', '2026-10-18T09:02', 'Open',        'Review Required', 'j.mendes',    'TL-BSC-04',   'Borescope kit is booked for another shop visit on the planned inspection date.'],
-    ['QI-2026-017', 526, 'Quality Inspection Exception',        'Dimensional Check Record',  'Document',   'A6-EXG', 'WO-99271', 'SV-33', '2026-10-17T15:27', 'Open',        'Review Required', 'l.haddad',    'QR-033-07',   'Dimensional check record references a superseded inspection procedure revision.'],
-    ['RI-2026-020', 503, 'Repeated Inspection Finding',         'Fuel Nozzle',               'Part',       'A6-EXF', 'WO-99296', 'SV-39', '2026-10-17T10:50', 'Open',        'Review Required', 'r.nair',      'INSP-039-02', 'Carbon build-up on fuel nozzle tips recorded at two consecutive inspections.'],
-    ['WD-2026-021', 476, 'Work-Order Execution Delay',          'Accessory Gearbox Removal', 'Task',       'A6-EXE', 'WO-99280', 'SV-37', '2026-10-16T17:12', 'Closed',      'Dismissed',       'j.mendes',    'TC-AGB-012',  'Accessory gearbox removal task started late; recovered within the planned window.'],
-    ['TA-2026-009', 441, 'Potential TAT Risk',                  'Shop Visit 35',             'Shop Visit', 'A6-EXB', 'WO-99238', 'SV-35', '2026-10-16T11:35', 'Open',        'Review Required', 'j.mendes',    'SV-35',       'Tooling and material exceptions on SV-35 may reduce the planned schedule margin.'],
-    ['QI-2026-018', 402, 'Quality Inspection Exception',        'Torque Record',             'Document',   'A6-EXC', 'WO-99245', 'SV-34', '2026-10-15T20:08', 'In Progress', 'Under Review',    'l.haddad',    'QR-034-22',   'Torque values recorded without the calibrated tool reference.'],
-    ['MA-2026-024', 365, 'Material Availability Exception',     'Oil Filter Element',        'Part',       'A6-EXF', 'WO-99296', 'SV-39', '2026-10-15T14:44', 'Closed',      'Dismissed',       'a.rahman',    'MAT-OFE-39',  'Oil filter element shortfall resolved through stock transfer.'],
-    ['TR-2026-011', 318, 'Tooling Readiness Issue',             'Engine Transport Stand',    'Tooling',    'A6-EXG', 'WO-99271', 'SV-33', '2026-10-15T09:26', 'Closed',      'Validated',       'j.mendes',    'TL-STD-02',   'Engine transport stand load test certificate renewal completed.']
+  activity: [ // confirmed: true only for events supported by the working SANAD demo
+    { at: '02 Oct 2026, 08:30 AM', by: 'mro.planning', event: 'Maintenance order registered', confirmed: false },
+    { at: '02 Oct 2026, 09:10 AM', by: 'mro.planning', event: 'Planned delivery milestone established', confirmed: false },
+    { at: '23 Oct 2026, 09:55 AM', by: 'system',       event: 'Delivery schedule deviation identified', confirmed: false },
+    { at: '23 Oct 2026, 10:14 AM', by: 'system',       event: 'Delivery-risk alert generated', confirmed: false },
+    { at: '23 Oct 2026, 10:20 AM', by: 'system',       event: 'Alert assigned for investigation (MRO Planning)', confirmed: false },
+    { at: 'Pending',               by: '-',            event: 'Digital Assistant investigation pending', confirmed: false }
   ],
-  primary: {
-    title: 'HPT Nozzle Crack - Engineering Disposition Required',
-    component: 'High Pressure Turbine (HPT) Nozzle',
-    finding: '2.8 mm trailing-edge crack',
-    defectType: 'Crack', defectLocation: 'Trailing edge', measurement: '2.8 mm',
-    findingSource: 'Engine inspection',
-    shopVisit: 'Shop Visit 38',
-    report: 'INSP-038-07',
-    description: 'During Shop Visit 38, an inspection identified a 2.8 mm trailing-edge crack on an HPT nozzle. The finding requires engineering assessment against applicable maintenance guidance to determine the appropriate disposition. Potential material requirements, workshop constraints, and turnaround-time implications are pending investigation.',
-    history: [
-      ['23 Oct 2026, 09:20', 'inspector (demo)', 'Inspection finding recorded: HPT nozzle, Shop Visit 38'],
-      ['23 Oct 2026, 09:48', 'inspector (demo)', 'Defect measurement documented: 2.8 mm trailing-edge crack'],
-      ['23 Oct 2026, 10:14', 'system',          'Engineering review alert generated'],
-      ['23 Oct 2026, 10:14', 'system',          'Awaiting disposition assessment']
-    ]
-  },
-  typeInfo: {
-    'HPT Nozzle Inspection Finding':       ['Inspection Finding Priority','Damage Severity','Engineering Review Requirement','Repeat Finding History','Material Exposure','TAT Exposure'],
-    'Component Damage Assessment':         ['Damage Severity','Engineering Review Requirement','Airworthiness Exposure','Repair Complexity','Material Exposure','TAT Exposure'],
-    'Repeated Inspection Finding':         ['Finding Recurrence','Damage Progression','Engineering Review Requirement','Reliability Trend','Inspection Interval Pressure','TAT Exposure'],
-    'Outstanding Engineering Disposition': ['Disposition Age','Engineering Backlog','Task Dependency','Airworthiness Exposure','TAT Exposure','Escalation History'],
-    'Material Availability Exception':     ['Material Shortfall','Need-Date Proximity','Alternate Source Availability','Reservation Status','Task Dependency','TAT Exposure'],
-    'Repair-Cell Capacity Constraint':     ['Cell Utilisation','Queue Length','Certified Staff Availability','Schedule Conflict','Task Dependency','TAT Exposure'],
-    'Tooling Readiness Issue':             ['Calibration Status','Need-Date Proximity','Alternate Tool Availability','Task Dependency','Quality Exposure','TAT Exposure'],
-    'Quality Inspection Exception':        ['Record Completeness','Airworthiness Exposure','Release Delay Risk','Repeat Exception History','Rework Effort','Audit Exposure'],
-    'Work-Order Execution Delay':          ['Task Overrun','Critical Path Exposure','Labour Availability','Open Dependencies','Rework Effort','TAT Exposure'],
-    'Potential TAT Risk':                  ['Open Findings Load','Critical Path Exposure','Material Dependency','Capacity Dependency','Contracted TAT Margin','Customer Impact']
+  /* Simulated investigation values used only by the local assistant responses.
+     Relative day values are used instead of calendar dates. */
+  sim: {
+    estDelayDays: 12, needInDays: 6, heldTask: 'TC-HPT-014 HPT module rebuild',
+    part: 'HPT nozzle segment set', pn: '307A1234-01', altPn: '307A1234-03',
+    supplier: 'Supplier A', po: 'PO-55810', supplierOtd: '71%', pool: 'Pool Partner B', sb: 'SB-72-H014', ec: 'EC-38-014'
   }
 };
 
-/* ---------- Scenario illustrations for the primary alert ----------
-   Scenario A is the baseline walkthrough. B, C and D are SIMULATED
-   scenario illustrations used to show how conclusions change.        */
-const SCENARIOS = {
-  A: { key: 'A', label: 'A. Repairable crack, parts and capacity available', crack: '2.8 mm', path: 'repair' },
-  B: { key: 'B', label: 'B. Repairable crack, workshop queue congested',      crack: '2.8 mm', path: 'repair' },
-  C: { key: 'C', label: 'C. Repairable crack, required material unavailable', crack: '2.8 mm', path: 'repair' },
-  D: { key: 'D', label: 'D. Crack exceeds demonstrated repair limit, replacement required', crack: '4.6 mm', path: 'replace' }
+/* Digital Assistant integration point.
+   mode 'local'    : simulated responses in this page (sendMessageToAssistant).
+   mode 'external' : opens externalUrl and passes the alert context as the
+                     'context' query parameter (URL-encoded JSON). The same
+                     object is available as window.SANAD_CONTEXT and in
+                     sessionStorage under 'sanad.context'.                     */
+const ASSISTANT_CONFIG = { mode: 'local', externalUrl: '', openInNewTab: false };
+
+const PRIMARY_ID = SANAD_SCENARIO.alertId;
+const SEVERITY = [ { key: 'crit', label: 'Critical', min: 800 }, { key: 'high', label: 'High', min: 600 }, { key: 'med', label: 'Medium', min: 400 }, { key: 'low', label: 'Low', min: 0 } ];
+
+const APP_DATA = {
+  analysts: [
+    { id: 'mro_analyst',  name: 'MRO Analyst (you)' },
+    { id: 'mro.planning', name: 'MRO Planning' },
+    { id: 'eng.review',   name: 'Engineering Review Board' },
+    { id: 'a.rahman',     name: 'A. Rahman, Materials Planning' },
+    { id: 's.khoury',     name: 'S. Khoury, Procurement' },
+    { id: 'j.mendes',     name: 'J. Mendes, Shop Planning' },
+    { id: 'l.haddad',     name: 'L. Haddad, Quality Assurance' }
+  ],
+  statuses: ['Open', 'In Progress', 'Escalated', 'Closed'],
+  triage: ['Investigation Required', 'Review Required', 'Under Review', 'Validated', 'Dismissed'],
+  fleet: {
+    'A6-EXA': { type: 'A330-900', engine: 'Trent 7000', esn: '10-4471' }, 'A6-EXB': { type: 'A330-900', engine: 'Trent 7000', esn: '10-4502' },
+    'A6-EXC': { type: 'A350-900', engine: 'Trent XWB', esn: '20-1187' },  'A6-EXD': { type: 'A350-900', engine: 'Trent XWB', esn: '20-1210' },
+    'A6-EXE': { type: 'B787-9', engine: 'GEnx-1B', esn: '95-6634' },      'A6-EXF': { type: 'A321neo', engine: 'LEAP-1A', esn: '59-8821' },
+    'A6-EXG': { type: 'B787-9', engine: 'GEnx-1B', esn: '95-6701' },      'A6-EXH': { type: 'A320neo', engine: 'PW1100G', esn: 'P7-3390' }
+  },
+  // Other alerts in the queue. None is linked to Shop Visit 38.
+  // [id, score, type, entity, entityType, aircraft, workOrder, shopVisit, detected, status, triage, owner, summary]
+  alertRows: [
+    ['DD-2026-014', 862, 'Delivery Schedule Deviation',     'Shop Visit 35',              'Shop Visit',       'A6-EXB', 'WO-99238', 'SV-35', '2026-10-23T08:52', 'Open',        'Review Required', 'mro.planning', 'The Shop Visit 35 forecast delivery has moved beyond its planned delivery milestone.'],
+    ['MS-2026-022', 828, 'Critical Material Shortage',      'Fuel Metering Unit',         'Part',             'A6-EXC', 'WO-99245', 'SV-34', '2026-10-22T17:30', 'Open',        'Review Required', 'a.rahman',     'No serviceable fuel metering unit is in stock against open demand on WO-99245.'],
+    ['SD-2026-007', 776, 'Supplier Delay',                  'Supplier D',                 'Supplier',         'A6-EXD', 'WO-99263', 'SV-36', '2026-10-22T14:05', 'In Progress', 'Under Review',    's.khoury',     'Supplier D has moved the delivery commitment for combustor liner order PO-55871.'],
+    ['WB-2026-011', 742, 'Repair Workshop Bottleneck',      'Blade Repair Cell',          'Facility',         'A6-EXG', 'WO-99271', 'SV-33', '2026-10-22T09:41', 'Escalated',   'Under Review',    'j.mendes',     'Blade repair cell queue exceeds planned capacity for the SV-33 repair window.'],
+    ['EA-2026-009', 718, 'Outstanding Engineering Approval','Engineering Case EC-36-004', 'Engineering Case', 'A6-EXD', 'WO-99263', 'SV-36', '2026-10-21T16:20', 'Open',        'Review Required', 'eng.review',   'Engineering approval for a combustor liner repair scheme is outstanding beyond its target date.'],
+    ['CA-2026-016', 694, 'Component Availability Issue',    'Integrated Drive Generator', 'Component',        'A6-EXF', 'WO-99252', 'SV-39', '2026-10-21T11:02', 'Open',        'Review Required', 'a.rahman',     'Replacement integrated drive generator is not available from the rotable pool on the required date.'],
+    ['ME-2026-020', 671, 'Maintenance Execution Delay',     'LPT Module Disassembly',     'Task',             'A6-EXG', 'WO-99271', 'SV-33', '2026-10-21T08:15', 'In Progress', 'Under Review',    'j.mendes',     'LPT module disassembly task is running beyond its planned duration.'],
+    ['QI-2026-016', 648, 'Quality Inspection Exception',    'FPI Inspection Record',      'Document',         'A6-EXD', 'WO-99263', 'SV-36', '2026-10-20T15:48', 'Open',        'Review Required', 'l.haddad',     'Fluorescent penetrant inspection record is missing the second inspector sign-off.'],
+    ['TC-2026-009', 625, 'Tooling Constraint',              'Fan Module Lifting Fixture', 'Tooling',          'A6-EXB', 'WO-99238', 'SV-35', '2026-10-20T10:33', 'Open',        'Review Required', 'j.mendes',     'Lifting fixture calibration expires before the planned fan module removal date.'],
+    ['TR-2026-008', 603, 'Turnaround-Time Risk',            'Shop Visit 34',              'Shop Visit',       'A6-EXC', 'WO-99245', 'SV-34', '2026-10-20T08:07', 'Open',        'Review Required', 'mro.planning', 'Open material and inspection items on SV-34 reduce the remaining schedule margin.'],
+    ['MS-2026-023', 586, 'Critical Material Shortage',      'Starter Valve',              'Part',             'A6-EXH', 'WO-99284', 'SV-40', '2026-10-19T19:22', 'Open',        'Review Required', 'a.rahman',     'Starter valve stock is below the work-order requirement.'],
+    ['DD-2026-015', 561, 'Delivery Schedule Deviation',     'Shop Visit 37',              'Shop Visit',       'A6-EXE', 'WO-99280', 'SV-37', '2026-10-19T13:10', 'Open',        'Under Review',    'mro.planning', 'The Shop Visit 37 module assembly milestone has slipped against plan.'],
+    ['SD-2026-008', 538, 'Supplier Delay',                  'Supplier E',                 'Supplier',         'A6-EXF', 'WO-99252', 'SV-39', '2026-10-19T07:55', 'Closed',      'Validated',       's.khoury',     'Supplier E shipment of IDG spares was late; now received.'],
+    ['EA-2026-010', 512, 'Outstanding Engineering Approval','Engineering Case EC-40-002', 'Engineering Case', 'A6-EXH', 'WO-99284', 'SV-40', '2026-10-18T16:40', 'Open',        'Review Required', 'eng.review',   'Concession request for a guide vane erosion finding is awaiting engineering approval.'],
+    ['ME-2026-021', 489, 'Maintenance Execution Delay',     'Accessory Gearbox Removal',  'Task',             'A6-EXE', 'WO-99280', 'SV-37', '2026-10-18T12:18', 'In Progress', 'Under Review',    'j.mendes',     'Accessory gearbox removal task started later than planned.'],
+    ['CA-2026-017', 466, 'Component Availability Issue',    'Hydraulic Pump',             'Component',        'A6-EXG', 'WO-99292', 'SV-33', '2026-10-18T09:02', 'Open',        'Review Required', 'a.rahman',     'Serviceable hydraulic pump availability depends on a repair-vendor return.'],
+    ['QI-2026-017', 441, 'Quality Inspection Exception',    'Dimensional Check Record',   'Document',         'A6-EXG', 'WO-99271', 'SV-33', '2026-10-17T15:27', 'Open',        'Review Required', 'l.haddad',     'Dimensional check record references a superseded inspection procedure revision.'],
+    ['WB-2026-012', 418, 'Repair Workshop Bottleneck',      'NDT Inspection Bay',         'Facility',         'A6-EXD', 'WO-99263', 'SV-36', '2026-10-17T10:50', 'Open',        'Review Required', 'j.mendes',     'NDT inspection bay is fully booked during the SV-36 inspection window.'],
+    ['TC-2026-010', 392, 'Tooling Constraint',              'Borescope Kit',              'Tooling',          'A6-EXH', 'WO-99284', 'SV-40', '2026-10-16T17:12', 'Closed',      'Dismissed',       'j.mendes',     'Borescope kit double-booked on the planned inspection date; resolved by rescheduling.'],
+    ['TR-2026-009', 367, 'Turnaround-Time Risk',            'Shop Visit 39',              'Shop Visit',       'A6-EXF', 'WO-99296', 'SV-39', '2026-10-16T11:35', 'Open',        'Review Required', 'mro.planning', 'Tooling and inspection exceptions on SV-39 may reduce schedule margin.'],
+    ['MS-2026-024', 344, 'Critical Material Shortage',      'Oil Filter Element',         'Part',             'A6-EXF', 'WO-99296', 'SV-39', '2026-10-15T20:08', 'Closed',      'Validated',       'a.rahman',     'Oil filter element shortfall resolved through stock transfer.'],
+    ['QI-2026-018', 321, 'Quality Inspection Exception',    'Torque Record',              'Document',         'A6-EXC', 'WO-99245', 'SV-34', '2026-10-15T14:44', 'In Progress', 'Under Review',    'l.haddad',     'Torque values recorded without the calibrated tool reference.'],
+    ['SD-2026-009', 298, 'Supplier Delay',                  'Supplier G',                 'Supplier',         'A6-EXB', 'WO-99301', 'SV-35', '2026-10-15T09:26', 'Closed',      'Dismissed',       's.khoury',     'Supplier G advance shipping notice was late; delivery arrived on time.']
+  ],
+  typeInfo: {
+    'Delivery Schedule Deviation':     ['Delivery Schedule Deviation', 'Critical Path Exposure', 'Open Dependencies', 'Customer Impact', 'Recovery Complexity', 'Turnaround-Time Exposure'],
+    'Critical Material Shortage':      ['Material Availability Risk', 'Need-Date Proximity', 'Alternate Source Availability', 'Supplier Dependency', 'Task Dependency', 'Turnaround-Time Exposure'],
+    'Supplier Delay':                  ['Supplier Dependency', 'Commitment Slippage', 'Open Order Exposure', 'Alternate Source Availability', 'Delivery Schedule Deviation', 'Turnaround-Time Exposure'],
+    'Repair Workshop Bottleneck':      ['Cell Utilisation', 'Queue Length', 'Certified Staff Availability', 'Maintenance Execution Constraints', 'Recovery Complexity', 'Turnaround-Time Exposure'],
+    'Outstanding Engineering Approval':['Engineering Approval Dependency', 'Approval Age', 'Task Dependency', 'Airworthiness Exposure', 'Recovery Complexity', 'Turnaround-Time Exposure'],
+    'Component Availability Issue':    ['Material Availability Risk', 'Rotable Pool Coverage', 'Repair-Vendor Dependency', 'Need-Date Proximity', 'Task Dependency', 'Turnaround-Time Exposure'],
+    'Maintenance Execution Delay':     ['Maintenance Execution Constraints', 'Task Overrun', 'Labour Availability', 'Open Dependencies', 'Rework Effort', 'Turnaround-Time Exposure'],
+    'Quality Inspection Exception':    ['Record Completeness', 'Airworthiness Exposure', 'Release Delay Risk', 'Repeat Exception History', 'Rework Effort', 'Audit Exposure'],
+    'Tooling Constraint':              ['Tooling Readiness', 'Calibration Status', 'Alternate Tool Availability', 'Need-Date Proximity', 'Task Dependency', 'Turnaround-Time Exposure'],
+    'Turnaround-Time Risk':            ['Turnaround-Time Exposure', 'Open Findings Load', 'Material Dependency', 'Capacity Dependency', 'Delivery Schedule Deviation', 'Customer Impact']
+  }
 };
 
-/* ---------- Build alert records ---------- */
-function buildAlerts() {
-  return DEMO.alertRows.map((r, idx) => {
-    const [id, score, type, entity, entityType, aircraft, wo, sv, detected, status, triage, owner, ref, finding] = r;
-    const fl = DEMO.fleet[aircraft];
-    const a = { id, score, type, entity, entityType, aircraft, wo, sv, detected, status, triage, owner, ref,
-                engine: fl.engine, esn: fl.esn, acType: fl.type, idx };
-    if (id === PRIMARY_ID) {
-      Object.assign(a, { primary: true, title: DEMO.primary.title, description: DEMO.primary.description, finding: DEMO.primary.finding, factors: [] });
-    } else {
-      a.title = type;
-      a.finding = finding;
-      a.description = `${finding} Linked to ${wo} (${sv}) for aircraft ${aircraft}.`;
-      a.factors = DEMO.typeInfo[type].map((n, i) => {
-        const v = Math.round(score / 10.4 - i * 6.5 - ((idx * 7 + i * 13) % 9));
-        return [n, Math.max(12, Math.min(97, v))];
-      }).sort((x, y) => y[1] - x[1]);
-    }
-    return a;
-  });
-}
-const BASE_ALERTS = buildAlerts();
-
-/* =====================================================================
-   STATE (persisted to localStorage)
-   ===================================================================== */
-const LS_KEY = 'sanadMroDemo.v2';
-const defaultState = () => ({ overrides: {}, selectedId: PRIMARY_ID, checked: [], investigations: [], chats: {}, scenario: {} });
-let S = loadState();
-const UI = { sort: { key: 'score', dir: 'desc' }, filters: { q: '', severity: '', status: '', triage: '', type: '', text: '', queue: 'all', adv: null },
-             view: 'alerts', savedScroll: 0, netNodeSel: null, busy: false };
-
-function loadState() {
-  try { const raw = localStorage.getItem(LS_KEY); if (raw) return Object.assign(defaultState(), JSON.parse(raw)); } catch (e) { /* storage unavailable */ }
-  return defaultState();
-}
-function saveState() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
-
-function getAlert(id) {
-  const b = BASE_ALERTS.find(x => x.id === id); if (!b) return null;
-  const o = S.overrides[id] || {};
-  return Object.assign({}, b, { status: o.status || b.status, triage: o.triage || b.triage, owner: o.owner || b.owner, history: o.history || [] });
-}
-function allAlerts() { return BASE_ALERTS.map(b => getAlert(b.id)); }
-function setOverride(id, patch, note) {
-  const o = S.overrides[id] || (S.overrides[id] = {});
-  Object.assign(o, patch);
-  o.history = o.history || [];
-  if (note) o.history.push({ at: nowStamp(), by: 'mro_analyst', note });
-  saveState();
-}
-function scenarioOf(id) { return SCENARIOS[(S.scenario && S.scenario[id]) || 'A']; }
-
-/* =====================================================================
-   HELPERS
-   ===================================================================== */
+/* ---------- Helpers ---------- */
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -657,17 +630,64 @@ function fmtDate(iso, long) {
   const ap = hh >= 12 ? 'PM' : 'AM'; const h12 = ((hh + 11) % 12) + 1;
   return `${String(dd).padStart(2, '0')} ${long ? MONTHS_L[m - 1] : MONTHS[m - 1]} ${y}, ${h12}:${String(mm).padStart(2, '0')} ${ap}`;
 }
+const fmtDay = iso => { const [y, m, d] = iso.split('-').map(Number); return `${String(d).padStart(2, '0')} ${MONTHS[m - 1]} ${y}`; };
+const addDays = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); const t = new Date(y, m - 1, d + n); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
 function nowStamp() { const d = new Date(); return `${String(d.getDate()).padStart(2,'0')} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
-const sevOf = s => s >= 800 ? 'crit' : s >= 500 ? 'med' : 'low';
-const sevLabel = s => ({ crit: 'Critical', med: 'Medium', low: 'Low' }[sevOf(s)]);
-const barSev = v => v >= 80 ? 'crit' : v >= 60 ? 'med' : 'low';
-const scoreText = a => String(a.score);
-const TRIAGE_CLS = { 'Engineering Review Required': 'rr', 'Review Required': 'rr', 'Under Review': 'ur', 'Validated': 'va', 'Dismissed': 'di' };
+const sevOf = s => SEVERITY.find(x => s >= x.min).key;
+const sevLabel = s => SEVERITY.find(x => s >= x.min).label;
+const ILL = '<span class="ill" title="Illustrative value for demonstration">Illustrative</span>';
+const ill = (v, on = true) => on ? `${esc(v)} ${ILL}` : esc(v);
+const TRIAGE_CLS = { 'Investigation Required': 'rr', 'Review Required': 'rr', 'Under Review': 'ur', 'Validated': 'va', 'Dismissed': 'di' };
 const triageTag = t => `<span class="tag ${TRIAGE_CLS[t] || 'di'}">${esc(t)}</span>`;
-const stateTag = ([txt, tone], title) => `<span class="state ${tone}" ${title ? `title="${esc(title)}"` : ''}>${esc(txt)}</span>`;
-const analystName = id => (DEMO.analysts.find(x => x.id === id) || { name: id }).name;
-const demoId = v => `${v} <span class="demo-id" title="${esc(DEMO.meta.idNote)}">demo ID</span>`;
+const stateTag = ([txt, tone]) => `<span class="state ${tone}">${esc(txt)}</span>`;
+const analystName = id => (APP_DATA.analysts.find(x => x.id === id) || { name: id }).name;
 function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; $('toasts').appendChild(t); setTimeout(() => t.remove(), 3400); }
+const C = SANAD_SCENARIO;
+const estDelay = () => C.deliveryDeviationDays != null ? C.deliveryDeviationDays : C.sim.estDelayDays;
+const delayIsIll = () => C.deliveryDeviationDays == null;
+
+/* ---------- Build alert records ---------- */
+function buildAlerts() {
+  const fl = APP_DATA.fleet[C.aircraftId] || { type: '', engine: C.engineId, esn: C.engineSerial };
+  const primary = { id: C.alertId, primary: true, score: C.score, type: C.alertType, title: C.title, entity: C.shopVisitName, entityType: 'Shop Visit',
+    aircraft: C.aircraftId, acType: fl.type, engine: C.engineId, esn: C.engineSerial, wo: C.workOrderId, sv: C.shopVisitId, detected: C.detected,
+    status: C.status, triage: C.triage, owner: C.assignedTo, description: C.description, factors: C.indicators.map(f => f.slice()) };
+  const rows = APP_DATA.alertRows.map((r, idx) => {
+    const [id, score, type, entity, entityType, aircraft, wo, sv, detected, status, triage, owner, summary] = r;
+    const f = APP_DATA.fleet[aircraft];
+    const factors = APP_DATA.typeInfo[type].map((n, i) => [n, Math.max(12, Math.min(97, Math.round(score / 10.4 - i * 6.5 - ((idx * 7 + i * 13) % 9))))]).sort((x, y) => y[1] - x[1]);
+    return { id, score, type, title: type, entity, entityType, aircraft, acType: f.type, engine: f.engine, esn: f.esn, wo, sv, detected, status, triage, owner,
+             description: summary, factors };
+  });
+  return [primary].concat(rows);
+}
+const BASE_ALERTS = buildAlerts();
+
+/* =====================================================================
+   STATE (persisted to localStorage)
+   ===================================================================== */
+const LS_KEY = 'sanadMro.workspace.v5';
+const defaultState = () => ({ overrides: {}, selectedId: PRIMARY_ID, checked: [], investigations: [], chats: {} });
+let S = loadState();
+const UI = { sort: { key: 'score', dir: 'desc' }, filters: { q: '', severity: '', status: '', triage: '', type: '', text: '', queue: 'all', adv: null },
+             view: 'alerts', savedScroll: 0, netNodeSel: null, busy: false };
+function loadState() {
+  try { const raw = localStorage.getItem(LS_KEY); if (raw) return Object.assign(defaultState(), JSON.parse(raw)); } catch (e) { /* storage unavailable */ }
+  return defaultState();
+}
+function saveState() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
+function getAlert(id) {
+  const b = BASE_ALERTS.find(x => x.id === id); if (!b) return null;
+  const o = S.overrides[id] || {};
+  return Object.assign({}, b, { status: o.status || b.status, triage: o.triage || b.triage, owner: o.owner || b.owner, history: o.history || [] });
+}
+function allAlerts() { return BASE_ALERTS.map(b => getAlert(b.id)); }
+function setOverride(id, patch, note) {
+  const o = S.overrides[id] || (S.overrides[id] = {});
+  Object.assign(o, patch); o.history = o.history || [];
+  if (note) o.history.push({ at: nowStamp(), by: 'mro_analyst', note });
+  saveState();
+}
 
 /* ---------- Modal ---------- */
 function showModal({ title, body, buttons = [], wide = false }) {
@@ -685,33 +705,25 @@ function showModal({ title, body, buttons = [], wide = false }) {
 function closeModal() { $('overlay').classList.remove('open'); }
 
 /* =====================================================================
-   INVESTIGATION PROGRESS (drives progressive disclosure)
-   Downstream indicators stay "Not yet assessed" until the Digital
-   Assistant has investigated them in the conversation.
+   INVESTIGATION PROGRESS (progressive disclosure)
+   Statuses change only after the Digital Assistant has investigated
+   the corresponding topic in the conversation.
    ===================================================================== */
 function askedIntents(id) { return new Set(chatOf(id).map(m => detectIntent(m.text))); }
-function assessment(id) {
-  const asked = askedIntents(id); const sc = scenarioOf(id).key; const na = ['Not yet assessed', 'na'];
-  const r = {
-    disp: ['Pending Review', 'med'], mat: na, wks: na, tat: na, op: ['Not Yet Assessed', 'na'], any: false, scenario: sc
-  };
-  if (asked.has('disposition') || asked.has('guidance')) { r.disp = sc === 'D' ? ['Rejection proposed, approval pending', 'med'] : ['Repair proposed, approval pending', 'med']; r.any = true; }
-  if (asked.has('availability')) { r.mat = { A: ['Assessed: available', 'grn'], B: ['Assessed: available', 'grn'], C: ['Assessed: material unavailable', 'crit'], D: ['Assessed: exchange unit in about 6 days', 'med'] }[sc]; r.any = true; }
-  else if (asked.has('parts')) { r.mat = ['Requirements identified; availability not yet checked', 'na']; r.any = true; }
-  if (asked.has('workshop')) { r.wks = { A: ['Assessed: capacity available', 'grn'], B: ['Assessed: repair queue congested', 'crit'], C: ['Assessed: slot available, start blocked', 'med'], D: ['Assessed: repair cell not required', 'grn'] }[sc]; r.any = true; }
-  if (asked.has('tat')) { r.tat = { A: ['Assessed: no impact expected', 'grn'], B: ['Assessed: +3 days (lowest option)', 'med'], C: ['Assessed: +4 days (lowest option)', 'med'], D: ['Assessed: +4 days', 'med'] }[sc]; r.op = r.tat; r.any = true; }
+function assessment() {
+  const asked = askedIntents(PRIMARY_ID); const D = estDelay(); const s = C.sim;
+  const r = { asked, any: false,
+    rootCause: [C.rootCauseStatus, 'med'], material: ['Pending Assessment', 'na'], alternatives: ['Not yet assessed', 'na'],
+    engineering: ['Not yet assessed', 'na'], recovery: [C.recoveryPlanStatus, 'na'],
+    deviation: C.deliveryDeviationDays != null ? [`+${D} days`, 'crit'] : ['Pending Assessment', 'na'],
+    expected: C.expectedDeliveryDate ? [fmtDay(C.expectedDeliveryDate), 'crit'] : ['Pending Assessment', 'na'] };
+  if (asked.has('cause')) { r.any = true; r.rootCause = [`Identified: ${s.part} not available`, 'crit']; if (delayIsIll()) r.deviation = [`Estimated +${D} days (illustrative)`, 'crit']; }
+  if (asked.has('material')) { r.any = true; r.material = ['Assessed: no serviceable stock, supplier ETA beyond need date', 'crit']; }
+  if (asked.has('alternatives')) { r.any = true; r.alternatives = ['3 options identified', 'med']; }
+  if (asked.has('engineering')) { r.any = true; r.engineering = ['Approval required before use', 'med']; }
+  if (asked.has('recovery') || asked.has('summary')) { r.any = true; r.recovery = [asked.has('summary') ? 'Recommended path proposed, approval pending' : 'Options assessed, approval pending', 'med'];
+    if (C.plannedDeliveryDate) r.expected = [`${fmtDay(addDays(C.plannedDeliveryDate, 1))} if recommended path is approved (illustrative)`, 'med']; }
   return r;
-}
-function primaryIndicators(id) {
-  const s = assessment(id);
-  return [
-    ['Inspection Finding Priority', ['High', 'crit']],
-    ['Engineering Disposition Pending', s.disp],
-    ['Technical Review Requirement', ['Required', 'med']],
-    ['Material Impact', s.mat],
-    ['Workshop Impact', s.wks],
-    ['TAT Impact', s.tat]
-  ];
 }
 
 /* =====================================================================
@@ -732,12 +744,12 @@ function visibleAlerts() {
     if (f.queue === 'mine' && a.owner !== 'mro_analyst') return false;
     if (f.queue === 'critical' && sevOf(a.score) !== 'crit') return false;
     if (f.queue === 'open' && a.status === 'Closed') return false;
-    if (f.queue === 'review' && !/Review Required/.test(a.triage)) return false;
+    if (f.queue === 'review' && !/Required/.test(a.triage)) return false;
     if (f.severity && sevOf(a.score) !== f.severity) return false;
     if (f.status && a.status !== f.status) return false;
     if (f.triage && a.triage !== f.triage) return false;
     if (f.type && a.type !== f.type) return false;
-    const hay = [a.id, a.entity, a.wo, a.aircraft, a.sv, a.type, a.ref, a.primary ? 'shop visit 38 crack' : ''].join(' ').toLowerCase();
+    const hay = [a.id, a.entity, a.wo, a.aircraft, a.sv, a.type, a.engine, a.primary ? 'shop visit 38 delivery delay' : ''].join(' ').toLowerCase();
     for (const q of [f.q, f.text]) if (q && !hay.includes(q.toLowerCase())) return false;
     if (f.adv) {
       const v = f.adv;
@@ -780,10 +792,10 @@ function renderTable() {
     $('tbody').innerHTML = vis.map(a => `
       <tr data-id="${a.id}" class="${a.id === S.selectedId ? 'sel' : ''}">
         <td class="c"><input type="checkbox" class="rowchk" data-id="${a.id}" ${S.checked.includes(a.id) ? 'checked' : ''} aria-label="Select ${a.id}"></td>
-        <td><span class="score ${sevOf(a.score)}" title="${sevLabel(a.score)}. Illustrative / synthetic alert score.">${scoreText(a)}</span></td>
+        <td><span class="score ${sevOf(a.score)}" title="${sevLabel(a.score)} (illustrative score)">${a.score}</span></td>
         <td class="aid">${a.id}</td>
-        <td title="${esc(a.type)}">${a.primary ? `<b>${esc(a.type)}</b>` : esc(a.type)}</td>
-        <td title="${esc(a.entity)}">${esc(a.entity)}</td>
+        <td title="${esc(a.title)}">${a.primary ? `<b>${esc(a.type)}</b>` : esc(a.type)}</td>
+        <td title="${esc(a.entity)}">${a.primary ? `<b>${esc(a.entity)}</b>` : esc(a.entity)}</td>
         <td>${esc(a.entityType)}</td>
         <td>${a.aircraft}</td>
         <td>${a.wo}</td>
@@ -792,22 +804,19 @@ function renderTable() {
         <td><span class="status"><span class="dot st-${a.status.replace(' ', '-')}"></span>${a.status}</span></td>
       </tr>`).join('');
   }
-  updateCounts(vis);
-  renderFilterSummary();
+  updateCounts(vis); renderFilterSummary();
 }
-
 function updateCounts(vis) {
   vis = vis || visibleAlerts();
   const total = BASE_ALERTS.length; const n = S.checked.length;
   $('countLbl').innerHTML = `<b>${vis.length}</b>${vis.length !== total ? ` of ${total}` : ''} alerts &nbsp;|&nbsp; <b>${n}</b> selected`;
   const inv = S.investigations.length; $('invCount').textContent = inv; $('invCount').style.display = inv ? 'inline-block' : 'none';
 }
-
 function renderFilterSummary() {
   const f = UI.filters; const parts = [];
   if (f.queue !== 'all') parts.push($('queueSel').selectedOptions[0].text.replace('Alerts: ', ''));
   if (f.q) parts.push(`Search "${f.q}"`);
-  if (f.severity) parts.push('Severity: ' + { crit: 'Critical', med: 'Medium', low: 'Low' }[f.severity]);
+  if (f.severity) parts.push('Severity: ' + SEVERITY.find(x => x.key === f.severity).label);
   if (f.status) parts.push('Status: ' + f.status);
   if (f.triage) parts.push('Triage: ' + f.triage);
   if (f.type) parts.push('Type: ' + f.type);
@@ -816,7 +825,6 @@ function renderFilterSummary() {
   $('activeFilters').textContent = parts.length ? 'Active: ' + parts.join(' · ') : '';
   $('btnFilter').classList.toggle('on', $('filterBar').classList.contains('open') || parts.length > 0);
 }
-
 function selectAlert(id, opts = {}) {
   S.selectedId = id; saveState();
   document.querySelectorAll('#tbody tr').forEach(tr => tr.classList.toggle('sel', tr.dataset.id === id));
@@ -834,32 +842,22 @@ function renderDetails() {
   $('btnDA').disabled = false;
   renderScorecard(a); renderInfo(a); renderNetwork(a);
 }
-
-function scoreTop(a) {
-  const sev = sevOf(a.score);
-  return `<div class="sc-top">
-      <div><div class="muted" style="margin-bottom:3px">Alert score</div><div class="sc-score ${sev}">${scoreText(a)}</div></div>
-      <div class="sc-meta">
-        <span><span class="sev ${sev}">${sevLabel(a.score)}</span></span>
-        <span class="illus">Illustrative &nbsp;<span class="info-tip" tabindex="0">i<span class="tip"><b>Illustrative / synthetic alert score.</b> ${esc(DEMO.meta.scoreNote)}</span></span></span>
-      </div>
-      <div class="sc-meta" style="margin-left:auto;text-align:right"><span>Triage</span><span>${triageTag(a.triage)}</span></div>
-    </div>`;
-}
+const barSev = v => v >= 80 ? 'crit' : v >= 60 ? 'med' : 'low';
 
 function renderScorecard(a) {
+  const sev = sevOf(a.score);
   $('scSub').textContent = a.id;
-  if (a.primary) {
-    const s = assessment(a.id);
-    $('scorecard').innerHTML = scoreTop(a) + `
-      <div class="synth-banner"><b>Illustrative / Synthetic Alert Score.</b> Not a validated predictive score. Indicators below are review states, not model outputs.</div>
-      <div class="muted" style="margin:10px 0 2px;font-weight:600">Inspection indicators</div>
-      ${primaryIndicators(a.id).map(([n, st]) => `<div class="ind-row"><span>${esc(n)}</span>${stateTag(st, st[1] === 'na' ? 'Will be assessed during the investigation' : '')}</div>`).join('')}
-      <div class="sc-foot">${s.any ? `Indicators marked <b>Assessed</b> were updated from the Digital Assistant investigation using <b>simulated scenario ${s.scenario}</b>.` : 'Material, workshop and TAT impact are assessed during the investigation in the Digital Assistant.'}</div>`;
-    return;
-  }
-  $('scorecard').innerHTML = scoreTop(a) + `
-    <div class="muted" style="margin-bottom:4px;font-weight:600">Contributing indicators (illustrative)</div>
+  const s = a.primary ? assessment() : null;
+  $('scorecard').innerHTML = `
+    <div class="sc-top">
+      <div><div class="muted" style="margin-bottom:3px">Score</div><div class="sc-score ${sev}">${a.score}</div></div>
+      <div class="sc-meta">
+        <span><span class="sev ${sev}">${sevLabel(a.score)}</span> ${ILL}</span>
+        <span class="illus">Illustrative score <span class="info-tip" tabindex="0">i<span class="tip">The alert score, severity and indicator values are illustrative values for this demonstration. They are not calculated by a production risk model.</span></span></span>
+      </div>
+      <div class="sc-meta" style="margin-left:auto;text-align:right"><span>Triage</span><span>${triageTag(a.triage)}</span></div>
+    </div>
+    <div class="muted" style="margin-bottom:4px;font-weight:600">${a.primary ? 'Operational delivery-risk indicators' : 'Contributing indicators'} <span class="ill">Illustrative values</span></div>
     ${a.factors.map(([n, v]) => `
       <div class="bar-row" title="${esc(n)}: ${v} (illustrative)">
         <span class="lbl">${esc(n)}</span>
@@ -867,7 +865,11 @@ function renderScorecard(a) {
         <span class="val">${v}</span>
       </div>`).join('')}
     <div class="sc-legend"><span><i style="background:#D9475C"></i>80 and above</span><span><i style="background:#E89A2C"></i>60 to 79</span><span><i style="background:#5B93C9"></i>Below 60</span></div>
-    <div class="sc-foot">Illustrative indicator values for demonstration purposes only.</div>`;
+    <div class="sc-foot">Indicators show where delivery risk is concentrated. They do not identify a root cause, and they are not outputs of a production risk model.</div>
+    ${s && s.any ? `<div class="muted" style="margin:10px 0 2px;font-weight:600">Investigation updates</div>
+      ${[['Root cause', s.rootCause], ['Material assessment', s.material], ['Alternative parts', s.alternatives], ['Engineering validation', s.engineering], ['Recovery planning', s.recovery]]
+        .map(([n, st]) => `<div class="ind-row"><span>${n}</span>${stateTag(st)}</div>`).join('')}
+      <div class="sc-foot">Updated from the Digital Assistant investigation (simulated responses).</div>` : ''}`;
 }
 
 function renderInfo(a) {
@@ -875,152 +877,154 @@ function renderInfo(a) {
   const inv = S.investigations.filter(i => i.alertId === a.id);
   let rows;
   if (a.primary) {
-    const s = assessment(a.id);
+    const s = assessment(); const il = C.identifiersIllustrative;
     rows = [
       ['Alert ID', esc(a.id)], ['Alert Type', esc(a.type)],
-      ['Primary Entity', esc(DEMO.primary.component)], ['Finding', `<span class="warn-txt">${esc(DEMO.primary.finding)}</span>`],
-      ['Finding Source', esc(DEMO.primary.findingSource)], ['Shop Visit', esc(DEMO.primary.shopVisit)],
-      ['Engine', demoId(`${a.engine}, ESN ${a.esn}`)], ['Aircraft', demoId(a.aircraft)],
-      ['Work Order', demoId(a.wo)], ['Inspection Report', demoId(DEMO.primary.report)],
-      ['Status', esc(a.status)], ['Triage Status', triageTag(a.triage)],
-      ['Eng. Disposition', stateTag(s.disp)], ['Operational Impact', stateTag(s.op)],
-      ['Detected', esc(fmtDate(a.detected, true))], ['Owner', esc(a.owner)]
+      ['Primary Entity', `<b>${esc(a.entity)}</b>`], ['Entity Type', 'Shop Visit'],
+      ['Aircraft', ill(a.aircraft, il)], ['Engine', ill(a.engine, il)],
+      ['Work Order', ill(a.wo, il)], ['Shop Visit', esc(C.shopVisitName)],
+      ['Alert Status', esc(a.status)], ['Triage Status', triageTag(a.triage)],
+      ['Assigned To', esc(analystName(a.owner))], ['Delivery Status', `<span class="state crit">${esc(C.deliveryStatus)}</span>`],
+      ['Root Cause', stateTag(s.rootCause)], ['Recovery Plan', stateTag(s.recovery)]
     ];
   } else {
     rows = [
-      ['Alert ID', esc(a.id)], ['Alert Type', esc(a.type)], ['Primary Entity', esc(a.entity)], ['Reference', esc(a.ref)],
+      ['Alert ID', esc(a.id)], ['Alert Type', esc(a.type)], ['Primary Entity', esc(a.entity)], ['Entity Type', esc(a.entityType)],
       ['Aircraft', esc(`${a.aircraft} (${a.acType})`)], ['Engine', esc(a.engine)], ['Work Order', esc(a.wo)], ['Shop Visit', esc(a.sv)],
-      ['Status', esc(a.status)], ['Triage Status', triageTag(a.triage)], ['Detected', esc(fmtDate(a.detected, true))], ['Owner', esc(a.owner)]
+      ['Status', esc(a.status)], ['Triage Status', triageTag(a.triage)], ['Assigned To', esc(analystName(a.owner))], ['Detected', esc(fmtDate(a.detected, true))]
     ];
   }
   $('alertInfo').innerHTML = `
     <div class="kv">${rows.map(([k, v]) => `<div class="k">${k}</div><div class="v">${v}</div>`).join('')}</div>
     <div class="desc"><span class="k">Description</span>${esc(a.description)}</div>
-    ${a.primary ? `<div class="id-note">${esc(DEMO.meta.idNote)} Detection and history timestamps are synthetic.</div>` : relatedHtml(a)}
+    ${a.primary ? `<div class="id-note">Detected ${esc(fmtDate(a.detected, true))}. Identifiers marked Illustrative are not customer records.</div>` : relatedHtml(a)}
     ${inv.length ? `<div class="inv-link">Linked investigation${inv.length > 1 ? 's' : ''}: ${inv.map(i => `<b>${i.id}</b>`).join(', ')}</div>` : ''}`;
 }
-
 function relatedHtml(a) {
-  const rel = allAlerts().filter(x => x.id !== a.id && !x.primary && (x.sv === a.sv || x.wo === a.wo)).slice(0, 4);
+  const rel = allAlerts().filter(x => x.id !== a.id && !x.primary && x.sv === a.sv).slice(0, 4);
   if (!rel.length) return '';
-  return `<div class="muted" style="margin:10px 0 3px;font-weight:600">Related alerts</div>
-    <table class="hist-table rel-table">${rel.map(x => `<tr data-rel="${x.id}" title="Select ${x.id}"><td style="width:62px"><span class="score ${sevOf(x.score)}">${scoreText(x)}</span></td><td class="aid" style="width:110px">${x.id}</td><td>${esc(x.type)}</td><td>${esc(x.entity)}</td><td style="width:92px">${esc(x.status)}</td></tr>`).join('')}</table>`;
+  return `<div class="muted" style="margin:10px 0 3px;font-weight:600">Other alerts on ${esc(a.sv)}</div>
+    <table class="hist-table rel-table">${rel.map(x => `<tr data-rel="${x.id}" title="Select ${x.id}"><td style="width:62px"><span class="score ${sevOf(x.score)}">${x.score}</span></td><td class="aid" style="width:110px">${x.id}</td><td>${esc(x.type)}</td><td>${esc(x.entity)}</td><td style="width:92px">${esc(x.status)}</td></tr>`).join('')}</table>`;
 }
 
 /* =====================================================================
    NETWORK (SVG, no external dependencies so it works fully offline)
    ===================================================================== */
 const ICONS = {
-  Aircraft:  '<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor"/>',
   Part:      '<circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v3.2M12 18.3v3.2M2.5 12h3.2M18.3 12h3.2M5.3 5.3l2.3 2.3M16.4 16.4l2.3 2.3M5.3 18.7l2.3-2.3M16.4 7.6l2.3-2.3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
   WorkOrder: '<rect x="5" y="4" width="14" height="17" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 3h6v3H9zM8.5 11h7M8.5 15h7" stroke="currentColor" stroke-width="2" fill="none"/>',
-  Task:      '<rect x="5" y="4" width="14" height="17" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 11.5l2 2 4.5-4.5M8.5 17h7" stroke="currentColor" stroke-width="2" fill="none"/>',
   Engine:    '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 10V4.5M13.7 13l4.8 2.7M10.3 13l-4.8 2.7" stroke="currentColor" stroke-width="2"/>',
   ShopVisit: '<rect x="3.5" y="5" width="17" height="15" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2"/><path d="M8 14l2.5 2.5L16 12" stroke="currentColor" stroke-width="2" fill="none"/>',
   Facility:  '<path d="M3 21V8l9-5 9 5v13z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 21v-6h8v6M8 11h2M14 11h2" stroke="currentColor" stroke-width="2"/>',
+  Milestone: '<path d="M6 21V3.5M6 4h11l-2.5 4L17 12H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  Material:  '<path d="M12 2.8l8.5 4.7v9L12 21.2l-8.5-4.7v-9z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9" stroke="currentColor" stroke-width="2"/>',
+  Stores:    '<path d="M3 9l9-5 9 5v11H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 20v-7h10v7M7 16h10" stroke="currentColor" stroke-width="2"/>',
+  Supplier:  '<path d="M2 21V10l5 3v-3l5 3v-3l5 3V4h4v17z" fill="currentColor"/>',
+  Engineering:'<circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="2"/>',
   Document:  '<path d="M6 3h8l5 5v13H6z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 3v5h5M9 13h7M9 17h5" stroke="currentColor" stroke-width="2"/>',
   Tooling:   '<path d="M14.5 3.5a4.5 4.5 0 0 0-4.3 5.8L3.5 16v4.5H8l6.7-6.7a4.5 4.5 0 0 0 5.8-4.3l-2.6 2.6-3.2-.8-.8-3.2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
-  Finding:   '<path d="M12 3L2.5 20h19z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9.5v5" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="17.2" r="1.1" fill="currentColor"/>',
-  Disposition:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>',
-  Material:  '<path d="M12 2.8l8.5 4.7v9L12 21.2l-8.5-4.7v-9z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9" stroke="currentColor" stroke-width="2"/>'
+  Case:      '<path d="M3 6.5h6l2 2h10V19H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 13.5h8" stroke="currentColor" stroke-width="2"/>',
+  Task:      '<rect x="5" y="4" width="14" height="17" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 11.5l2 2 4.5-4.5M8.5 17h7" stroke="currentColor" stroke-width="2" fill="none"/>'
 };
-const TYPE_COLOR = { Aircraft: '#005B8F', Part: '#6B4FA0', WorkOrder: '#3D6B4F', Task: '#3D6B4F', Engine: '#2F6FAD', ShopVisit: '#0E7C86', Facility: '#5B6670', Document: '#5B6670', Tooling: '#8A5A00', Finding: '#C8102E', Disposition: '#C96A00', Material: '#5B6670' };
-const TYPE_LABEL = { WorkOrder: 'Work Order', ShopVisit: 'Shop Visit', 'Shop Visit': 'Shop Visit' };
+const TYPE_COLOR = { Part: '#6B4FA0', WorkOrder: '#3D6B4F', Engine: '#2F6FAD', ShopVisit: '#0E7C86', Facility: '#5B6670', Milestone: '#5B6670', Material: '#5B6670', Stores: '#5B6670', Supplier: '#8A5A00', Engineering: '#5B6670', Document: '#5B6670', Tooling: '#8A5A00', Case: '#5B6670', Task: '#3D6B4F' };
+const TYPE_LABEL = { WorkOrder: 'Work Order', ShopVisit: 'Shop Visit', Stores: 'Inventory / Stores', Supplier: 'Procurement / Supplier', Case: 'Engineering Case' };
+const ENTITY_ICON = { 'Shop Visit': 'ShopVisit', 'Part': 'Part', 'Component': 'Part', 'Supplier': 'Supplier', 'Facility': 'Facility', 'Engineering Case': 'Case', 'Task': 'Task', 'Document': 'Document', 'Tooling': 'Tooling' };
 const NET = { nodes: [], edges: [], tx: 0, ty: 0, k: 1, alertId: null };
-const typeKey = t => t === 'Shop Visit' ? 'ShopVisit' : t;
+const toneOf = st => st[1] === 'na' ? 'pending' : st[1] === 'crit' ? 'hot' : st[1] === 'grn' ? 'ok' : 'warn';
 
 function buildPrimaryGraph(a) {
-  const s = assessment(a.id);
-  const pend = st => st[1] === 'na';
+  const s = assessment(); const asked = s.asked; const P = C.sim;
+  const node = (id, label, type, sub, x, y, tone) => ({ id, label, type, sub, x, y, tone });
   const nodes = [
-    { id: 'sv',   label: 'Shop Visit 38',   type: 'ShopVisit',  sub: 'Shop visit', x: 0, y: 0, hot: true },
-    { id: 'eng',  label: a.engine,          type: 'Engine',     sub: 'Engine · demo ID', x: -185, y: -80 },
-    { id: 'wo',   label: a.wo,              type: 'WorkOrder',  sub: 'Work order · demo ID', x: -185, y: 95 },
-    { id: 'noz',  label: 'HPT Nozzle',      type: 'Part',       sub: 'Component', x: 170, y: -80, hot: true },
-    { id: 'fnd',  label: 'Crack 2.8 mm',    type: 'Finding',    sub: 'Inspection finding', x: 345, y: -80, hot: true },
-    { id: 'rpt',  label: 'Inspection Report', type: 'Document', sub: 'demo reference', x: 505, y: -80 },
-    { id: 'disp', label: 'Engineering Disposition', type: 'Disposition', sub: s.disp[0], x: 345, y: 90, warn: true },
-    { id: 'mat',  label: 'Material Requirements', type: 'Material', sub: s.mat[0], x: 225, y: 230, pending: pend(s.mat) },
-    { id: 'wks',  label: 'Repair Workshop', type: 'Facility', sub: s.wks[0], x: 470, y: 230, pending: pend(s.wks) }
+    node('sv',   C.shopVisitName, 'ShopVisit', `Delivery ${C.deliveryStatus.toLowerCase()}`, 0, 0, 'hot'),
+    node('eng',  'Engine', 'Engine', a.engine, -230, -105),
+    node('wo',   'Maintenance Work Order', 'WorkOrder', a.wo, -230, 105, asked.has('cause') ? 'hot' : null),
+    node('ms',   'Planned Delivery Milestone', 'Milestone', C.plannedDeliveryDate ? `Planned ${fmtDay(C.plannedDeliveryDate)}, delayed` : 'Delayed', 0, -175, 'warn'),
+    node('engr', 'Engineering', 'Engineering', asked.has('engineering') ? 'Approval required for alternative' : 'Dependency, not yet assessed', 230, -105, asked.has('engineering') ? 'warn' : 'pending'),
+    node('ws',   'Repair Workshop', 'Facility', asked.has('recovery') ? 'Capacity available for resequencing' : 'Dependency, not yet assessed', 0, 185, asked.has('recovery') ? 'ok' : 'pending'),
+    node('mat',  'Material Requirements', 'Material', asked.has('cause') ? `${P.part} required` : 'Dependency, not yet assessed', 230, 105, asked.has('cause') ? 'hot' : 'pending'),
+    node('inv',  'Inventory / Stores', 'Stores', asked.has('material') ? 'No serviceable stock' : 'Dependency, not yet assessed', 450, 25, asked.has('material') ? 'hot' : 'pending'),
+    node('proc', 'Procurement / Supplier', 'Supplier', asked.has('material') ? `${P.supplier} ETA beyond need date` : 'Dependency, not yet assessed', 450, 185, asked.has('material') ? 'hot' : 'pending')
   ];
   const edges = [
-    { s: 'sv', t: 'eng', rel: 'inducted engine' }, { s: 'sv', t: 'wo', rel: 'executed under' },
-    { s: 'eng', t: 'noz', rel: 'contains' }, { s: 'wo', t: 'noz', rel: 'inspection task covers', dashed: true },
-    { s: 'noz', t: 'fnd', rel: 'has finding', hot: true }, { s: 'fnd', t: 'rpt', rel: 'documented in' },
-    { s: 'fnd', t: 'disp', rel: 'requires', hot: true },
-    { s: 'disp', t: 'mat', rel: 'may require', dashed: pend(s.mat) }, { s: 'disp', t: 'wks', rel: 'may require', dashed: pend(s.wks) }
+    { s: 'sv', t: 'eng', rel: 'inducted engine' }, { s: 'sv', t: 'wo', rel: 'executed under', hot: asked.has('cause') },
+    { s: 'sv', t: 'ms', rel: 'delivery milestone', warn: true }, { s: 'sv', t: 'engr', rel: 'engineering support', dashed: !asked.has('engineering') },
+    { s: 'sv', t: 'ws', rel: 'repair capacity', dashed: !asked.has('recovery') }, { s: 'wo', t: 'mat', rel: 'requires materials', hot: asked.has('cause'), dashed: !asked.has('cause') },
+    { s: 'mat', t: 'inv', rel: 'stock check', hot: asked.has('material'), dashed: !asked.has('material') }, { s: 'mat', t: 'proc', rel: 'sourcing', hot: asked.has('material'), dashed: !asked.has('material') },
+    { s: 'engr', t: 'mat', rel: 'part approvals', dashed: true }
   ];
+  if (asked.has('alternatives')) {
+    nodes.push(node('alt', 'Alternative Options', 'Part', '3 options identified', 450, -105, 'warn'));
+    edges.push({ s: 'mat', t: 'alt', rel: 'alternatives' }, { s: 'engr', t: 'alt', rel: 'approval', dashed: !asked.has('engineering') });
+  }
   return { nodes, edges };
 }
 
 function buildGraph(a) {
   if (a.primary) return buildPrimaryGraph(a);
-  const crit = a.score >= 800; const et = typeKey(a.entityType);
-  const nodes = [{ id: 'ac', label: a.aircraft, type: 'Aircraft', x: 0, y: 0 }];
-  const edges = [];
-  const add = (n, from, rel, hot) => { nodes.push(n); edges.push({ s: from, t: n.id, rel, hot: !!hot }); };
-  add({ id: 'eng', label: a.engine, type: 'Engine', x: -175, y: -45 }, 'ac', 'powered by');
-  if (et !== 'ShopVisit') {
-    add({ id: 'sv', label: a.sv, type: 'ShopVisit', x: -45, y: -165 }, 'ac', 'scheduled for');
-    add({ id: 'ent', label: a.entity, type: et, x: 175, y: -45, hot: crit }, et === 'Facility' || et === 'Tooling' ? 'sv' : 'eng',
-        et === 'Facility' ? 'constrained by' : et === 'Tooling' ? 'needs tooling' : et === 'Document' ? 'record' : et === 'Task' ? 'task' : 'contains', crit);
-    if (et === 'Document' || et === 'Task') edges.push({ s: 'sv', t: 'ent', rel: 'part of', dashed: true });
-  } else {
-    add({ id: 'ent', label: a.entity, type: 'ShopVisit', x: -45, y: -165, hot: crit }, 'ac', 'scheduled for', crit);
-  }
-  add({ id: 'wo', label: a.wo, type: 'WorkOrder', x: 55, y: 150 }, 'ac', 'work order');
-  if (et !== 'ShopVisit') edges.push({ s: 'wo', t: 'ent', rel: 'references', dashed: true });
-  add({ id: 'ref', label: a.ref, type: /^INSP|^QR/.test(a.ref) ? 'Document' : 'Material', x: 330, y: 40 }, 'ent', 'reference');
+  const crit = a.score >= 600; const et = ENTITY_ICON[a.entityType] || 'Material';
+  const nodes = [
+    { id: 'sv', label: a.sv, type: 'ShopVisit', sub: 'Shop visit', x: 0, y: 0, big: true },
+    { id: 'eng', label: a.engine, type: 'Engine', sub: `ESN ${a.esn}`, x: -200, y: -90 },
+    { id: 'wo', label: a.wo, type: 'WorkOrder', sub: 'Work order', x: -200, y: 95 }
+  ];
+  const edges = [{ s: 'sv', t: 'eng', rel: 'inducted engine' }, { s: 'sv', t: 'wo', rel: 'executed under' }];
+  if (et !== 'ShopVisit') { nodes.push({ id: 'ent', label: a.entity, type: et, sub: a.entityType, x: 200, y: 0, tone: crit ? 'hot' : 'warn' }); edges.push({ s: 'wo', t: 'ent', rel: 'affected by', hot: crit }); }
+  else { nodes[0].tone = crit ? 'hot' : 'warn'; nodes.push({ id: 'ms', label: 'Delivery Milestone', type: 'Milestone', sub: 'At risk', x: 200, y: 0, tone: 'warn' }); edges.push({ s: 'sv', t: 'ms', rel: 'milestone', warn: true }); }
+  nodes.push({ id: 'own', label: analystName(a.owner).split(',')[0], type: 'Engineering', sub: 'Assigned team', x: 0, y: 170 }); edges.push({ s: 'sv', t: 'own', rel: 'assigned to', dashed: true });
   return { nodes, edges };
 }
 
 function nodeDetails(a, n) {
   if (a.primary) {
-    const s = assessment(a.id); const sc = scenarioOf(a.id).key;
-    const sim = st => st[1] === 'na' ? st[0] : `${st[0]} (simulated scenario ${sc})`;
+    const s = assessment(); const P = C.sim; const asked = s.asked;
+    const pend = 'Not yet assessed. To be established during the investigation.';
     return ({
-      sv:   { 'Shop visit': '38', 'Engine': `${a.engine}, ESN ${a.esn} (demo ID)`, 'Open findings': '1 (this alert)' },
-      eng:  { 'Engine type': a.engine, 'ESN': `${a.esn} (demo ID)`, 'Aircraft': `${a.aircraft} (demo ID)` },
-      wo:   { 'Work order': `${a.wo} (demo ID)`, 'Scope': 'HPT module inspection (illustrative)' },
-      noz:  { 'Component': DEMO.primary.component, 'Finding': DEMO.primary.finding, 'Disposition': sim(s.disp) },
-      fnd:  { 'Defect type': 'Crack', 'Location': 'Trailing edge', 'Measured length': '2.8 mm', 'Source': 'Engine inspection' },
-      rpt:  { 'Reference': `${DEMO.primary.report} (demo reference)`, 'Contents': 'Finding description and measurement' },
-      disp: { 'Status': sim(s.disp), 'Approval': 'Authorised engineering review required' },
-      mat:  { 'Status': sim(s.mat) },
-      wks:  { 'Status': sim(s.wks) }
-    })[n.id];
+      sv:   { 'Shop visit': C.shopVisitName, 'Delivery status': C.deliveryStatus, 'Planned delivery': C.plannedDeliveryDate ? fmtDay(C.plannedDeliveryDate) : 'Not Provided', 'Relationship': 'Central entity of the delayed maintenance order' },
+      eng:  { 'Engine': `${a.engine}${C.identifiersIllustrative ? ' (illustrative)' : ''}`, 'Relationship': `Engine inducted under ${C.shopVisitName}` },
+      wo:   { 'Work order': `${a.wo}${C.identifiersIllustrative ? ' (illustrative)' : ''}`, 'Relationship': 'Maintenance order whose delivery is delayed', ...(asked.has('cause') ? { 'Investigated': `Task ${P.heldTask} on hold awaiting material` } : {}) },
+      ms:   { 'Milestone': 'Planned engine delivery', 'Planned date': C.plannedDeliveryDate ? fmtDay(C.plannedDeliveryDate) : 'Not Provided', 'Expected date': s.expected[0], 'Deviation': s.deviation[0] },
+      engr: { 'Relationship': 'Engineering approvals and dispositions for the order', 'Status': asked.has('engineering') ? `Approval required before using ${P.altPn} or an exchange unit` : pend },
+      ws:   { 'Relationship': 'Repair and assembly capacity for the order', 'Status': asked.has('recovery') ? 'Capacity available to run non-dependent tasks in parallel (simulated)' : pend },
+      mat:  { 'Relationship': 'Materials required to complete the order', 'Status': asked.has('cause') ? `${P.part} (P/N ${P.pn}) required for ${P.heldTask} (simulated finding)` : pend },
+      inv:  { 'Relationship': 'Stock position for the required materials', 'Status': asked.has('material') ? `0 serviceable units of P/N ${P.pn} (simulated finding)` : pend },
+      proc: { 'Relationship': 'Open orders and supplier commitments', 'Status': asked.has('material') ? `${P.po} with ${P.supplier}: ETA about ${P.needInDays + estDelay()} days, after the need date (simulated finding)` : pend },
+      alt:  { 'Options': `Alternative P/N ${P.altPn}; exchange unit from ${P.pool}; expedite ${P.po}`, 'Status': 'Subject to engineering approval (simulated)' }
+    })[n.id] || {};
   }
-  switch (n.type) {
-    case 'Aircraft': return { 'Aircraft type': a.acType, 'Engine': `${a.engine}, ESN ${a.esn}`, 'Open alerts': String(allAlerts().filter(x => x.aircraft === a.aircraft && x.status !== 'Closed').length) };
-    case 'Engine': return { 'ESN': a.esn, 'Installed on': a.aircraft, 'Position': DEMO.fleet[a.aircraft].pos };
-    case 'WorkOrder': return { 'Work order': a.wo, 'Aircraft': a.aircraft, 'Shop visit': a.sv };
-    case 'ShopVisit': return { 'Shop visit': a.sv, 'Aircraft': a.aircraft, 'Open alerts on visit': String(allAlerts().filter(x => x.sv === a.sv && x.status !== 'Closed').length) };
-    default: return n.id === 'ref' ? { 'Reference': a.ref, 'Linked alert': a.id } : { 'Entity type': n.type, 'Reference': a.ref, 'Finding': a.finding };
+  switch (n.id) {
+    case 'sv':  return { 'Shop visit': a.sv, 'Aircraft': a.aircraft, 'Open alerts on visit': String(allAlerts().filter(x => x.sv === a.sv && x.status !== 'Closed').length) };
+    case 'eng': return { 'Engine type': a.engine, 'ESN': a.esn, 'Aircraft': a.aircraft };
+    case 'wo':  return { 'Work order': a.wo, 'Shop visit': a.sv };
+    case 'ent': return { 'Entity': a.entity, 'Type': a.entityType, 'Alert': a.id };
+    case 'ms':  return { 'Milestone': 'Planned delivery', 'Status': 'At risk' };
+    case 'own': return { 'Assigned to': analystName(a.owner) };
+    default: return {};
   }
 }
 
 function renderNetwork(a) {
   const g = buildGraph(a); NET.nodes = g.nodes; NET.edges = g.edges; NET.alertId = a.id; UI.netNodeSel = null;
-  $('netSub').textContent = a.primary ? 'Shop Visit 38 inspection context' : `${a.aircraft} and related entities`;
+  $('netSub').textContent = a.primary ? `${C.shopVisitName} operational dependencies` : `${a.sv} and related entities`;
   drawNetwork(); fitNetwork();
-  $('netDetail').innerHTML = `<div class="net-hint">Select a node to view entity details. ${a.primary ? 'Red links show the inspection finding path. Dashed nodes are not yet assessed.' : ''}</div>`;
+  $('netDetail').innerHTML = `<div class="net-hint">Select an entity to view its relationship to the ${a.primary ? 'delayed maintenance order' : 'alert'}. ${a.primary ? 'Dashed entities are dependencies not yet assessed.' : ''}</div>`;
 }
-
+function nodeColor(n) { return n.tone === 'hot' ? '#C8102E' : n.tone === 'warn' ? '#C96A00' : n.tone === 'ok' ? '#2E7D32' : n.tone === 'pending' ? '#9AA3AC' : (TYPE_COLOR[n.type] || '#5B6670'); }
 function drawNetwork() {
   const byId = Object.fromEntries(NET.nodes.map(n => [n.id, n]));
   const edgeSvg = NET.edges.map(e => {
-    const s = byId[e.s], t = byId[e.t];
-    return `<line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" stroke="${e.hot ? '#C8102E' : '#A5AFB9'}" stroke-width="${e.hot ? 2.6 : 1.5}" ${e.dashed ? 'stroke-dasharray="4 4"' : ''}><title>${esc(s.label)} ${esc(e.rel)} ${esc(t.label)}</title></line>`;
+    const s = byId[e.s], t = byId[e.t]; if (!s || !t) return '';
+    const col = e.hot ? '#C8102E' : e.warn ? '#C96A00' : '#A5AFB9';
+    return `<line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" stroke="${col}" stroke-width="${e.hot || e.warn ? 2.4 : 1.5}" ${e.dashed ? 'stroke-dasharray="4 4"' : ''}><title>${esc(s.label)} ${esc(e.rel)} ${esc(t.label)}</title></line>`;
   }).join('');
   const nodeSvg = NET.nodes.map(n => {
-    const col = n.pending ? '#9AA3AC' : n.hot ? '#C8102E' : n.warn ? '#C96A00' : (TYPE_COLOR[n.type] || '#5B6670');
-    const r = (n.id === 'ac' || (n.id === 'sv' && n.hot)) ? 24 : 20;
-    const fill = n.pending ? '#F6F7F8' : n.hot ? '#FDECEF' : n.warn ? '#FFF4E3' : '#fff';
+    const col = nodeColor(n); const r = n.id === 'sv' ? 24 : 20;
+    const fill = { hot: '#FDECEF', warn: '#FFF4E3', ok: '#E5F3E8', pending: '#F6F7F8' }[n.tone] || '#fff';
     return `<g class="net-node ${UI.netNodeSel === n.id ? 'sel' : ''}" data-id="${n.id}" transform="translate(${n.x},${n.y})">
       <circle class="halo" r="${r + 5}"></circle>
-      <circle class="body" r="${r}" fill="${fill}" stroke="${col}" stroke-width="${n.hot ? 2.4 : 1.6}" ${n.pending ? 'stroke-dasharray="4 3"' : ''}></circle>
+      <circle class="body" r="${r}" fill="${fill}" stroke="${col}" stroke-width="${n.tone === 'hot' ? 2.4 : 1.6}" ${n.tone === 'pending' ? 'stroke-dasharray="4 3"' : ''}></circle>
       <g transform="translate(${-r * 0.55},${-r * 0.55}) scale(${r * 1.1 / 24})" style="color:${col}">${ICONS[n.type] || ICONS.Material}</g>
-      <text y="${r + 15}" text-anchor="middle" font-weight="${n.hot ? 600 : 400}">${esc(n.label)}</text>
+      <text y="${r + 15}" text-anchor="middle" font-weight="${n.tone === 'hot' || n.id === 'sv' ? 600 : 400}">${esc(n.label)}</text>
       <text class="t2" y="${r + 28}" text-anchor="middle">${esc(n.sub || TYPE_LABEL[n.type] || n.type)}</text>
     </g>`;
   }).join('');
@@ -1032,7 +1036,7 @@ function fitNetwork() {
   const svg = $('netSvg'); const W = svg.clientWidth || 600, H = svg.clientHeight || 300;
   if (!NET.nodes.length) return;
   const xs = NET.nodes.map(n => n.x), ys = NET.nodes.map(n => n.y);
-  const minX = Math.min(...xs) - 80, maxX = Math.max(...xs) + 80, minY = Math.min(...ys) - 40, maxY = Math.max(...ys) + 60;
+  const minX = Math.min(...xs) - 95, maxX = Math.max(...xs) + 95, minY = Math.min(...ys) - 40, maxY = Math.max(...ys) + 60;
   NET.k = Math.max(0.35, Math.min(1.3, Math.min(W / (maxX - minX), (H - 34) / (maxY - minY))));
   NET.tx = W / 2 - ((minX + maxX) / 2) * NET.k; NET.ty = (H + 28) / 2 - ((minY + maxY) / 2) * NET.k;
   applyNetTransform();
@@ -1046,9 +1050,9 @@ function selectNode(id) {
   UI.netNodeSel = id; const a = getAlert(NET.alertId); const n = NET.nodes.find(x => x.id === id);
   document.querySelectorAll('.net-node').forEach(g => g.classList.toggle('sel', g.dataset.id === id));
   const d = nodeDetails(a, n) || {};
-  const rels = NET.edges.filter(e => e.s === id || e.t === id).map(e => NET.nodes.find(x => x.id === (e.s === id ? e.t : e.s)).label);
-  const col = n.pending ? '#5B6670' : n.hot ? '#C8102E' : (TYPE_COLOR[n.type] || '#5B6670');
-  $('netDetail').innerHTML = `<div class="nd-title"><span style="color:${col}">${esc(n.label)}</span><span class="muted">${esc(TYPE_LABEL[n.type] || n.type)}</span>${n.hot ? '<span class="sev crit">Finding path</span>' : ''}${n.pending ? '<span class="state na">Not yet assessed</span>' : ''}</div>
+  const rels = NET.edges.filter(e => e.s === id || e.t === id).map(e => (NET.nodes.find(x => x.id === (e.s === id ? e.t : e.s)) || {}).label).filter(Boolean);
+  const badge = { hot: '<span class="sev crit">Constraint</span>', warn: '<span class="sev high">Attention</span>', ok: '<span class="state grn">Clear</span>', pending: '<span class="state na">Not yet assessed</span>' }[n.tone] || '';
+  $('netDetail').innerHTML = `<div class="nd-title"><span style="color:${nodeColor(n)}">${esc(n.label)}</span><span class="muted">${esc(TYPE_LABEL[n.type] || n.type)}</span>${badge}</div>
     <div class="nd-grid">${Object.entries(d).map(([k, v]) => `<span>${esc(k)}: <b>${esc(v)}</b></span>`).join('')}<span>Linked to: <b>${esc(rels.join(', '))}</b></span></div>`;
 }
 function initNetworkEvents() {
@@ -1066,15 +1070,11 @@ function initNetworkEvents() {
     if (drag.node) { drag.node.x = drag.nx + dx / NET.k; drag.node.y = drag.ny + dy / NET.k; drawNetwork(); }
     else { NET.tx = drag.tx + dx; NET.ty = drag.ty + dy; applyNetTransform(); }
   });
-  window.addEventListener('mouseup', () => {
-    if (!drag) return; svg.classList.remove('dragging');
-    if (!drag.moved && drag.node) selectNode(drag.node.id);
-    drag = null;
-  });
+  window.addEventListener('mouseup', () => { if (!drag) return; svg.classList.remove('dragging'); if (!drag.moved && drag.node) selectNode(drag.node.id); drag = null; });
   svg.addEventListener('mousemove', e => {
     const g = e.target.closest('.net-node'); if (!g || drag) { tip.style.display = 'none'; return; }
     const n = NET.nodes.find(x => x.id === g.dataset.id); const d = nodeDetails(getAlert(NET.alertId), n) || {};
-    tip.innerHTML = `<b>${esc(n.label)}</b> (${esc(TYPE_LABEL[n.type] || n.type)})<br>${Object.entries(d).slice(0, 2).map(([k, v]) => `${esc(k)}: ${esc(v)}`).join('<br>')}`;
+    tip.innerHTML = `<b>${esc(n.label)}</b><br>${Object.entries(d).slice(0, 2).map(([k, v]) => `${esc(k)}: ${esc(v)}`).join('<br>')}`;
     const r = $('netWrap').getBoundingClientRect(); tip.style.display = 'block';
     tip.style.left = Math.min(e.clientX - r.left + 14, r.width - 250) + 'px'; tip.style.top = (e.clientY - r.top + 14) + 'px';
   });
@@ -1085,67 +1085,63 @@ function initNetworkEvents() {
 /* =====================================================================
    TOOLBAR ACTIONS
    ===================================================================== */
+const kvHtml = rows => `<div class="kv kv-modal">${rows.map(([k, v]) => `<div class="k">${k}</div><div class="v">${v}</div>`).join('')}</div>`;
 function openAlertModal() {
   const ids = targetIds(); if (!ids.length) return toast('Select an alert first.');
   const id = S.checked.length === 1 ? S.checked[0] : S.selectedId;
   const a = getAlert(id); selectAlert(id, { scroll: true });
-  const histRows = (base) => `<table class="hist-table"><tr><th style="width:36px">#</th><th style="width:190px">Date/time</th><th style="width:130px">By</th><th>Activity</th></tr>
-      ${base.map((h, i) => `<tr><td>${i + 1}</td><td>${esc(h.at)}</td><td>${esc(h.by)}</td><td>${esc(h.note)}</td></tr>`).join('')}</table>`;
   const buttons = [{ label: 'Close' }, { label: 'Open Digital Assistant', primary: true, onClick: () => openAssistant() }];
   if (a.primary) {
-    const s = assessment(a.id); const P = DEMO.primary;
-    const hist = P.history.map(([at, by, note]) => ({ at: at + ' (synthetic)', by, note })).concat(a.history);
-    showModal({ title: `Alert ${a.id}: ${P.title}`, wide: true, buttons, body: `
-      <div class="modal-sec">Inspection finding details</div>
-      <div class="kv kv-modal">
-        ${[['Component', esc(P.component)], ['Shop Visit', esc(P.shopVisit)],
-           ['Defect type', esc(P.defectType)], ['Defect location', esc(P.defectLocation)],
-           ['Observed crack measurement', `<b class="warn-txt">${esc(P.measurement)}</b>`], ['Finding source', esc(P.findingSource)],
-           ['Engine', demoId(`${a.engine}, ESN ${a.esn}`)], ['Work order', demoId(a.wo)],
-           ['Inspection report', demoId(`${P.report}`)], ['Alert score', `${scoreText(a)} <span class="illus">(Illustrative / synthetic)</span>`]].map(([k, v]) => `<div class="k">${k}</div><div class="v">${v}</div>`).join('')}
-      </div>
-      <div class="modal-sec">Review status</div>
-      <div class="kv kv-modal">
-        ${[['Engineering review status', stateTag(s.disp)], ['Triage status', triageTag(a.triage)],
-           ['Alert status', esc(a.status)], ['Owner', esc(analystName(a.owner))],
-           ['Material impact', stateTag(s.mat)], ['Workshop impact', stateTag(s.wks)],
-           ['TAT impact', stateTag(s.tat)], ['Operational impact', stateTag(s.op)]].map(([k, v]) => `<div class="k">${k}</div><div class="v">${v}</div>`).join('')}
-      </div>
+    const s = assessment(); const il = C.identifiersIllustrative;
+    const hist = C.activity.map(e => ({ at: e.at, by: e.by, note: e.event, rec: e.confirmed ? '<span class="state grn">Confirmed</span>' : '<span class="ill">Synthetic demo activity</span>' }))
+      .concat(a.history.map(h => ({ at: h.at, by: h.by, note: h.note, rec: '<span class="state grn">Recorded in session</span>' })));
+    showModal({ title: `Alert ${a.id}: ${C.title}`, wide: true, buttons, body: `
+      <div class="modal-sec">Order information</div>
+      ${kvHtml([['Alert ID', esc(a.id)], ['Shop Visit', esc(C.shopVisitName)],
+        ['Work Order', ill(a.wo, il)], ['Aircraft', ill(a.aircraft, il)],
+        ['Engine', ill(a.engine, il)], ['Order Status', `In work, delivery <span class="state crit">${esc(C.deliveryStatus)}</span>`],
+        ['Planned Delivery Date', C.plannedDeliveryDate ? esc(fmtDay(C.plannedDeliveryDate)) : '<span class="state na">Not Provided</span>'],
+        ['Current Expected Delivery', stateTag(s.expected)],
+        ['Delivery Deviation', stateTag(s.deviation)], ['Detected', esc(fmtDate(a.detected, true))]])}
+      <div class="modal-sec">Investigation information</div>
+      ${kvHtml([['Severity', `${esc(sevLabel(a.score))} ${ILL}`], ['Alert Score', `${a.score} ${ILL}`],
+        ['Triage Status', triageTag(a.triage)], ['Assigned Analyst', esc(analystName(a.owner))],
+        ['Root Cause Status', stateTag(s.rootCause)], ['Material Assessment', stateTag(s.material)],
+        ['Recovery Planning', stateTag(s.recovery)], ['Alert Status', esc(a.status)]])}
       <div class="desc"><span class="k">Description</span>${esc(a.description)}</div>
-      <div class="modal-sec">Activity history <span class="muted" style="font-weight:400">(synthetic timestamps)</span></div>
-      ${histRows(hist)}
-      <p class="muted" style="margin:8px 0 0">${esc(DEMO.meta.idNote)} No repair approval, material position, workshop constraint or TAT outcome is established at this stage.</p>` });
+      <div class="modal-sec">Activity history</div>
+      <table class="hist-table"><tr><th style="width:36px">#</th><th style="width:180px">Date/time</th><th style="width:120px">By</th><th>Activity</th><th style="width:170px">Record</th></tr>
+        ${hist.map((h, i) => `<tr><td>${i + 1}</td><td>${esc(h.at)}</td><td>${esc(h.by)}</td><td>${esc(h.note)}</td><td>${h.rec}</td></tr>`).join('')}</table>` });
     return;
   }
-  const hist = [{ at: fmtDate(a.detected), by: 'system', note: 'Alert generated by SANAD MRO monitoring (illustrative)' }].concat(a.history);
+  const hist = [{ at: fmtDate(a.detected), by: 'system', note: 'Alert generated by SANAD MRO monitoring' }].concat(a.history);
   showModal({ title: `Alert ${a.id}: ${a.type}`, wide: true, buttons, body: `
-    <div class="kv kv-modal" style="margin-bottom:10px">
-      ${[['Score', `${scoreText(a)} (Illustrative)`], ['Severity', sevLabel(a.score)], ['Primary Entity', a.entity], ['Entity Type', a.entityType], ['Aircraft', `${a.aircraft} (${a.acType})`], ['Engine', `${a.engine}, ESN ${a.esn}`], ['Work Order', a.wo], ['Shop Visit', a.sv], ['Reference', a.ref], ['Status', a.status], ['Triage', a.triage], ['Owner', analystName(a.owner)]].map(([k, v]) => `<div class="k">${k}</div><div class="v">${esc(v)}</div>`).join('')}
-    </div>
+    ${kvHtml([['Score', `${a.score} (${sevLabel(a.score)}) ${ILL}`], ['Primary Entity', esc(a.entity)], ['Entity Type', esc(a.entityType)], ['Aircraft', esc(`${a.aircraft} (${a.acType})`)], ['Engine', esc(`${a.engine}, ESN ${a.esn}`)], ['Work Order', esc(a.wo)], ['Shop Visit', esc(a.sv)], ['Status', esc(a.status)], ['Triage', triageTag(a.triage)], ['Assigned To', esc(analystName(a.owner))]])}
     <div class="desc"><span class="k">Description</span>${esc(a.description)}</div>
-    <div class="modal-sec">Activity history</div>${histRows(hist)}` });
+    <div class="modal-sec">Activity history</div>
+    <table class="hist-table"><tr><th style="width:36px">#</th><th style="width:190px">Date/time</th><th style="width:130px">By</th><th>Activity</th></tr>
+      ${hist.map((h, i) => `<tr><td>${i + 1}</td><td>${esc(h.at)}</td><td>${esc(h.by)}</td><td>${esc(h.note)}</td></tr>`).join('')}</table>` });
 }
 
 function assignModal() {
   const ids = targetIds(); if (!ids.length) return toast('Select an alert first.');
   showModal({ title: `Assign ${ids.length > 1 ? ids.length + ' alerts' : ids[0]}`, body: `
-    <div class="form-row"><label>Assign to</label><select id="mAssignee">${DEMO.analysts.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div>
+    <div class="form-row"><label>Assign to</label><select id="mAssignee">${APP_DATA.analysts.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div>
     <div class="form-row"><label>Comment (optional)</label><textarea id="mAssignNote" placeholder="Reason for assignment"></textarea></div>
     <div class="muted">Applies to: ${ids.map(esc).join(', ')}</div>`,
     buttons: [{ label: 'Cancel' }, { label: 'Assign', primary: true, onClick: () => {
       const who = $('mAssignee').value, note = $('mAssignNote').value.trim();
-      ids.forEach(id => setOverride(id, { owner: who }, `Assigned to ${who}${note ? ': ' + note : ''}`));
-      refreshAll(); toast(`${ids.length} alert${ids.length > 1 ? 's' : ''} assigned to ${who}.`);
+      ids.forEach(id => setOverride(id, { owner: who }, `Assigned to ${analystName(who)}${note ? ': ' + note : ''}`));
+      refreshAll(); toast(`${ids.length} alert${ids.length > 1 ? 's' : ''} assigned to ${analystName(who)}.`);
     } }] });
 }
-
 function statusModal() {
   const ids = targetIds(); if (!ids.length) return toast('Select an alert first.');
   const a = getAlert(ids[0]);
   showModal({ title: `Change status: ${ids.length > 1 ? ids.length + ' alerts' : ids[0]}`, body: `
     <div class="form-2">
-      <div class="form-row"><label>Status</label><select id="mStatus">${DEMO.statuses.map(s => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-      <div class="form-row"><label>Triage status</label><select id="mTriage">${DEMO.triage.map(s => `<option ${s === a.triage ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="form-row"><label>Status</label><select id="mStatus">${APP_DATA.statuses.map(s => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="form-row"><label>Triage status</label><select id="mTriage">${APP_DATA.triage.map(s => `<option ${s === a.triage ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
     </div>
     <div class="form-row"><label>Comment (optional)</label><textarea id="mStatusNote" placeholder="Add a triage note"></textarea></div>
     <div class="muted">Applies to: ${ids.map(esc).join(', ')}</div>`,
@@ -1155,13 +1151,12 @@ function statusModal() {
       refreshAll(); toast(`Status updated for ${ids.length} alert${ids.length > 1 ? 's' : ''}.`);
     } }] });
 }
-
 function createInvestigation(alertId, title, silent) {
   const a = getAlert(alertId);
   const existing = S.investigations.find(i => i.alertId === alertId);
   if (existing && silent) { toast(`${alertId} is already linked to ${existing.id}.`); return existing; }
   const n = 31 + S.investigations.length;
-  const inv = { id: `INV-2026-0${n}`, alertId, title: title || `${a.title} (${a.sv})`, owner: 'mro_analyst', created: nowStamp(), status: 'Open', priority: sevOf(a.score) === 'crit' ? 'High' : 'Medium' };
+  const inv = { id: `INV-2026-0${n}`, alertId, title: title || (a.primary ? `${C.shopVisitName}: engine delivery delay` : a.title), owner: 'mro_analyst', created: nowStamp(), status: 'Open', priority: ['crit', 'high'].includes(sevOf(a.score)) ? 'High' : 'Medium' };
   S.investigations.push(inv);
   setOverride(alertId, { status: a.status === 'Open' ? 'In Progress' : a.status }, `Investigation ${inv.id} created and linked`);
   refreshAll(); toast(`Investigation ${inv.id} created and linked to ${alertId}.`);
@@ -1172,47 +1167,43 @@ function investigationModal() {
   const id = S.checked.length === 1 ? S.checked[0] : S.selectedId; const a = getAlert(id);
   const existing = S.investigations.filter(i => i.alertId === id);
   showModal({ title: `Create investigation from ${id}`, body: `
-    <div class="form-row"><label>Investigation title</label><input id="mInvTitle" value="${esc(a.primary ? 'Shop Visit 38: HPT nozzle 2.8 mm crack disposition' : `${a.type}: ${a.entity} (${a.sv})`)}"></div>
+    <div class="form-row"><label>Investigation title</label><input id="mInvTitle" value="${esc(a.primary ? `${C.shopVisitName}: engine delivery delay` : `${a.type}: ${a.entity} (${a.sv})`)}"></div>
     <div class="form-2">
-      <div class="form-row"><label>Lead investigator</label><select id="mInvOwner">${DEMO.analysts.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div>
-      <div class="form-row"><label>Priority</label><select id="mInvPrio"><option>${sevOf(a.score) === 'crit' ? 'High' : 'Medium'}</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+      <div class="form-row"><label>Lead investigator</label><select id="mInvOwner">${APP_DATA.analysts.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div>
+      <div class="form-row"><label>Priority</label><select id="mInvPrio"><option>${['crit', 'high'].includes(sevOf(a.score)) ? 'High' : 'Medium'}</option><option>High</option><option>Medium</option><option>Low</option></select></div>
     </div>
-    <div class="muted">The investigation will be linked to alert ${id}, work order ${a.wo} and ${a.primary ? 'Shop Visit 38' : a.sv}.${existing.length ? ` This alert is already linked to ${existing.map(i => i.id).join(', ')}.` : ''}</div>`,
+    <div class="muted">The investigation will be linked to alert ${id}, work order ${a.wo} and ${a.primary ? C.shopVisitName : a.sv}.${existing.length ? ` This alert is already linked to ${existing.map(i => i.id).join(', ')}.` : ''}</div>`,
     buttons: [{ label: 'Cancel' }, { label: 'Create Investigation', primary: true, onClick: () => {
       const inv = createInvestigation(id, $('mInvTitle').value.trim());
       inv.owner = $('mInvOwner').value; inv.priority = $('mInvPrio').value; saveState(); renderInvestigations();
     } }] });
 }
-
 function exportCsv() {
   const vis = visibleAlerts();
-  const head = ['Score (illustrative)', 'Alert ID', 'Alert Type', 'Primary Entity', 'Entity Type', 'Aircraft', 'Engine', 'Work Order', 'Shop Visit', 'Detected', 'Status', 'Triage', 'Owner', 'Reference', 'Note'];
+  const head = ['Score (illustrative)', 'Severity', 'Alert ID', 'Alert Type', 'Primary Entity', 'Entity Type', 'Aircraft', 'Engine', 'Work Order', 'Shop Visit', 'Detected', 'Status', 'Triage', 'Assigned To'];
   const q = v => `"${String(v).replace(/"/g, '""')}"`;
-  const lines = [head.map(q).join(',')].concat(vis.map(a => [scoreText(a), a.id, a.type, a.entity, a.entityType, a.aircraft, a.engine, a.wo, a.sv, fmtDate(a.detected), a.status, a.triage, a.owner, a.ref, 'Illustrative demonstration data'].map(q).join(',')));
+  const lines = [head.map(q).join(',')].concat(vis.map(a => [a.score, sevLabel(a.score), a.id, a.type, a.entity, a.entityType, a.aircraft, a.engine, a.wo, a.sv, fmtDate(a.detected), a.status, a.triage, analystName(a.owner)].map(q).join(',')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob); const link = document.createElement('a');
   link.href = url; link.download = `sanad_mro_alerts_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   toast(`Exported ${vis.length} alert${vis.length !== 1 ? 's' : ''} to CSV.`);
 }
-
 function refreshAll() {
   const st = $('tableWrap').scrollTop;
   renderTable(); renderDetails(); renderInvestigations();
   $('tableWrap').scrollTop = st;
   if (UI.view === 'assistant') renderContext();
 }
-function doRefresh() { S = loadState(); refreshAll(); $('refreshLbl').textContent = 'Refreshed ' + nowStamp().split(', ')[1]; toast('View refreshed from local data.'); }
-
+function doRefresh() { S = loadState(); refreshAll(); $('refreshLbl').textContent = 'Refreshed ' + nowStamp().split(', ')[1]; toast('View refreshed.'); }
 function clearFilters() {
   Object.assign(UI.filters, { q: '', severity: '', status: '', triage: '', type: '', text: '', queue: 'all', adv: null });
   ['fSeverity', 'fStatus', 'fTriage', 'fType', 'fText', 'globalSearch'].forEach(i => $(i).value = ''); $('queueSel').value = 'all';
   renderTable();
 }
-
 function advSearchModal() {
   const v = UI.filters.adv || {};
-  const acs = Object.keys(DEMO.fleet); const svs = [...new Set(BASE_ALERTS.map(a => a.sv))].sort((x, y) => svNum(x) - svNum(y));
+  const acs = Object.keys(APP_DATA.fleet); const svs = [...new Set(BASE_ALERTS.map(a => a.sv))].sort((x, y) => svNum(x) - svNum(y));
   showModal({ title: 'Advanced Search', body: `
     <div class="form-2">
       <div class="form-row"><label>Alert ID contains</label><input id="aId" value="${esc(v.id || '')}"></div>
@@ -1229,21 +1220,17 @@ function advSearchModal() {
                 switchTab('alerts'); renderTable(); toast(`${visibleAlerts().length} alerts match the advanced search.`);
               } }] });
 }
-
 function helpModal() {
-  showModal({ title: 'Help: demonstration guide', body: `
-    <p style="margin-top:0">This is a demonstration mockup of an alert triage workspace for SANAD MRO, inspired by SAS Visual Investigator. ${esc(DEMO.meta.disclaimer)}</p>
-    <b>Demonstration journey</b>
+  showModal({ title: 'Help', body: `
+    <b>Working an alert</b>
     <ol class="help-steps">
-      <li><b>Inspection finding:</b> select alert ${PRIMARY_ID} (HPT nozzle crack, Shop Visit 38).</li>
-      <li>Review the finding, triage status and pending review indicators. Downstream impacts are not yet assessed.</li>
-      <li>Explore the inspection context in the Network panel.</li>
-      <li>Click <b>Digital Assistant</b>. The selected alert context is handed over.</li>
-      <li>Follow the guided questions: engineering assessment, material requirements, operational constraints, TAT assessment, recommended actions.</li>
-      <li>Return to the alert to see the indicators updated from the investigation.</li>
+      <li>Select an alert in the table to load its scorecard, alert information and network.</li>
+      <li>Use <b>Open</b> for order information, investigation status and activity history.</li>
+      <li>Use <b>Assign</b>, <b>Change Status</b> and <b>Create Investigation</b> to triage the alert.</li>
+      <li>Click <b>Digital Assistant</b> to investigate the selected alert. The alert context is passed to the assistant automatically.</li>
     </ol>
-    <p><b>Scenario selector:</b> scenario A is the baseline walkthrough. Scenarios B, C and D are simulated illustrations showing how conclusions change.</p>
-    <b>Shortcuts</b>
+    <p class="muted">Scores, indicator values and identifiers marked Illustrative are demonstration values. Digital Assistant responses in this page are simulated.</p>
+    <b>Keyboard shortcuts</b>
     <ul class="help-steps"><li>Arrow Up / Arrow Down: move between alerts</li><li>Enter: open the Digital Assistant for the selected alert</li><li>Esc: close dialogs</li></ul>` });
 }
 
@@ -1258,7 +1245,6 @@ function renderInvestigations() {
     <td><button class="link-btn" data-goto="${i.alertId}">View alert</button></td></tr>`).join('')}</table>`;
   $('invList').querySelectorAll('[data-goto]').forEach(b => b.onclick = () => { switchTab('alerts'); clearFilters(); selectAlert(b.dataset.goto, { scroll: true }); });
 }
-
 function switchTab(t) {
   if (t === 'alerts' && UI.view === 'assistant') { backToAlert(); return; }
   UI.view = t === 'investigations' ? 'investigations' : 'alerts';
@@ -1273,301 +1259,267 @@ function switchTab(t) {
    DIGITAL ASSISTANT
    ===================================================================== */
 /**
- * Entry point for the Digital Assistant.
- * Today: returns a deterministic mock response built from local demonstration data.
- * Later: replace the body with the integration to the SANAD Agentic AI demo,
- * passing alertContext (built by buildAlertContext) as the handover payload.
- * @param {string} message       analyst question
- * @param {object} alertContext  context handed over from Visual Investigator
- * @returns {Promise<{title:string, blocks:Array, followUps:string[]}>}
+ * Entry point for the Digital Assistant (local simulated responses).
+ * To connect the working SANAD assistant, replace the body of this
+ * function, or set ASSISTANT_CONFIG.mode = 'external' to open it as a
+ * separate application with the alert context.
  */
 async function sendMessageToAssistant(message, alertContext) {
-  return mockRespond(message, alertContext);
+  return respondFromRecords(message, alertContext);
 }
 
-/** Context handed from Visual Investigator to the assistant. */
+/** Shared alert context handed to the assistant. Facts known at alert creation plus current investigation status. */
 function buildAlertContext(a) {
-  if (!a.primary) return { alertId: a.id, alertType: a.type, entity: a.entity, aircraft: a.aircraft, engine: a.engine, workOrder: a.wo, shopVisit: a.sv, status: a.status, triage: a.triage, finding: a.finding, illustrative: true, _alert: a };
-  return {
-    alertId: a.id, alertTitle: DEMO.primary.title, shopVisit: DEMO.primary.shopVisit, component: DEMO.primary.component,
-    finding: DEMO.primary.finding, defectType: DEMO.primary.defectType, defectLocation: DEMO.primary.defectLocation, measurement: DEMO.primary.measurement,
-    findingSource: DEMO.primary.findingSource, engineeringDisposition: 'Pending Review', triage: a.triage,
-    inspectionEvidence: [{ ref: 'EV-01', record: `${DEMO.primary.report} (demo reference)` }],
-    demoIdentifiers: { aircraft: a.aircraft, engine: `${a.engine} ESN ${a.esn}`, workOrder: a.wo },
-    scenario: scenarioOf(a.id).key, illustrative: true, _alert: a
+  const s = a.primary ? assessment() : null;
+  const ctx = {
+    alertId: a.id,
+    shopVisitId: a.primary ? C.shopVisitId : a.sv,
+    shopVisitName: a.primary ? C.shopVisitName : a.sv,
+    workOrderId: a.wo,
+    engineId: a.engine,
+    aircraftId: a.aircraft,
+    deliveryStatus: a.primary ? C.deliveryStatus : 'Not applicable',
+    plannedDeliveryDate: a.primary ? C.plannedDeliveryDate : null,
+    expectedDeliveryDate: a.primary ? C.expectedDeliveryDate : null,
+    investigationStatus: a.primary ? { rootCause: s.rootCause[0], material: s.material[0], recovery: s.recovery[0], triage: a.triage } : { triage: a.triage },
+    selectedAlertSummary: a.description,
+    alertTitle: a.title, alertType: a.type, score: a.score, severity: sevLabel(a.score), illustrativeIdentifiers: a.primary ? C.identifiersIllustrative : true
   };
+  Object.defineProperty(ctx, '_alert', { value: a, enumerable: false });
+  return ctx;
+}
+function publishContext(ctx) {
+  const plain = JSON.parse(JSON.stringify(ctx));
+  window.SANAD_CONTEXT = plain;
+  try { sessionStorage.setItem('sanad.context', JSON.stringify(plain)); } catch (e) { /* storage unavailable */ }
+  return plain;
 }
 
 const SEQ = [
-  'Based on the 2.8 mm crack detected on the HPT nozzle during Shop Visit 38, what is the recommended engineering disposition?',
-  'What applicable engineering guidance supports the recommendation?',
-  'What parts, consumables, or tooling would be required?',
-  'Are the required materials available?',
-  'Are there workshop or repair-cell constraints?',
-  'How could the available options affect turnaround time?',
-  'What actions should the relevant teams take next?'
+  'What is causing the delivery delay for this maintenance order?',
+  'Which required parts or components are affecting the order, and what is their availability status?',
+  'Are there any alternative parts or sourcing options that could help address the material constraints?',
+  'What engineering restrictions or approvals need to be considered before using these alternatives?',
+  'What actions could help reduce the delay, and how might they affect the expected delivery date?',
+  'Summarize the main causes of the delay, the available recovery options, and the recommended next steps.'
 ];
-const SEQ_INTENTS = ['disposition', 'guidance', 'parts', 'availability', 'workshop', 'tat', 'actions'];
+const SEQ_INTENTS = ['cause', 'material', 'alternatives', 'engineering', 'recovery', 'summary'];
 const JOURNEY = [
-  ['Inspection Finding', []], ['Engineering Assessment', ['disposition', 'guidance']], ['Material Requirements', ['parts', 'availability']],
-  ['Operational Constraints', ['workshop']], ['TAT Assessment', ['tat']], ['Recommended Actions', ['actions']]
+  ['Operational Alert', null], ['Alert Triage', null], ['Root-Cause Investigation', 'cause'], ['Material Availability', 'material'],
+  ['Alternative Parts', 'alternatives'], ['Engineering Validation', 'engineering'], ['Recovery Planning', 'recovery'], ['Executive Summary', 'summary']
 ];
-
 function detectIntent(text) {
   const m = text.toLowerCase();
-  if (/what actions|next steps?|teams take|summar|recommended actions/.test(m)) return 'actions';
-  if (/turnaround|\btat\b|operational impact|delay/.test(m)) return 'tat';
-  if (/guidance|manual|supports? the recommendation|repair limit|threshold/.test(m)) return 'guidance';
-  if (/workshop|repair[- ]cell|capacity|queue/.test(m)) return 'workshop';
-  if (/available|availability|in stock|\bstock\b/.test(m)) return 'availability';
-  if (/parts|consumable|tooling|would be required|material requirement/.test(m)) return 'parts';
-  if (/confiden|\bsure\b|certain|validat|challenge|what could change/.test(m)) return 'challenge';
-  if (/evidence|inspection record|report/.test(m)) return 'evidence';
-  if (/disposition|recommend/.test(m)) return 'disposition';
-  if (/caus|contribut|factor|driver/.test(m)) return 'cause';
-  if (/mitigat|options?\b|alternative/.test(m)) return 'options';
+  if (/summari[sz]e|executive summary/.test(m)) return 'summary';
+  if (/engineering restriction|approvals? need|restrictions? or approval/.test(m)) return 'engineering';
+  if (/alternative parts|sourcing options|substitut|alternatives?\b/.test(m)) return 'alternatives';
+  if (/reduce the delay|recovery|expected delivery date|actions could help/.test(m)) return 'recovery';
+  if (/availability|which required parts|components are affecting|in stock|\bstock\b|supplier|eta/.test(m)) return 'material';
+  if (/causing|cause|why .*delay|contributing/.test(m)) return 'cause';
+  if (/evidence|supporting|records?/.test(m)) return 'evidence';
+  if (/confiden|\bsure\b|certain|challenge/.test(m)) return 'challenge';
+  if (/next steps?|actions/.test(m)) return 'summary';
   return 'fallback';
 }
-
-function suggestionsFor(a) {
-  if (a.primary) return [SEQ[0]];
-  return ['Why was this alert raised?', 'What are the main contributing factors?', 'What options can help mitigate the risk?'];
-}
+function suggestionsFor(a) { return a.primary ? [SEQ[0]] : ['Why was this alert raised?', 'What options could help resolve it?', 'Summarize the recommended next steps']; }
 function nextSeq(id, after) {
   if (after) { const i = SEQ_INTENTS.indexOf(after) + 1; if (i > 0 && i < SEQ.length) return SEQ[i]; }
   const asked = askedIntents(id);
   for (let i = 0; i < SEQ.length; i++) if (!asked.has(SEQ_INTENTS[i])) return SEQ[i];
   return null;
 }
-
-function mockRespond(message, ctx) {
+function respondFromRecords(message, ctx) {
   const a = ctx._alert || getAlert(ctx.alertId);
   const intent = detectIntent(message);
-  const r = a.primary ? primaryResponse(intent, a, scenarioOf(a.id)) : genericResponse(intent, a);
+  const r = a.primary ? primaryResponse(intent, a, ctx) : genericResponse(intent, a);
   r.intent = intent;
   return r;
 }
 
 const cell = (v, tone) => ({ v, tone });
-const SIM_NOTE = sc => ({ t: 'scenario', text: sc.key === 'A' ? 'Scenario A (baseline walkthrough). Values in this step are simulated demonstration values.' : `Simulated scenario illustration ${sc.label}. Values in this step are simulated to show how conclusions change.` });
-const APPROVAL = { t: 'note', text: 'Decision support only. The final disposition remains subject to authorised engineering review and approval.' };
+const APPROVAL = { t: 'note', text: 'Use of any alternative part or exchange unit remains subject to authorised engineering review and approval.' };
 
-function primaryResponse(intent, a, sc) {
-  const rep = sc.path === 'repair'; const D = sc.key === 'D';
+function primaryResponse(intent, a, ctx) {
+  const P = C.sim; const D = estDelay(); const dIll = delayIsIll(); const eta = P.needInDays + D;
+  const dTxt = `${D} days${dIll ? ' (illustrative estimate)' : ''}`;
   const nxt = (after, extra) => [nextSeq(a.id, after)].concat(extra || []).filter(Boolean);
+  const plannedTxt = C.plannedDeliveryDate ? fmtDay(C.plannedDeliveryDate) : 'Not Provided';
+  const res = n => C.plannedDeliveryDate ? `${fmtDay(addDays(C.plannedDeliveryDate, n))}` : (n ? `Planned + ${n} day${n === 1 ? '' : 's'}` : 'On planned date');
+  const known = { t: 'known', items: [`${C.shopVisitName}, work order ${a.wo}, engine ${a.engine}, aircraft ${a.aircraft}.`, `Delivery status: ${C.deliveryStatus}. Planned delivery date: ${plannedTxt}.`, `Alert ${a.id} assigned to ${analystName(a.owner)}; triage ${a.triage}.`] };
   switch (intent) {
-    case 'disposition': return {
-      title: rep ? 'Recommended engineering disposition: Repair (subject to approval)' : 'Recommended engineering disposition: Reject and replace (subject to approval)',
+    case 'cause': return {
+      title: `Contributing factors behind the ${C.shopVisitName} delivery delay`,
       blocks: [
-        D ? { t: 'scenario', text: 'Simulated scenario illustration D. This step assumes a crack measured at 4.6 mm to show the rejection path. The recorded Shop Visit 38 finding is 2.8 mm.' } : null,
-        { t: 'p', text: rep
-          ? 'The observed **2.8 mm** trailing-edge crack on the HPT nozzle falls within the demonstrated repairable range of **1.5 to 4.0 mm**. Based on the demonstrated scenario, the recommended disposition is **repair**.'
-          : 'The simulated crack length of **4.6 mm** exceeds the upper limit of the demonstrated repairable range (4.0 mm). Based on the demonstrated scenario, the recommended disposition is **reject and replace** the HPT nozzle.' },
-        { t: 'table', head: ['Assessment input', 'Value'], rows: [
-          ['Component', DEMO.primary.component], ['Defect type and location', 'Crack, trailing edge'],
-          ['Observed crack length', rep ? '2.8 mm' : cell('4.6 mm (simulated)', 'amb')],
-          ['Demonstrated repairable range', '1.5 to 4.0 mm'], ['Demonstrated rejection path', 'Above 4.0 mm'],
-          ['Result', rep ? cell('Within demonstrated repairable range', 'grn') : cell('Exceeds demonstrated repair limit', 'red')],
-          ['Proposed disposition', rep ? cell('Repair, pending engineering approval', 'amb') : cell('Reject and replace, pending engineering approval', 'amb')]
+        known,
+        { t: 'p', text: `I reviewed the task status, inventory, procurement and engineering records linked to ${a.wo}. The delay is driven mainly by a **material constraint on the HPT module rebuild**, with two secondary factors.` },
+        { t: 'table', head: ['#', 'Contributing factor', 'What the records show', 'Role'], rows: [
+          ['1', 'Material constraint', `Task ${P.heldTask} is on hold awaiting an ${P.part} (P/N ${P.pn}). No serviceable unit is available.`, cell('Primary', 'red')],
+          ['2', 'Engineering outcome', `The removed nozzle set was assessed under ${P.ec} as beyond repair limits, so a replacement set is required.`, cell('Secondary', 'amb')],
+          ['3', 'Execution sequencing', 'Module assembly and engine test cannot start until the HPT module rebuild is complete.', cell('Secondary', 'amb')]
         ] },
-        { t: 'confirmed', items: ['A 2.8 mm trailing-edge crack on the HPT nozzle was recorded during the Shop Visit 38 engine inspection.', 'Engineering disposition is currently Pending Review.'] },
-        { t: 'assumptions', items: ['The 1.5 to 4.0 mm range and the above 4.0 mm rejection path are specific to this PoC scenario. They are **not universal OEM limits**.', 'The recorded measurement is accurate and no additional damage affects the same nozzle.', 'Material, workshop and TAT implications have not yet been assessed.'] },
-        APPROVAL,
-        { t: 'evidence', ids: ['EV-01', 'EV-02'] }
-      ].filter(Boolean),
-      followUps: nxt('disposition', ['How confident is this recommendation?'])
-    };
-    case 'guidance': return {
-      title: 'Engineering guidance supporting the recommendation',
+        { t: 'findings', items: [`${P.heldTask} is the only task on hold on the critical path.`, `Material requirement: 1 ${P.part}, P/N ${P.pn}.`] },
+        { t: 'assumptions', items: [`Estimated delivery impact if no action is taken: about **${dTxt}**.`, 'No other critical-path task is currently blocked.'] },
+        { t: 'evidence', ids: ['EV-01', 'EV-04', 'EV-08'] }
+      ], followUps: nxt('cause') };
+    case 'material': return {
+      title: 'Parts affecting the order and their availability',
       blocks: [
-        { t: 'table', head: ['Guidance element', 'Demonstrated scenario reference', 'Applied to this finding'], rows: [
-          ['Applicable defect', 'HPT nozzle trailing-edge crack', cell('Matches recorded finding', 'grn')],
-          ['Repairable range', '1.5 to 4.0 mm', rep ? cell('2.8 mm is within range', 'grn') : cell('4.6 mm (simulated) is outside range', 'red')],
-          ['Rejection path', 'Above 4.0 mm', rep ? 'Not triggered' : cell('Triggered', 'red')],
-          ['Approval', 'Authorised engineering review and sign-off', cell('Pending', 'amb')]
+        { t: 'table', head: ['Item', 'P/N', 'Required', 'Serviceable stock', 'Status', 'Expected arrival'], rows: [
+          [`**${P.part}**`, P.pn, '1 set', '0', cell('Not available', 'red'), `${P.po} with ${P.supplier}: ETA about ${eta} days`],
+          ['Seal and gasket kit', 'KIT-SEAL-38', '1 kit', '4', cell('Available', 'grn'), 'Reserved against the order'],
+          ['Nozzle retaining hardware', 'HW-7712-02', '1 kit', '2', cell('Available', 'grn'), 'In stock'],
+          ['Coating consumables', 'MAT-CTG-02', 'As required', 'Sufficient', cell('Available', 'grn'), 'In stock']
         ] },
-        { t: 'p', text: 'Reference: **demonstration engineering guidance DG-HPT-01** prepared for this PoC scenario (demo reference). In a production deployment, this step would cite the applicable approved maintenance data held by SANAD. That data is not represented in this mockup.' },
-        { t: 'assumptions', items: ['Thresholds are PoC-specific and must not be read as OEM limits.', 'The guidance revision and applicability to this engine configuration have not been verified in this demonstration.'] },
-        APPROVAL,
-        { t: 'evidence', ids: ['EV-02'] }
-      ],
-      followUps: nxt('guidance')
-    };
-    case 'parts': return {
-      title: rep ? 'Parts, consumables and tooling required for the repair path' : 'Parts, consumables and tooling required for the replacement path',
+        { t: 'table', caption: 'Supplier information', head: ['Item', 'Value'], rows: [
+          ['Supplier', P.supplier], ['Order', `${P.po}, 1 set, confirmed`], ['Expected arrival', `About ${eta} days; the part is needed in about ${P.needInDays} days`],
+          ['Gap to need date', cell(`About ${D} days`, 'red')], ['On-time delivery, last 6 months', cell(P.supplierOtd, 'amb')], ['Advance shipping notice', 'Not yet received']
+        ] },
+        { t: 'findings', items: [`Only the ${P.part} is constraining the order. All other materials are available or reserved.`, `The supplier ETA is after the need date for ${P.heldTask}.`] },
+        { t: 'assumptions', items: ['Stock and ETA values are illustrative and relative to the investigation date.', 'Supplier on-time performance is used as context, not as a forecast.'] },
+        { t: 'evidence', ids: ['EV-02', 'EV-03'] }
+      ], followUps: nxt('material') };
+    case 'alternatives': return {
+      title: 'Alternative parts and sourcing options',
       blocks: [
-        { t: 'table', head: ['Category', 'Item', 'Purpose'], rows: rep ? [
-          ['Consumable', 'Repair filler material (demo ref MAT-RPR-01)', 'Crack repair'],
-          ['Consumable', 'Protective coating materials (demo ref MAT-CTG-02)', 'Restore coating after repair'],
-          ['Consumable', 'Penetrant inspection consumables', 'Post-repair crack inspection'],
-          ['Part', 'Seal and gasket set for module reassembly (demo ref KIT-SEAL-38)', 'Reassembly'],
-          ['Tooling', 'Nozzle holding fixture (demo ref TL-FIX-07)', 'Hold nozzle during repair'],
-          ['Tooling', 'Dimensional inspection gauge', 'Post-repair conformance check']
-        ] : [
-          ['Part', 'Serviceable HPT nozzle (new or exchange unit)', 'Replacement of rejected nozzle'],
-          ['Part', 'Installation hardware kit', 'Nozzle installation'],
-          ['Part', 'Seal and gasket set for module reassembly (demo ref KIT-SEAL-38)', 'Reassembly'],
-          ['Tooling', 'Nozzle holding fixture (demo ref TL-FIX-07)', 'Handling and installation'],
-          ['Tooling', 'Calibrated torque tooling', 'Installation']
+        { t: 'table', head: ['Option', 'Source', 'Availability', 'Est. arrival', 'Engineering status'], rows: [
+          [`**A.** Alternative P/N ${P.altPn}`, 'Stores, another station', cell('1 serviceable set', 'grn'), 'About 3 days (transfer)', cell('Approval required', 'amb')],
+          ['**B.** Exchange unit', P.pool, cell('1 set listed', 'grn'), 'About 5 days', cell('Release and traceability check', 'amb')],
+          [`**C.** Expedite ${P.po}`, P.supplier, cell('Response pending', 'amb'), `About ${Math.max(eta - 4, 1)} days if accepted`, cell('No restriction', 'grn')],
+          ['**D.** Repair removed set', 'Repair workshop', cell('Not feasible', 'red'), '-', cell('Beyond repair limits', 'red')]
         ] },
-        { t: 'p', text: 'Availability of these items has **not been checked yet**. That is the next step.' },
-        { t: 'assumptions', items: ['This list is illustrative for the demonstration. Actual requirements come from the approved repair or replacement data.', 'Item references are demonstration references.'] },
-        { t: 'evidence', ids: ['EV-03'] }
-      ],
-      followUps: nxt('parts')
-    };
-    case 'availability': {
-      const rows = rep ? [
-        ['Repair filler material', sc.key === 'C' ? cell('Not in stock', 'red') : cell('In stock', 'grn'), sc.key === 'C' ? 'Supplier ETA about 9 days (simulated)' : '2 units available'],
-        ['Protective coating materials', cell('In stock', 'grn'), 'Sufficient for this repair'],
-        ['Penetrant inspection consumables', cell('In stock', 'grn'), 'Shop stock'],
-        ['Seal and gasket set', cell('Reserved', 'grn'), 'Reserved against the work order'],
-        ['Nozzle holding fixture', cell('Available', 'grn'), 'Calibration valid'],
-        ['Dimensional inspection gauge', cell('Available', 'grn'), 'Calibration valid']
-      ] : [
-        ['Serviceable HPT nozzle', cell('Not in local stock', 'red'), 'Exchange unit can be sourced in about 6 days (simulated)'],
-        ['Installation hardware kit', cell('In stock', 'grn'), 'Shop stock'],
-        ['Seal and gasket set', cell('Reserved', 'grn'), 'Reserved against the work order'],
-        ['Nozzle holding fixture', cell('Available', 'grn'), 'Calibration valid'],
-        ['Calibrated torque tooling', cell('Available', 'grn'), 'Calibration valid']
-      ];
-      const summary = { A: 'All items required for the repair path are available.', B: 'All items required for the repair path are available.', C: 'The **repair filler material is not in stock**. All other items are available.', D: 'A **serviceable replacement nozzle is not in local stock**. Other items are available.' }[sc.key];
-      return { title: 'Material availability', blocks: [SIM_NOTE(sc), { t: 'p', text: summary }, { t: 'table', head: ['Item', 'Status', 'Detail'], rows },
-        { t: 'assumptions', items: [`Material status values are simulated for scenario ${sc.key}. They are not live inventory data.`] },
-        { t: 'evidence', ids: ['EV-04'] }], followUps: nxt('availability') };
-    }
-    case 'workshop': {
-      const rows = {
-        A: [['Turbine repair cell', cell('Available', 'grn'), 'Slot from 26 Oct 2026; repair about 5 working days plus 1 day post-repair inspection'], ['NDT inspection bay', cell('Available', 'grn'), 'Post-repair inspection can follow repair completion'], ['Module assembly bay', cell('Available', 'grn'), 'Fits the planned reassembly window']],
-        B: [['Turbine repair cell', cell('Congested', 'red'), '4 jobs queued ahead; next slot 03 Nov 2026'], ['Approved external repair station', cell('Available', 'amb'), 'Slot from 28 Oct 2026, plus transport'], ['NDT inspection bay', cell('Available', 'grn'), 'Post-repair inspection can follow repair completion'], ['Module assembly bay', cell('Available', 'grn'), 'Fits the planned reassembly window']],
-        C: [['Turbine repair cell', cell('Available, start blocked', 'amb'), 'Slot from 26 Oct 2026, but repair cannot start until filler material arrives'], ['NDT inspection bay', cell('Available', 'grn'), 'No constraint'], ['Module assembly bay', cell('Available', 'grn'), 'No constraint']],
-        D: [['Turbine repair cell', cell('Not required', 'grn'), 'Replacement path'], ['Module assembly bay', cell('Available', 'grn'), 'Nozzle installation about 1 day once the unit arrives']]
-      }[sc.key];
-      const summary = { A: 'No workshop or repair-cell constraint for the repair path.', B: 'The **turbine repair cell queue is congested**. An approved external repair station has earlier capacity.', C: 'Capacity is available, but the repair **cannot start until the material arrives**.', D: 'The replacement path does not need the repair cell.' }[sc.key];
-      return { title: 'Workshop and repair-cell constraints', blocks: [SIM_NOTE(sc), { t: 'p', text: summary }, { t: 'table', head: ['Resource', 'Status', 'Detail'], rows },
-        { t: 'assumptions', items: [`Schedule and capacity values are simulated for scenario ${sc.key}.`] },
-        { t: 'evidence', ids: ['EV-05'] }], followUps: nxt('workshop') };
-    }
-    case 'tat': {
-      const rows = {
-        A: [['In-house repair', cell('+0 days', 'grn'), 'Repair cell slot 26 Oct', 'Fits within the module rebuild window'], ['Replace with exchange unit', cell('+4 days', 'amb'), 'Unit sourcing about 6 days', 'Not needed while repair is feasible']],
-        B: [['In-house repair after queue', cell('+6 days', 'red'), 'Repair cell slot 03 Nov', 'Lowest cost, longest wait'], ['Repair at approved external station', cell('+3 days', 'amb'), 'External slot 28 Oct, transport', 'Lowest TAT impact'], ['Replace with exchange unit', cell('+4 days', 'amb'), 'Unit sourcing about 6 days', 'Higher material cost']],
-        C: [['Repair after material arrives', cell('+7 days', 'red'), 'Filler material ETA about 9 days', 'Lowest cost, longest wait'], ['Repair with expedited material', cell('+5 days', 'amb'), 'Expedite not yet confirmed', 'Depends on supplier response'], ['Replace with exchange unit', cell('+4 days', 'amb'), 'Unit sourcing about 6 days', 'Lowest TAT impact, higher cost']],
-        D: [['Replace with exchange unit', cell('+4 days', 'amb'), 'Unit sourcing about 6 days', 'Only path in this scenario']]
-      }[sc.key];
-      const best = { A: 'In-house repair with **no expected TAT impact**.', B: 'External repair at **+3 days**.', C: 'Replacement with an exchange unit at **+4 days**.', D: 'Replacement at **+4 days**.' }[sc.key];
-      return { title: 'Turnaround-time impact of the available options', blocks: [SIM_NOTE(sc),
-        { t: 'p', text: 'Impact is shown as days added to the Shop Visit 38 planned turnaround time (simulated plan).' },
-        { t: 'table', head: ['Option', 'Est. TAT impact', 'Main dependency', 'Note'], rows },
-        { t: 'p', text: `**Lowest TAT impact in this scenario:** ${best}` },
-        { t: 'assumptions', items: ['TAT estimates are simulated for this demonstration and depend on the approved disposition.', 'Cost is described qualitatively only.'] },
-        { t: 'evidence', ids: ['EV-05', 'EV-06'] }], followUps: nxt('tat') };
-    }
-    case 'actions': {
-      const rows = [['Engineering', rep ? 'Review and approve the proposed repair disposition' : 'Review and confirm the rejection disposition', 'Before work starts']].concat({
-        A: [['Repair-cell planning', 'Confirm turbine repair cell slot from 26 Oct', '24 hours'], ['Materials', 'Issue repair consumables; keep seal set reserved', 'Before slot'], ['Quality', 'Schedule post-repair inspection and dimensional check', 'With repair plan'], ['Shop planning', 'Confirm no change to the Shop Visit 38 plan', '24 hours']],
-        B: [['Shop planning', 'Decide between external repair (+3 days) and internal queue (+6 days)', '24 hours'], ['Procurement', 'Confirm external repair station slot and terms', '24 hours'], ['Logistics', 'Arrange transport if external repair is selected', 'On decision'], ['Customer account manager', 'Prepare to brief the customer if a TAT change is confirmed', 'On decision']],
-        C: [['Materials', 'Request expedite of filler material and check approved alternatives', '24 hours'], ['Engineering', 'Assess replacement with an exchange unit as a parallel option', '48 hours'], ['Shop planning', 'Resequence non-dependent tasks to protect the critical path', '48 hours'], ['Customer account manager', 'Prepare to brief the customer on potential TAT impact', 'On decision']],
-        D: [['Materials', 'Source a serviceable exchange nozzle', '24 hours'], ['Shop planning', 'Update the Shop Visit 38 plan for +4 days', '48 hours'], ['Customer account manager', 'Brief the customer on the revised redelivery outlook', 'After approval']]
-      }[sc.key]).concat([['MRO analyst', 'Record the outcome on the alert and track actions in an investigation', 'Today']]);
-      return { title: 'Recommended next actions by team', blocks: [SIM_NOTE(sc),
-        { t: 'table', head: ['Team', 'Action', 'Timing'], rows },
-        { t: 'assumptions', items: ['Actions, owners and timings are proposals for this demonstration and require confirmation.'] },
+        { t: 'findings', items: [`Options A and B can supply a set before the ${P.supplier} ETA.`, 'Option D is excluded by the engineering assessment of the removed set.'] },
+        { t: 'assumptions', items: ['Availability and arrival times are illustrative and must be reconfirmed with Stores and the pooling partner.', 'Commercial terms for the exchange unit are not assessed here.'] },
         APPROVAL,
+        { t: 'evidence', ids: ['EV-05', 'EV-06', 'EV-07'] }
+      ], followUps: nxt('alternatives') };
+    case 'engineering': return {
+      title: 'Engineering restrictions and approvals for the alternatives',
+      blocks: [
+        { t: 'table', head: ['Alternative', 'Restriction or approval', 'Status'], rows: [
+          [`A. P/N ${P.altPn}`, `One-way interchangeable: ${P.altPn} may replace ${P.pn}, not the reverse`, cell('Confirmed in parts catalogue record', 'grn')],
+          [`A. P/N ${P.altPn}`, `Service bulletin ${P.sb} embodiment status must be confirmed for this engine`, cell('Check required', 'amb')],
+          [`A. P/N ${P.altPn}`, `Full set replacement only; do not mix ${P.pn} and ${P.altPn} segments in the same stage`, cell('Restriction', 'amb')],
+          ['B. Exchange unit', 'Authorised release certificate and back-to-birth records required', cell('Check required', 'amb')],
+          ['B. Exchange unit', 'Customer contract must permit exchange units for this workscope', cell('Check required', 'amb')],
+          ['All options', `Engineering disposition and sign-off recorded under ${P.ec}`, cell('Required', 'red')]
+        ] },
+        { t: 'findings', items: [`Option A is technically viable if ${P.sb} is embodied and the full set is replaced.`, 'Option B is viable subject to records and contract checks.'] },
+        { t: 'assumptions', items: ['Restrictions shown are illustrative for this demonstration and must be confirmed against approved maintenance data.'] },
+        APPROVAL,
+        { t: 'evidence', ids: ['EV-05', 'EV-07'] }
+      ], followUps: nxt('engineering') };
+    case 'recovery': {
+      const r1 = 2, r2 = 4, r3 = Math.max(D - 4, 0);
+      return {
+        title: 'Recovery options and effect on the expected delivery date',
+        blocks: [
+          { t: 'p', text: `Baseline without action: delivery about **${dTxt}** after the planned delivery date${C.plannedDeliveryDate ? ` (${plannedTxt})` : ''}.` },
+          { t: 'table', head: ['Option', 'Est. residual delay', 'Expected delivery', 'Key dependency', 'Delivery confidence'], rows: [
+            [`1. Use alternative P/N ${P.altPn} from Stores`, cell(`+${r1} days`, 'grn'), res(r1), `Engineering approval and ${P.sb} check`, cell('High', 'grn')],
+            [`2. Exchange unit from ${P.pool}`, cell(`+${r2} days`, 'amb'), res(r2), 'Release records and contract check', cell('Medium', 'amb')],
+            [`3. Expedite ${P.po}`, cell(`+${r3} days`, 'red'), res(r3), 'Supplier acceptance', cell('Low', 'red')],
+            ['4. Run non-dependent tasks in parallel (add to 1, 2 or 3)', cell('-2 days', 'grn'), 'Applied to selected option', 'Repair workshop capacity', cell('High', 'grn')]
+          ] },
+          { t: 'p', text: `**Lowest residual delay:** option 1 combined with option 4, about **no residual delay**${C.plannedDeliveryDate ? ` (${res(0)})` : ''}, if engineering approval is obtained quickly. Option 2 is the fallback.` },
+          { t: 'actions', label: 'Proposed recovery actions', items: [`Request engineering approval for P/N ${P.altPn} under ${P.ec}, including the ${P.sb} check.`, 'Reserve the alternative set in Stores and arrange the transfer.', `Place a provisional hold on the ${P.pool} exchange unit as fallback.`, 'Resequence non-dependent tasks with shop planning.'] },
+          { t: 'assumptions', items: ['Residual delays are illustrative planning estimates relative to the planned delivery date.', 'Delivery confidence reflects the number of open dependencies, not a model output.'] },
+          APPROVAL,
+          { t: 'evidence', ids: ['EV-06', 'EV-07', 'EV-08'] }
+        ], followUps: nxt('recovery') };
+    }
+    case 'summary': return {
+      title: 'Executive summary and recommended next steps',
+      blocks: [
+        { t: 'table', head: ['Area', 'Summary'], rows: [
+          ['Situation', `${C.shopVisitName} (${a.wo}) engine delivery is delayed; about ${dTxt} without action.`],
+          ['Main cause', `${P.part} (P/N ${P.pn}) not available; removed set beyond repair; supplier ETA after the need date.`],
+          ['Recovery options', `Alternative P/N ${P.altPn} (+2 days), exchange unit (+4 days), expedite (+${Math.max(D - 4, 0)} days); parallel tasks save about 2 days.`],
+          ['Recommended path', `Use P/N ${P.altPn} with parallel tasks; hold the exchange unit as fallback.`],
+          ['Decision required', `Engineering approval for P/N ${P.altPn} under ${P.ec}.`]
+        ] },
+        { t: 'table', caption: 'Recommended next steps', head: ['Team', 'Action', 'Timing'], rows: [
+          ['Engineering', `Review and approve P/N ${P.altPn}; confirm ${P.sb} embodiment`, '24 hours'],
+          ['Materials / Stores', 'Reserve and transfer the alternative set', 'On approval'],
+          ['Procurement', `Hold the ${P.pool} exchange unit; keep ${P.po} open`, '24 hours'],
+          ['Shop planning', 'Resequence non-dependent tasks; update the delivery forecast', '48 hours'],
+          ['MRO Planning', 'Track actions in an investigation and update the alert', 'Today']
+        ] },
+        { t: 'assumptions', items: ['Owners and timings require confirmation by the responsible teams.', 'Delay values are illustrative unless replaced with values from the SANAD demo.'] },
         { t: 'buttons', items: [{ label: 'Set triage to Under Review', action: 'review' }, { label: 'Create Investigation', action: 'investigate' }] },
-        { t: 'evidence', ids: ['EV-01', 'EV-02', 'EV-04', 'EV-05', 'EV-06'] }], followUps: ['Show the inspection evidence', 'How confident is this recommendation?'] };
-    }
+        { t: 'evidence', ids: ['EV-01', 'EV-02', 'EV-03', 'EV-05', 'EV-06', 'EV-07'] }
+      ], followUps: ['Show the supporting evidence', 'How confident is this assessment?'] };
     case 'challenge': return {
-      title: 'How confident is the recommendation',
+      title: 'How confident is this assessment',
       blocks: [
-        { t: 'p', text: rep
-          ? 'Within the demonstrated scenario, confidence in the repair recommendation is **moderate to high (illustrative)**. The recorded 2.8 mm crack is 1.2 mm below the 4.0 mm upper limit, so a small measurement variation would not change the outcome.'
-          : 'In simulated scenario D, the 4.6 mm crack exceeds the 4.0 mm upper limit by 0.6 mm, so the rejection path applies within the demonstrated scenario.' },
-        { t: 'table', caption: 'What could change the disposition', head: ['Condition', 'Effect'], rows: [
-          ['Re-measurement gives a value above 4.0 mm', 'Rejection path applies'],
-          ['Additional cracks or damage found during detailed inspection', 'Disposition must be reassessed'],
-          ['Approved maintenance data differs from the PoC thresholds', 'Disposition follows the approved data'],
-          ['Engineering reviewer does not approve', 'Recommendation is not adopted']
+        { t: 'p', text: `Confidence that the ${P.part} is the main cause is **high**: it is the only task on hold on the critical path. Confidence in the recovery estimates is **moderate**, because they depend on engineering approval and reconfirmed availability.` },
+        { t: 'table', caption: 'What could change the outcome', head: ['Condition', 'Effect'], rows: [
+          [`${P.sb} not embodied on this engine`, `Option 1 not usable; option 2 becomes the recommended path (+4 days)`],
+          ['Alternative set no longer available in Stores', 'Option 2 becomes the recommended path'],
+          ['Supplier accepts a large expedite', 'Option 3 residual delay reduces'],
+          ['New finding during module rebuild', 'Delivery outlook must be reassessed']
         ] },
-        { t: 'assumptions', items: ['Confidence wording is a demonstration judgement, not a model output.'] },
         APPROVAL,
-        { t: 'evidence', ids: ['EV-01', 'EV-02'] }
-      ],
-      followUps: nxt(null)
-    };
+        { t: 'evidence', ids: ['EV-05', 'EV-06', 'EV-07'] }
+      ], followUps: nxt(null) };
     case 'evidence': return {
-      title: 'Inspection evidence and supporting records',
+      title: 'Supporting records',
       blocks: [
-        { t: 'p', text: 'Records available to this investigation so far. Select a reference to view details. All records are demonstration records.' },
+        { t: 'p', text: 'Records referenced in this investigation. Select a reference to view details.' },
         { t: 'table', head: ['Ref', 'Record', 'Source', 'Date'], rows: evidenceIdsFor(a.id).map(id => { const e = evidenceRecord(id, a); return [cell(id, 'blu'), e.title, e.source, e.date]; }) },
         { t: 'evidence', ids: evidenceIdsFor(a.id) }
-      ],
-      followUps: nxt(null)
-    };
+      ], followUps: nxt(null) };
     default: return {
       title: 'Guided investigation',
-      blocks: [{ t: 'p', text: `I can investigate alert **${a.id}** (HPT nozzle crack, Shop Visit 38) in this order: engineering assessment, applicable guidance, material requirements and availability, workshop constraints, turnaround-time impact, and recommended actions. Use the suggested question to continue.` }],
-      followUps: nxt(null)
-    };
+      blocks: [known, { t: 'p', text: `I can investigate the ${C.shopVisitName} delay in this order: contributing factors, material availability, alternative parts and sourcing, engineering restrictions, recovery options, and an executive summary.` }],
+      followUps: nxt(null) };
   }
 }
 
 function genericResponse(intent, a) {
   const top = a.factors.slice(0, 4);
-  const ev = ['EV-A1', 'EV-A2', 'EV-A3'];
-  const facts = [`Alert ${a.id} raised on ${fmtDate(a.detected, true)} for ${a.entity} (${a.entityType}).`, `Linked to ${a.wo} and ${a.sv} on aircraft ${a.aircraft} (${a.engine}).`];
-  const fu = ['What are the main contributing factors?', 'What options can help mitigate the risk?', 'Summarize the recommended next actions'];
-  const factorTable = { t: 'table', head: ['Indicator', 'Score', 'Level'], rows: top.map(([n, v]) => [n, cell(String(v), v >= 80 ? 'red' : v >= 60 ? 'amb' : 'blu'), v >= 80 ? 'High' : v >= 60 ? 'Elevated' : 'Moderate']) };
-  if (intent === 'cause') return { title: `Main contributing indicators for ${a.id}`, blocks: [
-    { t: 'p', text: `The strongest indicator is **${top[0][0]}** (${top[0][1]}), followed by **${top[1][0]}** (${top[1][1]}).` },
-    factorTable, { t: 'confirmed', items: facts }, { t: 'assumptions', items: ['Indicator scores are synthetic. A detailed scripted investigation is only provided for alert ' + PRIMARY_ID + '.'] }, { t: 'evidence', ids: ev }], followUps: fu.slice(1) };
-  if (intent === 'options' || intent === 'tat' || intent === 'workshop' || intent === 'availability') return { title: `Options for ${a.id}`, blocks: [
+  const factorTable = { t: 'table', head: ['Indicator', 'Value', 'Level'], rows: top.map(([n, v]) => [n, cell(String(v), v >= 80 ? 'red' : v >= 60 ? 'amb' : 'blu'), v >= 80 ? 'High' : v >= 60 ? 'Elevated' : 'Moderate']) };
+  const known = { t: 'known', items: [`${a.type} on ${a.entity} (${a.entityType}).`, `${a.sv}, ${a.wo}, aircraft ${a.aircraft} (${a.engine}).`, `Status ${a.status}; triage ${a.triage}; assigned to ${analystName(a.owner)}.`] };
+  if (intent === 'summary') return { title: `Summary for ${a.id}`, blocks: [known,
+    { t: 'actions', label: 'Recommended next steps', items: ['Confirm the current position with the assigned team.', 'Agree the response and record it on the alert.', 'Create an investigation if follow-up is needed.'] },
+    { t: 'buttons', items: [{ label: 'Set triage to Under Review', action: 'review' }, { label: 'Create Investigation', action: 'investigate' }] }], followUps: ['Why was this alert raised?'] };
+  if (intent === 'cause' || intent === 'fallback' || intent === 'evidence' || intent === 'challenge') return { title: `Why ${a.id} was raised`, blocks: [known,
+    { t: 'p', text: `${a.description} The alert scored **${a.score}** (${sevLabel(a.score)}, illustrative).` }, factorTable,
+    { t: 'assumptions', items: ['Indicator values are illustrative. A detailed scripted investigation is provided only for the Shop Visit 38 alert.'] }], followUps: ['What options could help resolve it?', 'Summarize the recommended next steps'] };
+  return { title: `Options for ${a.id}`, blocks: [
     { t: 'table', head: ['#', 'Option', 'Expected effect'], rows: [
       ['1', `Confirm the current position of ${a.entity} with ${analystName(a.owner)}`, 'Establish facts before acting'],
       ['2', `Review alternatives for ${a.entity} (resource, material or schedule)`, 'Reduce dependency on a single path'],
       ['3', `Adjust the plan for ${a.wo} on ${a.sv}`, 'Protect the critical path']] },
-    { t: 'assumptions', items: ['Options are indicative and need validation by the responsible teams.'] },
-    { t: 'actions', items: ['Confirm facts with the alert owner.', 'Agree the preferred option and owner.', 'Update the alert triage status.'] }], followUps: ['Summarize the recommended next actions'] };
-  if (intent === 'actions') return { title: `Summary for ${a.id}`, blocks: [
-    { t: 'p', text: `${a.type} on ${a.entity} for ${a.aircraft} (${a.sv}). Status: **${a.status}**, triage: **${a.triage}**, owner: ${a.owner}.` },
-    { t: 'actions', items: ['Validate the leading indicator with the owner.', 'Decide on the response and record it on the alert.', 'Create an investigation if follow-up is needed.'] },
-    { t: 'buttons', items: [{ label: 'Set triage to Under Review', action: 'review' }, { label: 'Create Investigation', action: 'investigate' }] }], followUps: ['Why was this alert raised?'] };
-  return { title: `Why ${a.id} was raised`, blocks: [
-    { t: 'p', text: `${a.description} The alert scored **${a.score} (illustrative)**, in the **${sevLabel(a.score)}** band.` },
-    factorTable, { t: 'confirmed', items: facts }, { t: 'assumptions', items: ['Indicator scores are synthetic values for this demonstration.'] }, { t: 'evidence', ids: ev }], followUps: fu };
+    { t: 'assumptions', items: ['Options are indicative and need validation by the responsible teams.'] }], followUps: ['Summarize the recommended next steps'] };
 }
 
-/* ---------- Evidence records ---------- */
+/* ---------- Evidence records (illustrative) ---------- */
 function evidenceRecord(id, a) {
-  if (a.primary) {
-    const sc = scenarioOf(a.id).key;
-    const recs = {
-      'EV-01': { title: `Inspection finding record ${DEMO.primary.report}`, source: 'Engine inspection record (demo reference)', date: '23 Oct 2026 (synthetic)',
-                 fields: { 'Shop visit': '38', 'Component': DEMO.primary.component, 'Defect type': 'Crack', 'Location': 'Trailing edge', 'Measured length': '2.8 mm', 'Finding source': 'Engine inspection' } },
-      'EV-02': { title: 'Demonstrated engineering guidance DG-HPT-01', source: 'PoC scenario reference (demo)', date: 'PoC reference',
-                 fields: { 'Repairable range': '1.5 to 4.0 mm', 'Rejection path': 'Above 4.0 mm', 'Scope': 'This PoC scenario only. Not universal OEM limits.', 'Approval': 'Authorised engineering review required' } },
-      'EV-03': { title: `Work order ${a.wo} task list`, source: 'Maintenance & Engineering system (demo ID)', date: '23 Oct 2026 (synthetic)',
-                 fields: { 'Work order': `${a.wo} (demo ID)`, 'Scope': 'HPT module inspection (illustrative)', 'Related finding': DEMO.primary.finding } },
-      'EV-04': { title: `Material availability snapshot (scenario ${sc})`, source: 'Simulated inventory snapshot', date: '23 Oct 2026 (simulated)',
-                 fields: { A: { 'Repair filler material': 'In stock', 'Seal and gasket set': 'Reserved' }, B: { 'Repair filler material': 'In stock', 'Seal and gasket set': 'Reserved' }, C: { 'Repair filler material': 'Not in stock, ETA about 9 days', 'Seal and gasket set': 'Reserved' }, D: { 'Serviceable HPT nozzle': 'Not in local stock; exchange unit about 6 days', 'Seal and gasket set': 'Reserved' } }[sc] },
-      'EV-05': { title: `Repair cell schedule (scenario ${sc})`, source: 'Simulated shop schedule', date: '23 Oct 2026 (simulated)',
-                 fields: { A: { 'Turbine repair cell': 'Slot from 26 Oct 2026' }, B: { 'Turbine repair cell': '4 jobs queued; next slot 03 Nov 2026', 'External repair station': 'Slot from 28 Oct 2026' }, C: { 'Turbine repair cell': 'Slot from 26 Oct 2026; start blocked by material' }, D: { 'Turbine repair cell': 'Not required', 'Module assembly bay': 'Available' } }[sc] },
-      'EV-06': { title: 'Shop Visit 38 plan', source: 'Simulated shop visit plan', date: '23 Oct 2026 (simulated)',
-                 fields: { 'Plan basis': 'Synthetic plan for demonstration', 'Measure': 'Days added to planned turnaround time' } }
-    };
-    return recs[id];
-  }
-  const d = fmtDate(a.detected).split(',')[0];
-  return {
-    'EV-A1': { title: `Alert scoring record for ${a.id}`, source: 'Alert scoring (illustrative)', date: d, fields: { 'Score': `${a.score} (illustrative)`, 'Top indicator': `${a.factors[0][0]} (${a.factors[0][1]})` } },
-    'EV-A2': { title: `Work order ${a.wo}`, source: 'Maintenance & Engineering system', date: d, fields: { 'Aircraft': a.aircraft, 'Engine': `${a.engine}, ESN ${a.esn}`, 'Shop visit': a.sv } },
-    'EV-A3': { title: `${a.entity} record (${a.ref})`, source: 'Planning and quality records', date: d, fields: { 'Entity type': a.entityType, 'Reference': a.ref, 'Finding': a.finding } }
-  }[id];
+  const P = C.sim; const D = estDelay();
+  const recs = {
+    'EV-01': { title: `Work order ${a.wo} task status`, source: 'Maintenance & Engineering records (illustrative)', date: 'Investigation date',
+               fields: { 'Work order': a.wo, 'Task on hold': P.heldTask, 'Hold reason': `Awaiting material: ${P.part}`, 'Waiting downstream': 'Module assembly, engine test' } },
+    'EV-02': { title: `Inventory position, P/N ${P.pn}`, source: 'Inventory records (illustrative)', date: 'Investigation date',
+               fields: { 'Serviceable on hand': '0', 'Unserviceable': '1 set (removed, beyond repair)', 'Open demand': `1 set, ${a.wo}` } },
+    'EV-03': { title: `Purchase order ${P.po}`, source: 'Procurement records (illustrative)', date: 'Investigation date',
+               fields: { 'Supplier': P.supplier, 'Quantity': '1 set', 'Expected arrival': `About ${P.needInDays + D} days`, 'Advance shipping notice': 'Not received', 'On-time delivery, 6 months': P.supplierOtd } },
+    'EV-04': { title: `Engineering assessment ${P.ec}`, source: 'Engineering records (illustrative)', date: 'Investigation date',
+               fields: { 'Subject': `Removed ${P.part}`, 'Result': 'Beyond repair limits; replacement required' } },
+    'EV-05': { title: `Interchangeability record, P/N ${P.altPn}`, source: 'Parts catalogue records (illustrative)', date: 'Current revision',
+               fields: { 'Interchangeability': `${P.altPn} replaces ${P.pn}, one-way`, 'Condition': `${P.sb} embodied`, 'Restriction': 'Full set replacement only' } },
+    'EV-06': { title: `Stores availability, P/N ${P.altPn}`, source: 'Inventory records (illustrative)', date: 'Investigation date',
+               fields: { 'Location': 'Another station', 'Quantity': '1 serviceable set', 'Transfer time': 'About 3 days' } },
+    'EV-07': { title: `${P.pool} exchange listing`, source: 'Pooling partner listing (illustrative)', date: 'Investigation date',
+               fields: { 'Unit': `${P.part}, P/N ${P.pn}`, 'Condition': 'Serviceable', 'Availability': 'About 5 days', 'Requirement': 'Release certificate and traceability records' } },
+    'EV-08': { title: `${C.shopVisitName} delivery plan`, source: 'Shop visit planning (illustrative)', date: 'Investigation date',
+               fields: { 'Planned delivery': C.plannedDeliveryDate ? fmtDay(C.plannedDeliveryDate) : 'Not Provided', 'Delivery status': C.deliveryStatus, 'Critical path': 'HPT module rebuild, module assembly, engine test' } }
+  };
+  return recs[id];
 }
 function evidenceIdsFor(id) {
-  const a = getAlert(id); const seen = a.primary ? ['EV-01'] : [];
-  const ctx = buildAlertContext(a);
-  chatOf(id).filter(m => detectIntent(m.text) !== 'evidence').forEach(m => (mockRespond(m.text, ctx).blocks.find(b => b.t === 'evidence') || { ids: [] }).ids.forEach(e => { if (!seen.includes(e)) seen.push(e); }));
+  const a = getAlert(id); if (!a.primary) return [];
+  const seen = []; const ctx = buildAlertContext(a);
+  chatOf(id).filter(m => detectIntent(m.text) !== 'evidence').forEach(m => (respondFromRecords(m.text, ctx).blocks.find(b => b.t === 'evidence') || { ids: [] }).ids.forEach(e => { if (!seen.includes(e)) seen.push(e); }));
   return seen;
 }
 
@@ -1576,13 +1528,17 @@ function chatOf(id) { return S.chats[id] || (S.chats[id] = []); }
 
 function openAssistant() {
   const a = getAlert(S.selectedId); if (!a) return toast('Select an alert first.');
+  const ctx = publishContext(buildAlertContext(a));
+  if (ASSISTANT_CONFIG.mode === 'external' && ASSISTANT_CONFIG.externalUrl) {
+    const url = ASSISTANT_CONFIG.externalUrl + (ASSISTANT_CONFIG.externalUrl.includes('?') ? '&' : '?') + 'context=' + encodeURIComponent(JSON.stringify(ctx));
+    if (ASSISTANT_CONFIG.openInNewTab) window.open(url, '_blank'); else window.location.href = url;
+    return;
+  }
   UI.savedScroll = $('tableWrap').scrollTop;
   UI.view = 'assistant';
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === 'alerts'));
   $('viewAlerts').classList.remove('active'); $('viewInv').classList.remove('active'); $('viewDA').classList.add('active');
   $('daCrumb').textContent = `Alerts / ${a.id}`;
-  $('scnWrap').style.display = a.primary ? 'flex' : 'none';
-  $('scnSel').value = scenarioOf(a.id).key;
   renderContext(); renderChat();
   setTimeout(() => $('chatText').focus(), 0);
 }
@@ -1597,113 +1553,96 @@ function backToAlert() {
 
 function renderContext() {
   const a = getAlert(S.selectedId); if (!a) return;
+  publishContext(buildAlertContext(a));
   $('ctxSub').textContent = a.id;
   const kv = rows => `<div class="ctx-kv">${rows.map(([k, v]) => `<div class="k">${k}</div><div>${v}</div>`).join('')}</div>`;
+  const head = `<div class="ctx-score"><span class="score ${sevOf(a.score)}" style="font-size:15px;padding:4px 8px">${a.score}</span><div><div style="font-weight:600;line-height:1.3">${esc(a.primary ? `${C.shopVisitName} - ${C.alertType}` : a.title)}</div><div class="illus">${sevLabel(a.score)} · illustrative score</div></div></div>`;
   if (a.primary) {
-    const s = assessment(a.id);
-    $('ctxPanel').innerHTML = `
-      <div class="ctx-score"><span class="score crit" style="font-size:15px;padding:4px 8px">${scoreText(a)}</span><div><div style="font-weight:600;line-height:1.3">${esc(DEMO.primary.title)}</div><div class="illus">Illustrative / synthetic score</div></div></div>
-      ${kv([['Alert ID', esc(a.id)], ['Shop Visit', 'Shop Visit 38'], ['Component', 'HPT Nozzle'], ['Finding', `<b class="warn-txt">2.8 mm trailing-edge crack</b>`], ['Source', 'Engine inspection'],
-            ['Evidence', `<span class="ev" data-ev="EV-01">EV-01</span> ${esc(DEMO.primary.report)}`], ['Disposition', stateTag(s.disp)], ['Triage', triageTag(a.triage)]])}
-      <div class="muted" style="margin:10px 0 4px;font-weight:600">Investigation progress</div>
-      ${journeyHtml(a.id)}`;
+    const s = assessment(); const il = C.identifiersIllustrative;
+    $('ctxPanel').innerHTML = head + kv([['Alert ID', esc(a.id)], ['Shop Visit', esc(C.shopVisitName)], ['Work Order', ill(a.wo, il)], ['Engine', ill(a.engine, il)], ['Aircraft', ill(a.aircraft, il)],
+        ['Delivery', `<span class="state crit">${esc(C.deliveryStatus)}</span>`], ['Planned', C.plannedDeliveryDate ? esc(fmtDay(C.plannedDeliveryDate)) : 'Not Provided'], ['Expected', stateTag(s.expected)],
+        ['Root Cause', stateTag(s.rootCause)], ['Triage', triageTag(a.triage)]]) +
+      `<div class="muted" style="margin:10px 0 4px;font-weight:600">Investigation progress</div>${journeyHtml(a.id)}`;
   } else {
-    $('ctxPanel').innerHTML = `
-      <div class="ctx-score"><span class="score ${sevOf(a.score)}" style="font-size:15px;padding:4px 8px">${scoreText(a)}</span><div><div style="font-weight:600">${esc(a.type)}</div><div class="illus">Illustrative score</div></div></div>
-      ${kv([['Alert ID', esc(a.id)], ['Primary Entity', esc(a.entity)], ['Aircraft', esc(a.aircraft)], ['Engine', esc(a.engine)], ['Work Order', esc(a.wo)], ['Shop Visit', esc(a.sv)], ['Status', esc(a.status)], ['Triage', triageTag(a.triage)]])}
-      <div class="muted" style="margin:10px 0 4px;font-weight:600">Top indicators</div>
-      <div class="mini-bars">${a.factors.slice(0, 4).map(([n, v]) => `<div class="bar-row"><span class="lbl">${esc(n)}</span><span class="bar-track"><span class="bar-fill ${barSev(v)}" style="width:${v}%"></span></span><span class="val">${v}</span></div>`).join('')}</div>`;
+    $('ctxPanel').innerHTML = head + kv([['Alert ID', esc(a.id)], ['Primary Entity', esc(a.entity)], ['Shop Visit', esc(a.sv)], ['Engine', esc(a.engine)], ['Work Order', esc(a.wo)], ['Status', esc(a.status)], ['Triage', triageTag(a.triage)]]);
   }
-  $('ctxPanel').querySelectorAll('[data-ev]').forEach(el => el.onclick = () => showEvidence(el.dataset.ev));
   renderHistory(); renderEvidencePanel();
 }
-
 function journeyHtml(id) {
-  const asked = askedIntents(id);
-  let firstOpen = true;
-  return `<ol class="journey">${JOURNEY.map(([label, intents], i) => {
-    const done = i === 0 || intents.some(x => asked.has(x));
+  const asked = askedIntents(id); let firstOpen = true;
+  return `<ol class="journey">${JOURNEY.map(([label, intent], i) => {
+    const done = !intent || asked.has(intent);
     const cls = done ? 'done' : (firstOpen ? (firstOpen = false, 'next') : '');
     return `<li class="${cls}"><span class="jd">${done ? '&#10003;' : i + 1}</span>${label}</li>`;
   }).join('')}</ol>`;
 }
-
 function renderHistory() {
   const msgs = chatOf(S.selectedId);
   $('histPanel').innerHTML = msgs.length
     ? `<ul class="hist-list">${msgs.map((m, i) => `<li data-i="${i}">${esc(m.text)}<small>${esc(m.at)}</small></li>`).join('')}</ul>`
-    : '<div class="muted">No questions asked yet for this alert. Select the suggested question to begin.</div>';
+    : '<div class="muted">No questions asked yet for this alert.</div>';
   $('histPanel').querySelectorAll('li').forEach(li => li.onclick = () => { const el = document.querySelector(`#chatLog [data-q="${li.dataset.i}"]`); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
 }
-
 function renderEvidencePanel() {
   const a = getAlert(S.selectedId); const seen = evidenceIdsFor(a.id);
   $('evSub').textContent = seen.length ? `${seen.length} referenced` : '';
   $('evPanel').innerHTML = seen.length
-    ? `<ul class="ev-list">${seen.map(id => { const e = evidenceRecord(id, a); return `<li data-ev="${id}"><b>${id}</b>${esc(e.title)}<small>${esc(e.source)} · ${esc(e.date)}</small></li>`; }).join('')}</ul><div class="muted" style="margin-top:6px">Demonstration records. Simulated records are labelled.</div>`
-    : '<div class="muted">Evidence referenced by the assistant will appear here as the investigation progresses.</div>';
+    ? `<ul class="ev-list">${seen.map(id => { const e = evidenceRecord(id, a); return `<li data-ev="${id}"><b>${id}</b>${esc(e.title)}<small>${esc(e.source)}</small></li>`; }).join('')}</ul>`
+    : '<div class="muted">Records referenced by the assistant will appear here as the investigation progresses.</div>';
   $('evPanel').querySelectorAll('[data-ev]').forEach(li => li.onclick = () => showEvidence(li.dataset.ev));
 }
-
 function showEvidence(id) {
   const a = getAlert(S.selectedId); const e = evidenceRecord(id, a); if (!e) return;
   showModal({ title: `${id}: ${e.title}`, body: `
     <div class="ctx-kv" style="grid-template-columns:200px 1fr">${[['Source', e.source], ['Record date', e.date]].concat(Object.entries(e.fields)).map(([k, v]) => `<div class="k">${esc(k)}</div><div style="white-space:normal">${esc(v)}</div>`).join('')}</div>
-    <p class="muted" style="margin-bottom:0">Demonstration record. Not a verified SANAD operational record.</p>` });
+    <p class="muted" style="margin-bottom:0">Illustrative record used by the simulated assistant responses.</p>` });
 }
 
 function welcomeHtml(a) {
-  const ctx = a.primary
-    ? `<b>Active Context: ${a.id} - ${esc(DEMO.primary.title)}</b><br>
-       <span class="muted">Shop Visit 38 · HPT Nozzle · 2.8 mm trailing-edge crack · Engineering disposition: Pending Review · Inspection evidence: ${esc(DEMO.primary.report)} (demo ref) · Score ${scoreText(a)} (Illustrative)</span>`
-    : `<b>Active Context: ${a.id} - ${esc(a.type)}</b><br><span class="muted">${esc(a.entity)} · ${a.aircraft} · ${a.engine} · ${a.wo} · ${a.sv} · Score ${scoreText(a)} (Illustrative)</span>`;
+  const ctxLine = a.primary
+    ? `<b>Active Context: ${esc(C.shopVisitName)} - ${esc(C.alertType)}</b><br>
+       <span class="muted">Alert ${esc(a.id)} · Work order ${esc(a.wo)} · ${esc(a.engine)} · ${esc(a.aircraft)} · Delivery ${esc(C.deliveryStatus)} · Planned delivery ${C.plannedDeliveryDate ? esc(fmtDay(C.plannedDeliveryDate)) : 'Not Provided'} · Root cause ${esc(assessment().rootCause[0])}</span>`
+    : `<b>Active Context: ${esc(a.id)} - ${esc(a.type)}</b><br><span class="muted">${esc(a.entity)} · ${esc(a.sv)} · ${esc(a.wo)} · ${esc(a.engine)}</span>`;
+  const intro = a.primary
+    ? `I can help investigate the delivery delay associated with ${esc(C.shopVisitName)}, examine the contributing operational and material constraints, explore available alternatives, and assess potential recovery actions.`
+    : 'I can help investigate the selected MRO alert, explore operational information, validate findings, and identify potential next steps.';
   return `<div class="msg bot"><div class="av">DA</div><div class="bubble">
-    <p>Hello. I'm your SANAD Digital Assistant. I can help you investigate the selected MRO alert, explore operational information, validate findings, and identify potential next steps.</p>
-    <div class="ctx-card">${ctx}</div>
-    ${a.primary ? `<div class="scn-line">Scenario: <b>${esc(scenarioOf(a.id).label)}</b>${scenarioOf(a.id).key === 'A' ? ' (baseline walkthrough)' : ' <span class="demo-label">Simulated scenario illustration</span>'}</div>` : ''}
+    <p>${intro}</p>
+    <div class="ctx-card">${ctxLine}</div>
     <div class="sec">Suggested question${a.primary ? '' : 's'}</div>
-    <div class="chips">${suggestionsFor(a).map(q => `<button class="chip" data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>
-    <div class="meta"><span class="demo-label">Demonstration Data</span></div>
+    <div class="chips">${suggestionsFor(a).map((q, i) => `<button class="chip ${a.primary && i === 0 ? 'chip-next' : ''}" data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+    <div class="meta"><span class="sim-tag">Simulated</span></div>
   </div></div>`;
 }
-
 function responseHtml(r) {
   const tone = { red: 't-red', amb: 't-amb', grn: 't-grn', blu: 't-blu' };
   const c = x => (x && typeof x === 'object') ? `<span class="${tone[x.tone] || ''}">${md(x.v)}</span>` : md(x);
+  const box = (cls, h, items) => `<div class="cbox ${cls}"><div class="cb-h">${h}</div><ul>${items.map(i => `<li>${md(i)}</li>`).join('')}</ul></div>`;
   const body = r.blocks.map(b => {
     switch (b.t) {
       case 'p': return `<p>${md(b.text)}</p>`;
-      case 'scenario': return `<div class="scn-note">${md(b.text)}</div>`;
       case 'note': return `<div class="appr-note">${md(b.text)}</div>`;
       case 'table': return `${b.caption ? `<div class="sec">${esc(b.caption)}</div>` : ''}<table class="rtable"><tr>${b.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${b.rows.map(row => `<tr>${row.map(x => `<td>${c(x)}</td>`).join('')}</tr>`).join('')}</table>`;
-      case 'confirmed': return `<div class="cbox conf"><div class="cb-h">Confirmed information</div><ul>${b.items.map(i => `<li>${md(i)}</li>`).join('')}</ul></div>`;
-      case 'assumptions': return `<div class="cbox assm"><div class="cb-h">Assumptions and open points</div><ul>${b.items.map(i => `<li>${md(i)}</li>`).join('')}</ul></div>`;
-      case 'actions': return `<div class="sec">Recommended next actions</div><ol>${b.items.map(i => `<li>${md(i)}</li>`).join('')}</ol>`;
-      case 'evidence': return `<div class="sec">Supporting evidence</div><div>${b.ids.map(id => `<span class="ev" data-ev="${id}" title="View evidence record">${id}</span>`).join('')}</div>`;
+      case 'known': return box('known', 'Known order information', b.items);
+      case 'findings': return box('conf', 'Investigated findings', b.items);
+      case 'assumptions': return box('assm', 'Illustrative assumptions', b.items);
+      case 'actions': return box('act', b.label || 'Proposed recovery actions', b.items);
+      case 'evidence': return `<div class="sec">Supporting records</div><div>${b.ids.map(id => `<span class="ev" data-ev="${id}" title="View record">${id}</span>`).join('')}</div>`;
       case 'buttons': return `<div class="act-btns">${b.items.map(x => `<button class="btn primary" data-act="${x.action}">${esc(x.label)}</button>`).join('')}</div>`;
       default: return '';
     }
   }).join('');
   return `<h4>${esc(r.title)}</h4>${body}
     ${r.followUps && r.followUps.length ? `<div class="sec">Next question</div><div class="chips">${r.followUps.map((q, i) => `<button class="chip ${i === 0 ? 'chip-next' : ''}" data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
-    <div class="meta"><span class="demo-label">Demonstration Data</span><span>Mock response based on illustrative records</span></div>`;
+    <div class="meta"><span class="sim-tag">Simulated response</span><span>Based on illustrative records</span></div>`;
 }
-
 function userBubble(text, i) { return `<div class="msg me" data-q="${i}"><div class="av">MA</div><div class="bubble">${esc(text)}</div></div>`; }
 function botBubble(inner) { return `<div class="msg bot"><div class="av">DA</div><div class="bubble">${inner}</div></div>`; }
-
-/* Responses are rebuilt from history, replaying the intents asked so far,
-   so follow-up suggestions reflect the state at the time of each answer. */
 function replayResponses(a) {
   const msgs = chatOf(a.id); const out = []; const saved = S.chats[a.id];
-  for (let i = 0; i < msgs.length; i++) {
-    S.chats[a.id] = msgs.slice(0, i + 1);
-    out.push(mockRespond(msgs[i].text, buildAlertContext(a)));
-  }
-  S.chats[a.id] = saved;
-  return out;
+  for (let i = 0; i < msgs.length; i++) { S.chats[a.id] = msgs.slice(0, i + 1); out.push(respondFromRecords(msgs[i].text, buildAlertContext(a))); }
+  S.chats[a.id] = saved; return out;
 }
-
 function renderChat() {
   const a = getAlert(S.selectedId); const msgs = chatOf(a.id); const resps = replayResponses(a);
   let html = welcomeHtml(a);
@@ -1711,7 +1650,6 @@ function renderChat() {
   $('chatLog').innerHTML = html;
   $('chatLog').scrollTop = $('chatLog').scrollHeight;
 }
-
 async function ask(text) {
   text = (text || '').trim(); if (!text || UI.busy) return;
   const a = getAlert(S.selectedId); const msgs = chatOf(a.id);
@@ -1719,7 +1657,7 @@ async function ask(text) {
   const i = msgs.length; msgs.push({ text, at: nowStamp() }); saveState();
   const log = $('chatLog');
   log.insertAdjacentHTML('beforeend', userBubble(text, i));
-  log.insertAdjacentHTML('beforeend', `<div class="msg bot" id="typing"><div class="av">DA</div><div class="bubble"><span class="typing"><span></span><span></span><span></span></span> <span class="muted">Reviewing alert records</span></div></div>`);
+  log.insertAdjacentHTML('beforeend', `<div class="msg bot" id="typing"><div class="av">DA</div><div class="bubble"><span class="typing"><span></span><span></span><span></span></span> <span class="muted">Reviewing order records</span></div></div>`);
   log.scrollTop = log.scrollHeight;
   renderHistory();
   const [resp] = await Promise.all([sendMessageToAssistant(text, buildAlertContext(a)), new Promise(r => setTimeout(r, 650))]);
@@ -1729,19 +1667,9 @@ async function ask(text) {
   renderContext();
   UI.busy = false; $('btnSend').disabled = false;
 }
-
-function resetChat(silent) {
+function resetChat() {
   const a = getAlert(S.selectedId); S.chats[a.id] = []; saveState();
-  renderChat(); renderContext(); if (!silent) toast(`Conversation for ${a.id} reset.`);
-}
-
-function changeScenario(key) {
-  const a = getAlert(S.selectedId); const cur = scenarioOf(a.id).key;
-  if (key === cur) return;
-  const apply = () => { S.scenario[a.id] = key; saveState(); resetChat(true); toast(`Scenario ${SCENARIOS[key].label} selected. Conversation restarted.`); };
-  if (!chatOf(a.id).length) { apply(); return; }
-  showModal({ title: 'Change scenario', body: `<p style="margin:0">Switching to <b>${esc(SCENARIOS[key].label)}</b> restarts the conversation for ${a.id}. ${key === 'A' ? 'Scenario A is the baseline walkthrough.' : 'This is a simulated scenario illustration.'}</p>`,
-    buttons: [{ label: 'Cancel', onClick: () => { $('scnSel').value = cur; } }, { label: 'Switch scenario', primary: true, onClick: apply }] });
+  renderChat(); renderContext(); toast(`Conversation for ${a.id} reset.`);
 }
 
 /* =====================================================================
@@ -1749,11 +1677,10 @@ function changeScenario(key) {
    ===================================================================== */
 function init() {
   $('fType').innerHTML = '<option value="">All</option>' + [...new Set(BASE_ALERTS.map(a => a.type))].map(t => `<option>${esc(t)}</option>`).join('');
-  $('fTriage').innerHTML = '<option value="">All</option>' + DEMO.triage.map(t => `<option>${t}</option>`).join('');
-  $('scnSel').innerHTML = Object.values(SCENARIOS).map(s => `<option value="${s.key}">${esc(s.label)}${s.key === 'A' ? ' (baseline)' : ' (simulated)'}</option>`).join('');
+  $('fTriage').innerHTML = '<option value="">All</option>' + APP_DATA.triage.map(t => `<option>${t}</option>`).join('');
+  $('fSeverity').innerHTML = '<option value="">All</option>' + SEVERITY.map(x => `<option value="${x.key}">${x.label}</option>`).join('');
   if (!BASE_ALERTS.find(a => a.id === S.selectedId)) S.selectedId = PRIMARY_ID;
   S.checked = S.checked.filter(id => BASE_ALERTS.some(a => a.id === id));
-  S.scenario = S.scenario || {};
 
   $('theadRow').addEventListener('click', e => {
     if (e.target.id === 'chkAll') {
@@ -1789,15 +1716,13 @@ function init() {
   $('btnAdvSearch').onclick = advSearchModal; $('btnHelp').onclick = helpModal;
   $('btnUser').onclick = e => { e.stopPropagation(); $('userMenu').classList.toggle('open'); };
   document.addEventListener('click', () => $('userMenu').classList.remove('open'));
-  $('mnuResetDemo').onclick = () => showModal({ title: 'Reset demonstration data', body: '<p style="margin:0">This clears triage changes, assignments, investigations, scenario choices and conversations stored in this browser, and restores the original demonstration data.</p>',
-    buttons: [{ label: 'Cancel' }, { label: 'Reset', primary: true, onClick: () => { try { localStorage.removeItem(LS_KEY); } catch (e) {} S = defaultState(); clearFilters(); UI.sort = { key: 'score', dir: 'desc' }; switchTab('alerts'); refreshAll(); $('tableWrap').scrollTop = 0; toast('Demonstration data restored.'); } }] });
-  $('mnuAbout').onclick = () => showModal({ title: 'About this demonstration', body: `<p style="margin-top:0"><b>SANAD MRO: from inspection finding to AI-assisted investigation and confident decisions.</b></p><p>A SAS Visual Investigator-inspired demonstration mockup. ${esc(DEMO.meta.disclaimer)} ${esc(DEMO.meta.idNote)}</p><p style="margin-bottom:0">${esc(DEMO.meta.scoreNote)} Digital Assistant responses are deterministic mock responses; no live AI service or operational system is connected. The repair thresholds used (1.5 to 4.0 mm repairable, above 4.0 mm rejection) are specific to the PoC scenario and are not OEM limits.</p>` });
+  $('mnuResetDemo').onclick = () => showModal({ title: 'Reset workspace', body: '<p style="margin:0">This clears triage changes, assignments, investigations and conversations in this workspace and restores the original alert queue.</p>',
+    buttons: [{ label: 'Cancel' }, { label: 'Reset', primary: true, onClick: () => { try { localStorage.removeItem(LS_KEY); } catch (e) {} S = defaultState(); clearFilters(); UI.sort = { key: 'score', dir: 'desc' }; switchTab('alerts'); refreshAll(); $('tableWrap').scrollTop = 0; toast('Workspace reset.'); } }] });
 
-  document.querySelectorAll('.tab').forEach(t => t.onclick = () => { if (t.classList.contains('disabled')) { toast(`${t.textContent} is not available in this demonstration.`); return; } switchTab(t.dataset.tab); });
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => { if (t.classList.contains('disabled')) { toast(`You do not have access to ${t.textContent}.`); return; } switchTab(t.dataset.tab); });
 
   $('alertInfo').addEventListener('click', e => { const tr = e.target.closest('[data-rel]'); if (tr) { if (!visibleAlerts().some(x => x.id === tr.dataset.rel)) clearFilters(); selectAlert(tr.dataset.rel, { scroll: true }); } });
-  $('btnDA').onclick = openAssistant; $('btnBack').onclick = backToAlert; $('btnResetChat').onclick = () => resetChat();
-  $('scnSel').onchange = e => changeScenario(e.target.value);
+  $('btnDA').onclick = openAssistant; $('btnBack').onclick = backToAlert; $('btnResetChat').onclick = resetChat;
   $('btnSend').onclick = () => { const v = $('chatText').value; $('chatText').value = ''; ask(v); };
   $('chatText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('btnSend').click(); } });
   $('chatLog').addEventListener('click', e => {
