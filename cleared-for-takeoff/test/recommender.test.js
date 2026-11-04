@@ -154,3 +154,17 @@ test('hourly budget caps Claude calls and falls back to rules', async () => {
   assert.equal(second.reason, 'hourly_budget');
   assert.equal(client.calls.length, 1);
 });
+
+test('steering: free-only and time limits are respected, pinned courses are kept', () => {
+  const ctx = { content, catalog, sessions: [] };
+  const p = { role: 'tech', experience: 'intermediate', interests: ['agentic', 'genai'] };
+  const plan = rules.buildRulesPlan(p, ctx, { constraints: { time: 'short', freeOnly: true, handsOn: false } });
+  plan.stages.forEach(s => {
+    if (s.relaxed) return;
+    s.courseIds.forEach(id => { const c = catalog.courses.find(x => x.id === id); assert.equal(c.cost, 'free', id); assert.ok(c.hours <= 2, id); });
+  });
+  const pinned = rules.buildRulesPlan(p, ctx, { constraints: { time: 'short', freeOnly: true }, pinned: ['dlai-ml-specialization'] });
+  assert.ok(pinned.stages.some(s => s.courseIds.includes('dlai-ml-specialization') && s.pinned.includes('dlai-ml-specialization')));
+  // without options the plan is unchanged by the steering code
+  assert.deepEqual(rules.buildRulesPlan(p, ctx).stages.map(s => s.courseIds), rules.buildRulesPlan(p, ctx, {}).stages.map(s => s.courseIds));
+});

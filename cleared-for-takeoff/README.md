@@ -35,6 +35,17 @@ cleared-for-takeoff/
 
 The booth chat assistant is rule-based. It answers from `content.js` and the catalogue, so it also works without a connection. Only the course recommender calls Claude.
 
+## Learning Flight Map (prototype)
+
+`public/flight-map.html` is a 3D prototype of the learning agent at work. Open it at `/flight-map.html`.
+- **The map:** the 30 catalogue courses appear as stars. They are grouped into one constellation per learning track and raised by level (FL100 Beginner, FL200 Intermediate, FL300 Advanced).
+- **Planning:** the visitor answers the same three questions. The agent then visibly scans, filters, weighs and plots a four-waypoint route.
+- **Steering:** time per course, free only, prefer hands-on, and adding a course. Each change makes the agent re-plan, and the waypoints that changed are highlighted.
+- **Explanations:** tapping any star shows the agent's reason for picking it or filtering it out.
+- **Takeoff:** *Cleared for takeoff* flies the route with a chase camera. After 60 s without input the page demonstrates itself.
+- **Planner:** the prototype plans on the device with the shared rules (`buildRulesPlan` with steering options). Connecting it to Claude means passing the same options to `/api/recommend`.
+- **three.js:** loaded from `public/vendor/three.min.js`, a tree-shaken bundle of three.js r187 (MIT), so it works offline under the CSP. See `scripts/build-three.md`.
+
 ## Run locally
 
 ```bash

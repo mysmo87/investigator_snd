@@ -19,6 +19,9 @@
   const LIMITS = { topic: 90, why: 240, nextStep: 240, summary: 420 };
   const ROLE_SENTENCE = { gov: 'government employee', tech: 'technology professional', student: 'student', leader: 'business leader', other: 'curious visitor' };
 
+  /* Optional steering (Learning Flight Map): limits the visitor can set. */
+  const TIME_LIMITS = { any: Infinity, medium: 10, short: 2 };   // max hours per course
+  const HANDS_ON = /hands-on|lab|project|notebook|exercise/i;      // course formats that count as hands-on
   const byId = (list, id) => list.find(x => x.id === id);
   const clip = (s, max) => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
   const listText = arr => arr.length > 1 ? arr.slice(0, -1).join(', ') + ' and ' + arr[arr.length - 1] : (arr[0] || '');
@@ -71,11 +74,18 @@
     return -1;
   }
   function courseAllowed(course, lvl) { return Math.abs(LEVELS.indexOf(course.level) - lvl) <= 1; }
+  function meetsConstraints(course, k) {
+    if (!k) return true;
+    if (k.freeOnly && course.cost !== 'free') return false;
+    return course.hours <= (TIME_LIMITS[k.time] || Infinity);
+  }
 
-  function rankCourses(stage, profile, lvl, primary, secondary, catalog, used) {
+  function rankCourses(stage, profile, lvl, primary, secondary, catalog, used, options) {
+    const handsOn = !!(options && options.constraints && options.constraints.handsOn);
     return catalog.courses
       .map((c, i) => {
         let s = (c.stages.includes(stage) ? 4 : 0) + levelFit(c, lvl, stage);
+        if (handsOn && HANDS_ON.test(c.format)) s += 3;
         s += c.tracks.includes(primary.id) ? 4 : c.tracks.includes(secondary.id) ? 1 : 0;
         s += c.interests.filter(x => profile.interests.includes(x)).length * 2;
         if (used.has(c.id)) s -= 20;
@@ -105,15 +115,31 @@
     return d ? d.title : '';
   }
 
-  /* ---------- deterministic plan ---------- */
-  function buildRulesPlan(profile, ctx) {
+  /* ---------- deterministic plan ----------
+     options (optional): { constraints: { time: 'any'|'medium'|'short', freeOnly, handsOn }, pinned: [courseId] }
+     Pinned courses are placed first in the earliest stage they fit. If no course in a stage meets
+     the constraints, the time limit and then all limits are relaxed for that stage (stage.relaxed). */
+  function buildRulesPlan(profile, ctx, options) {
     const { content, catalog } = ctx, R = content.rules;
     const lvl = levelIndex(content, profile.experience);
     const ranked = rankTracks(profile, content), primary = ranked[0], secondary = ranked[1];
     const usedC = new Set(), usedE = new Set();
     const interestLabels = profile.interests.map(i => byId(content.interests, i).label);
+    const k = options && options.constraints ? { ...options.constraints, time: TIME_LIMITS[options.constraints.time] ? options.constraints.time : 'any' } : null;
+    const pinStage = {};
+    STAGES.forEach(s => { pinStage[s] = []; });
+    ((options && options.pinned) || []).map(id => byId(catalog.courses, id)).filter(Boolean).forEach(c => {
+      const st = STAGES.find(s => c.stages.includes(s) && pinStage[s].length < 2) || STAGES.find(s => pinStage[s].length < 2);
+      if (st) { pinStage[st].push(c); usedC.add(c.id); }
+    });
     const stages = STAGES.map(stage => {
-      const courses = rankCourses(stage, profile, lvl, primary, secondary, catalog, usedC).slice(0, 2);
+      const rankedCourses = rankCourses(stage, profile, lvl, primary, secondary, catalog, usedC, options);
+      let pool = rankedCourses.filter(c => meetsConstraints(c, k)), relaxed = null;
+      if (k && !pool.length && !pinStage[stage].length) {
+        pool = rankedCourses.filter(c => meetsConstraints(c, { ...k, time: 'any' })); relaxed = 'time';
+        if (!pool.length) { pool = rankedCourses; relaxed = 'all'; }
+      }
+      const courses = [...pinStage[stage], ...pool].slice(0, 2);
       courses.forEach(c => usedC.add(c.id));
       const expId = rankExperiences(R.stageExperience[stage], profile, primary, ctx, usedE)[0];
       usedE.add(expId);
@@ -127,7 +153,9 @@
         courseIds: courses.map(c => c.id),
         why: `Chosen for your ${content.levels[lvl]} level in ${primary.title}${matched.length ? ` and your interest in ${listText(matched.slice(0, 2))}` : ''}.`,
         nextStep,
-        experienceId: expId
+        experienceId: expId,
+        pinned: pinStage[stage].map(c => c.id),
+        relaxed
       };
     });
     return {
@@ -185,5 +213,5 @@
     return { plan: { primaryTrack, secondaryTrack, summary, stages }, repairs };
   }
 
-  return { STAGES, LEVELS, LIMITS, validateProfile, rankTracks, buildRulesPlan, sanitizePlan, levelIndex };
+  return { STAGES, LEVELS, LIMITS, TIME_LIMITS, HANDS_ON, validateProfile, rankTracks, buildRulesPlan, sanitizePlan, levelIndex, courseAllowed, meetsConstraints };
 });
