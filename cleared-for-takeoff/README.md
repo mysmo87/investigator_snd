@@ -64,11 +64,12 @@ npm run check                 # validates content + catalogue
 
 1. **New Project → Deploy from GitHub repo** → choose this repository.
 2. Under **Service → Settings**:
-   - **Root Directory:** `/cleared-for-takeoff`
-   - **Config file path:** `/cleared-for-takeoff/railway.json`. Railway does not apply the Root Directory to this path, so give the full path from the repository root.
+   - **Root Directory:** leave it empty. The repository root is an npm workspace containing `cleared-for-takeoff`, and the root `railway.json` holds the start command and health check, so no other build settings are needed.
    - **Networking → Generate Domain**, or add your custom domain.
 3. Under **Service → Variables**, add at least `ANTHROPIC_API_KEY`; the full list is in the next section.
-4. Deploy. Railpack detects Node from `package.json`, runs `npm ci`, starts with `npm start` and waits for `GET /api/health`. If the content files are invalid the server refuses to start, so a bad edit never replaces a working deployment.
+4. Deploy. Railpack detects Node from the root `package.json`, runs `npm ci`, starts with `npm start` and waits for `GET /api/health`. If the content files are invalid the server refuses to start, so a bad edit never replaces a working deployment.
+
+Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder has its own `package.json`, lockfile and `railway.json`.
 
 ### Variables
 
