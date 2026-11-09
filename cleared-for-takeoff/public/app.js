@@ -10,6 +10,8 @@ const CATALOG = window.CFT_CATALOG;
 const RULES = window.CFT_RULES;
 /* Runtime settings. Defaults keep the kiosk working when the page is opened
    from disk; when served by the API server they are replaced by GET /api/config. */
+/* Original (dark-ink) logo for white backgrounds — the passport card draws it on a white plate. */
+const ORG_LOGO = Object.assign(new Image(), { src: 'assets/gdrfa-logo.png' });
 const CONFIG = {
   served: /^https?:$/.test(location.protocol),
   aiEnabled: false, aiTimeoutMs: 20000, publicBaseUrl: null,
@@ -1113,7 +1115,7 @@ function drawPassport(cv, p) {
   g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, 'rgba(216,177,91,0)'); g.addColorStop(.5, 'rgba(244,216,143,.9)'); g.addColorStop(1, 'rgba(216,177,91,0)'); x.fillStyle = g; x.fillRect(40, 138, W - 80, 2);
   // official logo on a white plate
   x.fillStyle = '#ffffff'; rrect(x, 44, 14, 452, 116, 16); x.fill();
-  const logo = $('#orgLogo');
+  const logo = ORG_LOGO;
   if (logo && logo.complete && logo.naturalWidth) { const lh = 104, lw = lh * logo.naturalWidth / logo.naturalHeight; x.drawImage(logo, 44 + (452 - lw) / 2, 20, lw, lh); }
   x.textAlign = 'right'; x.direction = 'rtl'; x.fillStyle = '#f4d88f'; x.font = `600 23px ${FA}`; x.fillText('جواز الذكاء الاصطناعي الوكيل', W - 60, 52); x.direction = 'ltr';
   x.font = `700 32px ${FD}`; spacing(x, '7px'); x.fillStyle = '#f4d88f'; x.fillText('AGENTIC AI PASSPORT', W - 60, 92); x.font = `600 17px ${FB}`; spacing(x, '4px'); x.fillStyle = '#46d2ff'; x.fillText('CLEARED FOR TAKEOFF · GITEX 2026', W - 60, 122); spacing(x, '0px'); x.textAlign = 'left';
@@ -1155,7 +1157,7 @@ function drawPassport(cv, p) {
   x.strokeStyle = g; x.lineWidth = 4; rrect(x, 2, 2, W - 4, H - 4, 42); x.stroke();
   x.strokeStyle = 'rgba(96,170,255,.25)'; x.lineWidth = 1.5; rrect(x, 18, 18, W - 36, H - 36, 32); x.stroke();
 }
-function fontsReady() { const logo = $('#orgLogo'), l = logo && logo.decode ? logo.decode().catch(() => {}) : Promise.resolve(); return Promise.race([Promise.all([document.fonts ? document.fonts.ready : null, l]), wait(1500)]); }
+function fontsReady() { const logo = ORG_LOGO, l = logo && logo.decode ? logo.decode().catch(() => {}) : Promise.resolve(); return Promise.race([Promise.all([document.fonts ? document.fonts.ready : null, l]), wait(1500)]); }
 function paintPassport(cv) { if (!cv || !state.passport) return; drawPassport(cv, state.passport); fontsReady().then(() => { if (document.contains(cv) && state.passport) drawPassport(cv, state.passport); }); }
 function passportActionsHTML(inWizard) {
   return `<div class="glass pp-actions"><div class="eyebrow">${ic('check')} Passport ready</div><h3>Welcome, ${esc(state.passport.name.split(' ')[0])}!</h3><p>Your Agentic AI Passport for <b>${esc(state.journey.primary.title)}</b> at <b>${esc(state.journey.levelName)}</b> level. Download it, preview the QR destination or see yourself on the big screen.</p>
@@ -1234,7 +1236,7 @@ const bigscreen = (() => {
     const latin = /^[\u0000-ɏ\s'.-]+$/.test(p.name);
     (latin ? Array.from(p.name) : [p.name]).forEach((ch, i) => { const s = document.createElement('span'); s.textContent = ch === ' ' ? ' ' : ch; s.style.animationDelay = (2.6 + i * (latin ? .055 : 0)) + 's'; nm.appendChild(s); });
     $('#bsTrack').textContent = `${p.journey.primary.title} · ${p.journey.levelName}`;
-    $('#bsBrand').innerHTML = `<div class="logo-plate"><img src="${$('#orgLogo').src}" alt=""></div><span>AGENTIC AI: CLEARED FOR TAKEOFF · GITEX 2026</span>`;
+    $('#bsBrand').innerHTML = `<div class="logo-plate clear"><img src="assets/gdrfa-logo-light.png" alt=""></div><span>AGENTIC AI: CLEARED FOR TAKEOFF · GITEX 2026</span>`;
     o.classList.remove('play', 'out'); void o.offsetWidth; o.classList.add('open', 'play');
     api.playing = true; updateGlobe();
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
