@@ -90,6 +90,13 @@ function readJsonBody(req) {
   });
 }
 
+/* Which build is running — Railway sets these variables on every deployment. */
+const DEPLOY = {
+  branch: process.env.RAILWAY_GIT_BRANCH || null,
+  commit: process.env.RAILWAY_GIT_COMMIT_SHA ? process.env.RAILWAY_GIT_COMMIT_SHA.slice(0, 7) : null,
+  deploymentId: process.env.RAILWAY_DEPLOYMENT_ID || null
+};
+
 function createApp({ config, recommender, rules, content, logger, publicDir, version }) {
   const limiter = createRateLimiter(config.rateLimitPerMinute);
   const root = path.resolve(publicDir);
@@ -107,8 +114,9 @@ function createApp({ config, recommender, rules, content, logger, publicDir, ver
       const ext = path.extname(file).toLowerCase();
       const headers = {
         'Content-Type': MIME[ext] || 'application/octet-stream',
-        // HTML always revalidates; assets are short-lived because filenames are not content-hashed.
-        'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=300',
+        // Filenames are not content-hashed, so every file revalidates (cheap 304 when unchanged)
+        // and a new deploy is visible on the next page load.
+        'Cache-Control': 'no-cache',
         'Last-Modified': st.mtime.toUTCString()
       };
       if (req.headers['if-modified-since'] && new Date(req.headers['if-modified-since']) >= new Date(st.mtime.toUTCString())) {
@@ -161,7 +169,7 @@ function createApp({ config, recommender, rules, content, logger, publicDir, ver
     try {
       if (pathname === '/api/health') {
         if (req.method !== 'GET' && req.method !== 'HEAD') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
-        return sendJson(res, 200, { status: 'ok', version, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() } });
+        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() } });
       }
       if (pathname === '/api/config') {
         if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });

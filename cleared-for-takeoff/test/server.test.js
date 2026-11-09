@@ -101,3 +101,16 @@ test('rejects cross-origin recommendation requests', async () => {
     assert.equal((await post(s.base, body, { origin: s.base })).status, 200);
   } finally { await s.close(); }
 });
+
+test('static files always revalidate so a new deploy shows immediately', async () => {
+  const s = await start();
+  try {
+    for (const p of ['/', '/styles.css', '/app.js', '/assets/gdrfa-logo-light.png']) {
+      const res = await fetch(s.base + p);
+      assert.equal(res.status, 200, p);
+      assert.equal(res.headers.get('cache-control'), 'no-cache', p);
+    }
+    const h = await (await fetch(s.base + '/api/health')).json();
+    assert.ok('deploy' in h);
+  } finally { await s.close(); }
+});
