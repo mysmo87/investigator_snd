@@ -6,13 +6,14 @@ Every version below is a complete, working copy of the app: code, styles, assets
 |---|---|---|---|---|
 | `GOLDEN_BASELINE_V1`: original design | `da63427` | `golden-baseline-v1` | `2acec53` | `baseline/GOLDEN_BASELINE_V1.png` |
 | `HERO_REFINEMENT_V2`: first hero refinement | `1c1f45d` | `hero-refinement-v2` | `26ee83b` | `versions/HERO_REFINEMENT_V2.png` |
+| `HERO_FINAL_V3`: final hero polish | `0f542af` | `hero-final-v3` | `0f542af` | `versions/HERO_FINAL_V3.png` |
 
 Never move or delete these commits or tags. New work goes on new commits.
 
 ## Look at a version without changing your branch
 ```bash
 git fetch origin
-git checkout <commit-or-tag>   # e.g. da63427 or hero-refinement-v2
+git checkout <commit-or-tag>   # e.g. da63427, 1c1f45d or 0f542af
 npm ci && npm start            # from the repository root, then open http://localhost:3000
 git switch -                   # back to your branch
 ```
@@ -31,5 +32,6 @@ This restores the app files only; the screenshots and these notes stay as they a
 git fetch origin
 git tag -a golden-baseline-v1 da63427 -m "GOLDEN_BASELINE_V1"
 git tag -a hero-refinement-v2 1c1f45d -m "HERO_REFINEMENT_V2"
-git push origin golden-baseline-v1 hero-refinement-v2
+git tag -a hero-final-v3 0f542af -m "HERO_FINAL_V3"
+git push origin golden-baseline-v1 hero-refinement-v2 hero-final-v3
 ```
