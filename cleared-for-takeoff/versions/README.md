@@ -8,8 +8,11 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | `HERO_REFINEMENT_V2`: first hero refinement | `1c1f45d` | `hero-refinement-v2` | `26ee83b` | `versions/HERO_REFINEMENT_V2.png` |
 | `HERO_FINAL_V3`: final hero polish | `0f542af` | `hero-final-v3` | `0f542af` | `versions/HERO_FINAL_V3.png` |
 | `PRE_V4_FULL_APP`: full app before the V4 homepage redesign (V3 plus the responsive fix) | `ccda35f` | `pre-v4-full-app` | `900a662` | `versions/PRE_V4_FULL_APP.png` |
+| `HOMEPAGE_V4_CANDIDATE`: minimal premium homepage; **candidate for review, not approved** | _set after commit_ | `homepage-v4-candidate` | _this commit_ | `versions/HOMEPAGE_V4_CANDIDATE.png` |
 
 Never move or delete these commits or tags. New work goes on new commits.
+
+To go back from the V4 candidate, restore `PRE_V4_FULL_APP` with the restore commands below. The V4 review, with screenshots, differences from the reference and checks, is in `design-reviews/homepage-v4/NOTES.md`.
 
 Fixes made after `HERO_FINAL_V3` keep its approved look:
 - **Responsive fix, 1024 px overflow:** a one-line CSS fix that applies only at 1200 px and below; above that, the app looks exactly like V3. Details: `design-reviews/responsive-pass/NOTES.md`. If you restore V3 itself, the 1024 px overflow comes back.

@@ -81,6 +81,9 @@ const ICONS = {
   analytics: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/><circle cx="19" cy="8" r="1"/>',
   knowledge: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 8h6M9 12h4"/>',
   layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  stack: '<path d="M12 3.5l8.5 4.5-8.5 4.5L3.5 8z"/><path d="M3.5 12l8.5 4.5 8.5-4.5"/><path d="M3.5 16l8.5 4.5 8.5-4.5"/>',
+  chat: '<path d="M20.5 11.5c0 4.2-3.8 7.5-8.5 7.5-1.3 0-2.5-.2-3.6-.7L4 19.8l1.2-3.6c-1-1.3-1.7-2.9-1.7-4.7C3.5 7.3 7.3 4 12 4s8.5 3.3 8.5 7.5z"/>',
+  grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.3"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.3"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.3"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.3"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   code: '<path d="M8 8l-5 4 5 4M16 8l5 4-5 4M14 4l-4 16"/>',
   briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
@@ -281,123 +284,250 @@ function avatarCanvas(av, S = 512) { const c = document.createElement('canvas');
 function paintAvatarInto(canvas, av) { const S = canvas.width; const x = canvas.getContext('2d'); x.clearRect(0, 0, S, S); drawAvatar(x, av, 0, 0, S); }
 
 /* =====================================================================
-   HERO VISUALS: skyline + globe/radar
+   HOME VISUAL: digital globe (animated canvas) + Dubai skyline (static canvas)
+   The globe sits to the right of the copy column, with Dubai as the focal point; the skyline is
+   drawn under it with the Burj Khalifa beneath the globe. Both are decorative (aria-hidden).
    ===================================================================== */
-function skylineSVG() {
-  const W = 1600, H = 320, r = rng(7); let back = '', front = '', win = '';
-  for (let x = -10; x < W;) { const w = 16 + r() * 36, h = 50 + r() * 130; back += `<rect x="${x.toFixed(1)}" y="${(H - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"/>`; x += w + 1 + r() * 5; }
-  const avoid = [[205, 335], [480, 590], [700, 830], [880, 945], [995, 1125], [1285, 1395], [1420, 1590]];
-  for (let x = -5; x < W;) {
-    const w = 22 + r() * 40, h = 60 + r() * 130;
-    if (!avoid.some(([a, b]) => x + w > a && x < b)) {
-      front += `<rect x="${x.toFixed(1)}" y="${(H - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"/>`;
-      for (let wy = H - h + 8; wy < H - 6; wy += 9) for (let wx = x + 4; wx < x + w - 4; wx += 7) if (r() < .13) win += `<rect x="${wx.toFixed(1)}" y="${wy.toFixed(1)}" width="2.2" height="3"${r() < .12 ? ' class="wg"' : ''}/>`;
-    }
-    x += w + 3 + r() * 10;
-  }
-  const c = 1060, bk = [[c - 36, 320], [c - 36, 255], [c - 27, 255], [c - 27, 205], [c - 20, 205], [c - 20, 155], [c - 14, 155], [c - 14, 110], [c - 9, 110], [c - 9, 68], [c - 4.5, 68], [c - 1.6, 14], [c, 0], [c + 1.6, 14], [c + 4.5, 68], [c + 9, 68], [c + 9, 120], [c + 15, 120], [c + 15, 170], [c + 22, 170], [c + 22, 228], [c + 30, 228], [c + 30, 270], [c + 38, 270], [c + 38, 320]].map(p => p.join(',')).join(' ');
-  const landmarks = `
-    <polygon points="${bk}"/>
-    <path d="M232 320 L232 112 Q300 150 318 320 Z"/><path d="M226 320 L224 96" class="ln"/><path d="M226 150 L292 150" class="ln"/>
-    <polygon points="500,320 500,148 538,112 538,320"/><polygon points="548,320 548,170 578,140 578,320"/>
-    <rect x="732" y="296" width="62" height="24"/><ellipse cx="763" cy="246" rx="44" ry="56" fill="none" class="mof" stroke-width="20"/>
-    <path d="M890 320 C 884 250 902 200 896 120 L926 120 C 932 200 914 250 920 320 Z"/>
-    <rect x="1298" y="168" width="13" height="152"/><rect x="1366" y="168" width="13" height="152"/><rect x="1298" y="158" width="81" height="14"/>
-    <circle cx="1505" cy="222" r="74" fill="none" class="ln" stroke-width="3"/><circle cx="1505" cy="222" r="6"/>
-    <path d="M1505 222 L1462 320 M1505 222 L1548 320" class="ln" stroke-width="4"/>`;
-  let spokes = ''; for (let k = 0; k < 16; k++) { const a = k * Math.PI / 8; spokes += `<line x1="1505" y1="222" x2="${(1505 + 74 * Math.cos(a)).toFixed(1)}" y2="${(222 + 74 * Math.sin(a)).toFixed(1)}"/><circle cx="${(1505 + 74 * Math.cos(a)).toFixed(1)}" cy="${(222 + 74 * Math.sin(a)).toFixed(1)}" r="3.4"/>`; }
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice">
-    <defs>
-      <linearGradient id="skyF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#11336f"/><stop offset=".6" stop-color="#071739"/><stop offset="1" stop-color="#030b22"/></linearGradient>
-      <linearGradient id="skyB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d2556"/><stop offset="1" stop-color="#04102c"/></linearGradient>
-      <linearGradient id="skyG" x1="0" x2="1"><stop offset="0" stop-color="#46d2ff" stop-opacity="0"/><stop offset=".5" stop-color="#46d2ff" stop-opacity=".9"/><stop offset="1" stop-color="#46d2ff" stop-opacity="0"/></linearGradient>
-      <linearGradient id="bkL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4d88f"/><stop offset="1" stop-color="#46d2ff" stop-opacity="0"/></linearGradient>
-      <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#020817" stop-opacity=".9"/></linearGradient>
-    </defs>
-    <style>.b rect{fill:url(#skyB);opacity:.7}.f>*{fill:url(#skyF);stroke:rgba(110,190,255,.28);stroke-width:1}.f .ln{fill:none;stroke:rgba(110,190,255,.38)}.f .mof{fill:none;stroke:url(#skyF)}.w rect{fill:#7cc4ff;opacity:.42}.w .wg{fill:#f4d88f;opacity:.55}.sp line{stroke:rgba(110,190,255,.22);stroke-width:1}.sp circle{fill:#46d2ff;opacity:.4}</style>
-    <g class="b">${back}</g>
-    <g class="f">${front}${landmarks}</g>
-    <ellipse cx="763" cy="246" rx="44" ry="56" fill="none" stroke="rgba(110,190,255,.32)" stroke-width="1"/><ellipse cx="763" cy="246" rx="25" ry="37" fill="none" stroke="rgba(110,190,255,.32)" stroke-width="1"/>
-    <g class="sp">${spokes}</g>
-    <g class="w">${win}</g>
-    <line x1="${c}" y1="4" x2="${c}" y2="300" stroke="url(#bkL)" stroke-width="1.1" opacity=".7"/>
-    <circle cx="${c}" cy="2" r="2.5" fill="#f4d88f"><animate attributeName="opacity" values="1;.2;1" dur="2s" repeatCount="indefinite"/></circle>
-    <rect y="230" width="${W}" height="90" fill="url(#fade)"/>
-    <rect y="${H - 2}" width="${W}" height="2" fill="url(#skyG)"/>
-  </svg>`;
-}
-
 const globe = (() => {
-  let cv, ctx, W = 0, H = 0, raf = 0, active = false;
+  const DEG = Math.PI / 180;
+  let cv, ctx, sky, sctx, hero, copy, W = 0, H = 0, raf = 0, active = false, geo = null;
   const t0 = performance.now();
-  const N = 700, pts = [];
-  for (let i = 0; i < N; i++) { const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), phi = i * 2.399963; pts.push([Math.cos(phi) * r, y, Math.sin(phi) * r]); }
-  const ll = (lat, lon) => { const a = lat * Math.PI / 180, b = -lon * Math.PI / 180; return [Math.cos(a) * Math.cos(b), Math.sin(a), Math.cos(a) * Math.sin(b)]; };
-  const DXB = ll(25.2, 55.3);
-  // a few long-haul routes from Dubai: London, Singapore, New York, Tokyo, Nairobi, Mumbai
-  const cities = [[51.5, -0.1], [1.35, 103.8], [40.7, -74], [35.7, 139.7], [-1.3, 36.8], [19.1, 72.9]].map(c => ll(c[0], c[1]));
-  const slerp = (a, b, s) => { const d = Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])), om = Math.acos(d), so = Math.sin(om) || 1; const k1 = Math.sin((1 - s) * om) / so, k2 = Math.sin(s * om) / so; return [a[0] * k1 + b[0] * k2, a[1] * k1 + b[1] * k2, a[2] * k1 + b[2] * k2]; };
-  const arcs = cities.map(c => { const arr = []; for (let i = 0; i <= 40; i++) { const s = i / 40, p = slerp(DXB, c, s), l = 1 + .22 * Math.sin(Math.PI * s); arr.push([p[0] * l, p[1] * l, p[2] * l]); } return arr; });
-  const theta0 = Math.atan2(-DXB[0], DXB[2]), TILT = .35;
-  const grid = [];
-  for (let lon = 0; lon < 360; lon += 30) { const line = []; for (let lat = -90; lat <= 90; lat += 6) line.push(ll(lat, lon)); grid.push(line); }
-  for (const lat of [-60, -30, 0, 30, 60]) { const line = []; for (let lon = 0; lon <= 360; lon += 6) line.push(ll(lat, lon)); grid.push(line); }
+  const vec = (lat, lon) => [Math.cos(lat * DEG) * Math.sin(lon * DEG), Math.sin(lat * DEG), Math.cos(lat * DEG) * Math.cos(lon * DEG)];
 
-  function resize() { if (!cv) return; const r = cv.getBoundingClientRect(); const dpr = Math.min(window.devicePixelRatio || 1, 1.5); W = r.width; H = r.height; cv.width = Math.max(1, W * dpr); cv.height = Math.max(1, H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); if (!raf) frame(performance.now()); }
-  function proj(p, rot, cx, cy, R) { const c = Math.cos(rot), s = Math.sin(rot), x1 = p[0] * c + p[2] * s, z1 = -p[0] * s + p[2] * c, ct = Math.cos(TILT), st = Math.sin(TILT); return [cx + x1 * R, cy - (p[1] * ct - z1 * st) * R, p[1] * st + z1 * ct]; }
-  function frame(now) {
+  // Land dots: a regular latitude/longitude lattice, kept where the land mask (shared/globe-land.js) is set.
+  const LAND = (() => {
+    const L = window.CFT_LAND, out = [];
+    if (!L) return new Float32Array(0);
+    const raw = atob(L.bits), STEP = 1.0;
+    const isLand = (lat, lon) => { const r = Math.floor((90 - lat) / L.res), c = ((Math.floor((lon + 180) / L.res) % L.w) + L.w) % L.w, n = r * L.w + c; return r >= 0 && r < L.h && (raw.charCodeAt(n >> 3) >> (n & 7) & 1); };
+    // rows of latitude; the longitude step widens towards the poles so the dots stay evenly spaced on the sphere
+    let row = 0;
+    for (let lat = -56.5; lat <= 74; lat += STEP, row++) { const n = Math.max(1, Math.round(360 / STEP * Math.cos(lat * DEG))), d = 360 / n, off = row % 2 ? d / 2 : 0; for (let k = 0; k < n; k++) { const lon = -180 + off + k * d; if (isLand(lat, lon)) out.push(...vec(lat, lon)); } }
+    return new Float32Array(out);
+  })();
+
+  const DXB = vec(25.2, 55.3);
+  // flight routes from Dubai: London, Lagos, Johannesburg, Singapore, Mumbai, Beijing
+  const CITIES = [[51.5, -0.1], [6.5, 3.4], [-26.2, 28], [1.35, 103.8], [19.1, 72.9], [39.9, 116.4]].map(c => vec(c[0], c[1]));
+  const slerp = (a, b, s) => { const d = Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])), om = Math.acos(d), so = Math.sin(om) || 1, k1 = Math.sin((1 - s) * om) / so, k2 = Math.sin(s * om) / so; return [a[0] * k1 + b[0] * k2, a[1] * k1 + b[1] * k2, a[2] * k1 + b[2] * k2]; };
+  const ARCS = CITIES.map(c => { const om = Math.acos(Math.max(-1, Math.min(1, DXB[0] * c[0] + DXB[1] * c[1] + DXB[2] * c[2]))), lift = .06 + .2 * om / Math.PI, pts = []; for (let i = 0; i <= 48; i++) { const s = i / 48, p = slerp(DXB, c, s), l = 1 + lift * Math.sin(Math.PI * s); pts.push([p[0] * l, p[1] * l, p[2] * l]); } return pts; });
+  const GRID = [];
+  for (let lon = -180; lon < 180; lon += 30) { const line = []; for (let lat = -84; lat <= 84; lat += 4) line.push(vec(lat, lon)); GRID.push(line); }
+  for (const lat of [-60, -30, 0, 30, 60]) { const line = []; for (let lon = -180; lon <= 180; lon += 4) line.push(vec(lat, lon)); GRID.push(line); }
+
+  // view: Dubai to the right of centre, the northern hemisphere tilted towards the viewer
+  const LAT0 = 16 * DEG, cT = Math.cos(LAT0), sT = Math.sin(LAT0);
+  let cL = 1, sL = 0;
+  // project a point (unit vector times l) to [screenX, screenY, depth, onDiscRadius²]
+  function P(p) { const x1 = p[0] * cL - p[2] * sL, z1 = p[0] * sL + p[2] * cL, y2 = p[1] * cT - z1 * sT, z2 = p[1] * sT + z1 * cT; return [geo.cx + x1 * geo.R, geo.cy - y2 * geo.R, z2, x1 * x1 + y2 * y2]; }
+
+  // where the globe goes: the V4 proportions when there is room, otherwise kept clear of the copy column
+  function layout() {
+    const hr = hero.getBoundingClientRect(), cr = copy.getBoundingClientRect();
+    const right = cr.right - hr.left, bottom = cr.bottom - hr.top;
+    if (W < 700) { const R = Math.min(W * .4, 190); return { cx: W * .5, cy: Math.min(H - R * .9, bottom + R + 40), R, horizon: H * .97 }; }
+    let R = Math.min(W * .1924, H * .3616), cx = W * .7557;
+    const minLeft = right + Math.max(24, W * .02);
+    if (cx - R < minLeft) { R = Math.min(R, (W - minLeft) / 1.95); cx = Math.max(cx, minLeft + R); }
+    return { cx, cy: H * .424, R, horizon: H * .821 };
+  }
+
+  function resize() {
+    if (!cv) return;
+    W = hero.clientWidth; H = hero.clientHeight;
     if (!W || !H) return;
-    const t = now - t0, mobile = W < 700;
-    ctx.clearRect(0, 0, W, H);
-    const cx = mobile ? W * .5 : W * .73, cy = mobile ? Math.min(H * .5, 340) : H * .4, R = mobile ? Math.min(W * .34, 160) : Math.min(W * .176, H * .286);
-    const rot = theta0 + Math.sin(t * .00008) * 1.05;
-    // halo + body
-    ctx.lineWidth = 1;
-    // soft atmospheric bloom around the globe
-    let g = ctx.createRadialGradient(cx, cy, R * .85, cx, cy, R * 1.85); g.addColorStop(0, 'rgba(56,150,255,.2)'); g.addColorStop(.4, 'rgba(56,150,255,.07)'); g.addColorStop(1, 'rgba(56,150,255,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.85, 0, 7); ctx.fill();
-    g = ctx.createRadialGradient(cx - R * .35, cy - R * .4, R * .1, cx, cy, R); g.addColorStop(0, 'rgba(46,120,240,.3)'); g.addColorStop(1, 'rgba(4,16,46,.92)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
-    // radar sweep, kept inside a single range ring
-    const RR = R * 1.22, ang = (t * .00045) % (Math.PI * 2);
-    if (ctx.createConicGradient) { const cg = ctx.createConicGradient(ang - Math.PI * 2 * .9, cx, cy); cg.addColorStop(0, 'rgba(70,210,255,0)'); cg.addColorStop(.9, 'rgba(70,210,255,.12)'); cg.addColorStop(.9001, 'rgba(70,210,255,0)'); cg.addColorStop(1, 'rgba(70,210,255,0)'); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(cx, cy, RR, 0, 7); ctx.fill(); }
-    ctx.strokeStyle = 'rgba(140,225,255,.2)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(ang) * RR, cy + Math.sin(ang) * RR); ctx.stroke();
-    ctx.strokeStyle = 'rgba(70,210,255,.14)'; ctx.beginPath(); ctx.arc(cx, cy, RR, 0, 7); ctx.stroke();
-    ctx.strokeStyle = 'rgba(70,210,255,.22)'; ctx.beginPath();
-    for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; ctx.moveTo(cx + Math.cos(a) * RR, cy + Math.sin(a) * RR); ctx.lineTo(cx + Math.cos(a) * (RR + 5), cy + Math.sin(a) * (RR + 5)); }
-    ctx.stroke();
-    // graticule
-    ctx.strokeStyle = 'rgba(90,170,255,.09)'; ctx.beginPath();
-    grid.forEach(line => { let prev = null; line.forEach(p => { const q = proj(p, rot, cx, cy, R); if (q[2] > 0) { prev ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); prev = q; } else prev = null; }); });
-    ctx.stroke();
-    // dots (bucketed by depth)
-    const buckets = [[], [], [], [], []];
-    pts.forEach(p => { const q = proj(p, rot, cx, cy, R); if (q[2] > 0) buckets[Math.min(4, (q[2] * 5) | 0)].push(q); });
-    buckets.forEach((b, i) => { ctx.fillStyle = `rgba(150,215,255,${.12 + i * .12})`; const s = .8 + i * .26; ctx.beginPath(); b.forEach(q => ctx.rect(q[0] - s / 2, q[1] - s / 2, s, s)); ctx.fill(); });
-    // arcs
-    arcs.forEach((arr, i) => {
-      ctx.strokeStyle = 'rgba(244,216,143,.22)'; ctx.lineWidth = 1; ctx.beginPath(); let prev = null;
-      arr.forEach(p => { const q = proj(p, rot, cx, cy, R); if (q[2] > -.05) { prev ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); prev = q; } else prev = null; });
-      ctx.stroke();
-      const s = (t * .00022 + i * .137) % 1, p = arr[Math.round(s * 40)], q = proj(p, rot, cx, cy, R);
-      if (q[2] > -.05) { ctx.fillStyle = 'rgba(255,240,200,.55)'; ctx.beginPath(); ctx.arc(q[0], q[1], 1.6, 0, 7); ctx.fill(); }
-      const e = proj(cities[i], rot, cx, cy, R); if (e[2] > 0) { ctx.fillStyle = 'rgba(70,210,255,.5)'; ctx.beginPath(); ctx.arc(e[0], e[1], 1.7, 0, 7); ctx.fill(); }
-    });
-    ctx.lineWidth = 1;
-    // Dubai
-    const d = proj(DXB, rot, cx, cy, R);
-    if (d[2] > 0) {
-      const pr = (t % 2200) / 2200;
-      ctx.strokeStyle = `rgba(244,216,143,${(1 - pr) * .7})`; ctx.beginPath(); ctx.arc(d[0], d[1], 4 + pr * 18, 0, 7); ctx.stroke();
-      ctx.fillStyle = '#f4d88f'; ctx.shadowColor = '#d8b15b'; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(d[0], d[1], 3.6, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
-      ctx.font = '600 10.5px Inter, Segoe UI, sans-serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '1.5px';
-      ctx.fillStyle = 'rgba(244,216,143,.9)'; ctx.fillText('DUBAI', d[0] + 9, d[1] - 8); if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    for (const [c, x] of [[cv, ctx], [sky, sctx]]) { c.width = Math.max(1, Math.round(W * dpr)); c.height = Math.max(1, Math.round(H * dpr)); x.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    geo = layout();
+    drawSkyline();
+    frame(performance.now());
+  }
+
+  /* ---------- skyline (static; redrawn on resize) ---------- */
+  function drawSkyline() {
+    const x = sctx, { cx, R, horizon: hy } = geo, u = H / 843, rnd = rng(20261015), dpr = sky.width / W;
+    x.clearRect(0, 0, W, H);
+    const mobile = W < 700, x0 = mobile ? 0 : Math.max(W * .3, cx - R * 2.15), bx = cx - R * .02, mofX = bx + 150 * u, span = W - x0;
+    // haze: the lower part of the globe dissolves into the city glow
+    let g = x.createLinearGradient(0, hy - R * .9, 0, hy);
+    g.addColorStop(0, 'rgba(6,19,44,0)'); g.addColorStop(.7, 'rgba(6,19,44,.55)'); g.addColorStop(1, 'rgba(6,19,44,.88)');
+    x.fillStyle = g; x.fillRect(0, hy - R * .9, W, R * .9);
+    // dusk glow behind the city: a wide violet haze and a narrower warm band, centred near the Burj
+    const glow = (gx, rx, ry, stops) => { x.save(); x.translate(gx, hy); x.scale(1, ry / rx); const gg = x.createRadialGradient(0, 0, 0, 0, 0, rx); stops.forEach(([o, c]) => gg.addColorStop(o, c)); x.fillStyle = gg; x.beginPath(); x.arc(0, 0, rx, 0, 7); x.fill(); x.restore(); };
+    glow(bx - 60 * u, span * .62, 160 * u, [[0, 'rgba(186,130,148,.42)'], [.45, 'rgba(120,98,156,.2)'], [1, 'rgba(60,70,130,0)']]);
+    glow(bx, span * .42, 56 * u, [[0, 'rgba(255,188,128,.44)'], [1, 'rgba(255,184,124,0)']]);
+
+    // buildings go on their own layer so the water can reflect them
+    const L = document.createElement('canvas'); L.width = sky.width; L.height = sky.height;
+    const b = L.getContext('2d'); b.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const lights = [];
+    const windows = (tx, top, w, h, dens, far) => {
+      const cols = Math.max(1, Math.floor((w - 2.5 * u) / (3.6 * u))), rows = Math.floor((h - 5 * u) / (4.2 * u));
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        if (rnd() > dens) continue;
+        const wx = tx + 1.6 * u + c * 3.6 * u, wy = top + 4 * u + r * 4.2 * u, warm = rnd() < .8, a = (far ? .34 : .58) + rnd() * .42;
+        b.fillStyle = warm ? `rgba(255,212,150,${a.toFixed(2)})` : `rgba(206,226,255,${(a * .85).toFixed(2)})`;
+        b.fillRect(wx, wy, 1.5 * u, 1.8 * u);
+        if (!far && wy > hy - 24 * u && rnd() < .18) lights.push([wx + .75 * u, warm, a]);
+      }
+    };
+    const tower = (tx, w, h, kind, far) => {
+      const top = hy - h, gr = b.createLinearGradient(0, top, 0, hy), tone = far ? 0 : rnd();
+      gr.addColorStop(0, far ? '#17264c' : tone < .3 ? '#1d3160' : '#15284f'); gr.addColorStop(1, far ? '#22325c' : '#2b416e');
+      b.fillStyle = gr; b.beginPath();
+      if (kind === 'slant') { b.moveTo(tx, hy); b.lineTo(tx, top + w * .8); b.lineTo(tx + w, top); b.lineTo(tx + w, hy); }
+      else if (kind === 'spire') { b.moveTo(tx, hy); b.lineTo(tx, top + 9 * u); b.lineTo(tx + w * .5, top - 12 * u); b.lineTo(tx + w, top + 9 * u); b.lineTo(tx + w, hy); }
+      else if (kind === 'step') { b.rect(tx, top + h * .25, w, h * .75); b.rect(tx + w * .2, top, w * .6, h * .25 + 1); }
+      else b.rect(tx, top, w, h);
+      b.fill();
+      if (!far) { b.fillStyle = 'rgba(160,190,235,.14)'; b.fillRect(tx + w - Math.max(1, .7 * u), top + 3 * u, Math.max(1, .7 * u), h - 3 * u); }
+      windows(tx, top + (kind === 'step' ? h * .25 : 0), w, h * (kind === 'step' ? .75 : 1), far ? .14 : .4, far);
+    };
+    // height envelope: low at the left end, rising to a peak around the Burj, staying tall to the right
+    const fb = (bx - x0) / span;
+    const env = tx => { const f = (tx - x0) / span, peak = Math.exp(-(((f - fb) / .16) ** 2)); return Math.max(.28 + .5 * Math.min(1, f / Math.max(fb, .1)), peak, f > fb ? .74 : 0); };
+    for (let tx = x0; tx < W;) { const w = (8 + rnd() * 16) * u, h = (16 + rnd() * 40) * u * Math.min(1, .45 + (tx - x0) / (span * .3)); tower(tx, w, h, 'box', true); tx += w + rnd() * 3 * u; }
+    for (let tx = x0 + 24 * u; tx < W;) {
+      const w = (12 + rnd() * 22) * u, mid = tx + w / 2, clear = Math.abs(mid - bx) < 30 * u || Math.abs(mid - mofX) < 74 * u;
+      if (!clear) { const k = rnd(), h = (46 + rnd() * 140) * u * env(mid); tower(tx, w, h, k < .12 ? 'slant' : k < .22 ? 'spire' : k < .32 ? 'step' : 'box'); }
+      tx += w + (1.5 + rnd() * 7) * u;
     }
-    ctx.strokeStyle = 'rgba(120,200,255,.22)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+    // low podiums in front give the city some depth
+    for (let tx = x0 + 40 * u; tx < W;) { const w = (20 + rnd() * 40) * u, h = (8 + rnd() * 16) * u; if (Math.abs(tx + w / 2 - mofX) > 70 * u) { b.fillStyle = '#101f42'; b.fillRect(tx, hy - h, w, h); windows(tx, hy - h, w, h, .35, false); } tx += w + (6 + rnd() * 20) * u; }
+    // Burj Khalifa: stepped tiers, lit edges and a slender spire
+    const tiers = [[46, 0, 62], [38, 62, 116], [30, 116, 160], [22, 160, 198], [15, 198, 228], [9, 228, 250], [5, 250, 266]], top = hy - 312 * u, spireBase = hy - 266 * u;
+    for (const [w, y0, y1] of tiers) {
+      const gr = b.createLinearGradient(bx - w * u / 2, 0, bx + w * u / 2, 0); gr.addColorStop(0, '#2c4374'); gr.addColorStop(.5, '#3b5487'); gr.addColorStop(1, '#22365f');
+      b.fillStyle = gr; b.fillRect(bx - w * u / 2, hy - y1 * u, w * u, (y1 - y0) * u);
+      b.fillStyle = 'rgba(255,226,170,.75)'; b.fillRect(bx - w * u / 2 + 1.2 * u, hy - y1 * u + 1.2 * u, w * u - 2.4 * u, .7 * u);
+      for (let k = -w / 2 + 4; k < w / 2 - 3; k += 4.5) { b.fillStyle = `rgba(255,232,190,${(.3 + rnd() * .35).toFixed(2)})`; b.fillRect(bx + k * u, hy - y1 * u + 4 * u, .8 * u, (y1 - y0 - 6) * u); }
+    }
+    b.fillStyle = '#2f4776'; b.beginPath(); b.moveTo(bx - 2.6 * u, spireBase); b.lineTo(bx - .6 * u, top + 10 * u); b.lineTo(bx, top); b.lineTo(bx + .6 * u, top + 10 * u); b.lineTo(bx + 2.6 * u, spireBase); b.closePath(); b.fill();
+    g = b.createLinearGradient(0, top, 0, spireBase); g.addColorStop(0, 'rgba(255,240,205,.95)'); g.addColorStop(1, 'rgba(255,220,160,.5)');
+    b.fillStyle = g; b.fillRect(bx - .4 * u, top + 4 * u, .8 * u, spireBase - top);
+    b.fillStyle = 'rgba(255,244,214,.95)'; b.beginPath(); b.arc(bx, top + 1.5 * u, 1.5 * u, 0, 7); b.fill();
+    lights.push([bx, true, .95], [bx - 14 * u, true, .7], [bx + 14 * u, true, .7]);
+    // Museum of the Future: a brushed-steel torus with a lit inner edge
+    const my = hy - 36 * u, rx = 58 * u, ry = 32 * u;
+    b.fillStyle = '#16274c'; b.fillRect(mofX - 34 * u, hy - 9 * u, 68 * u, 9 * u); windows(mofX - 34 * u, hy - 9 * u, 68 * u, 9 * u, .5, false);
+    b.save(); b.translate(mofX, my); b.beginPath(); b.ellipse(0, 0, rx, ry, 0, 0, 7); b.ellipse(0, 0, rx * .6, ry * .5, 0, 0, 7, true);
+    g = b.createLinearGradient(-rx, -ry, rx, ry); g.addColorStop(0, '#9aaccb'); g.addColorStop(.45, '#5a6e95'); g.addColorStop(1, '#2c3d63');
+    b.fillStyle = g; b.fill('evenodd'); b.clip('evenodd');
+    b.strokeStyle = 'rgba(255,232,190,.5)'; b.lineWidth = Math.max(.8, .7 * u);
+    for (let k = 0; k < 34; k++) { const yy = -ry + rnd() * ry * 2, xx = -rx + rnd() * rx * 2; b.beginPath(); b.moveTo(xx, yy); b.bezierCurveTo(xx + 4 * u, yy - 4 * u, xx + 9 * u, yy + 3 * u, xx + 13 * u, yy - 1 * u); b.stroke(); }
+    b.restore();
+    b.strokeStyle = 'rgba(255,224,170,.55)'; b.lineWidth = Math.max(1, .9 * u); b.beginPath(); b.ellipse(mofX, my, rx * .6, ry * .5, 0, 0, 7); b.stroke();
+    // fade the left end of the skyline into the open water
+    if (!mobile) { b.globalCompositeOperation = 'destination-in'; g = b.createLinearGradient(x0, 0, x0 + R * .9, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)'); b.fillStyle = g; b.fillRect(0, 0, W, H); b.globalCompositeOperation = 'source-over'; }
+
+    // water: a faint tint (no hard edge), the compressed reflection, then a few light streaks
+    g = x.createLinearGradient(0, hy, 0, H); g.addColorStop(0, 'rgba(18,38,76,.55)'); g.addColorStop(1, 'rgba(6,18,42,0)');
+    x.fillStyle = g; x.fillRect(0, hy, W, H - hy);
+    if (!mobile) { x.save(); x.globalCompositeOperation = 'destination-out'; g = x.createLinearGradient(x0 - R * .5, 0, x0 + R * .4, 0); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, hy - 1, W, H - hy + 1); x.restore(); }
+    x.save(); x.globalAlpha = .42; x.filter = `blur(${Math.max(1, 1.4 * u * dpr).toFixed(1)}px)`;
+    x.setTransform(1, 0, 0, -.55, 0, hy * 1.55 * dpr); // mirrored about the horizon and compressed (device pixels)
+    x.drawImage(L, 0, 0);
+    x.restore();
+    x.save(); x.filter = `blur(${Math.max(.6, .6 * u * dpr).toFixed(1)}px)`;
+    for (const [lx, warm, a] of lights) { const len = (10 + rnd() * 38) * u; g = x.createLinearGradient(0, hy, 0, hy + len); g.addColorStop(0, warm ? `rgba(255,206,140,${(a * .45).toFixed(2)})` : `rgba(200,220,255,${(a * .35).toFixed(2)})`); g.addColorStop(1, 'rgba(255,206,140,0)'); x.fillStyle = g; x.fillRect(lx - .5 * u, hy + 1, 1 * u, len); }
+    x.restore();
+    x.fillStyle = 'rgba(5,17,42,.22)'; for (let yy = hy + 2 * u; yy < H; yy += 3.2 * u) x.fillRect(x0, yy, W - x0, Math.max(1, .9 * u)); // ripples
+    x.drawImage(L, 0, 0, W, H);
+    // a warm seam where the city meets the water
+    g = x.createLinearGradient(x0, 0, W, 0); g.addColorStop(0, 'rgba(255,200,140,0)'); g.addColorStop(.35, 'rgba(255,200,140,.32)'); g.addColorStop(1, 'rgba(255,200,140,.22)');
+    x.fillStyle = g; x.fillRect(x0, hy - .8 * u, W - x0, 1.4 * u);
+    // the water fades into the page at the bottom edge
+    g = x.createLinearGradient(0, H * .9, 0, H); g.addColorStop(0, 'rgba(5,17,42,0)'); g.addColorStop(1, 'rgba(5,17,42,.8)'); x.fillStyle = g; x.fillRect(0, H * .9, W, H * .1);
+  }
+
+  /* ---------- globe (animated) ---------- */
+  function frame(now) {
+    if (!W || !H || !geo) return;
+    const t = now - t0, { cx, cy, R } = geo, x = ctx;
+    const lon0 = (41 + Math.sin(t * .000055) * 5) * DEG; cL = Math.cos(lon0); sL = Math.sin(lon0);
+    x.clearRect(0, 0, W, H);
+    // atmosphere: a wide soft bloom and a brighter rim
+    let g = x.createRadialGradient(cx, cy, R * .9, cx, cy, R * 1.6); g.addColorStop(0, 'rgba(46,128,255,.2)'); g.addColorStop(.3, 'rgba(46,128,255,.07)'); g.addColorStop(1, 'rgba(46,128,255,0)');
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R * 1.6, 0, 7); x.fill();
+    g = x.createRadialGradient(cx, cy, R * .98, cx, cy, R * 1.14); g.addColorStop(0, 'rgba(80,160,255,.34)'); g.addColorStop(1, 'rgba(80,160,255,0)');
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R * 1.14, 0, 7); x.fill();
+    orbit(t, false);
+    // body: deep navy, lit from the upper left, with a luminous limb
+    g = x.createRadialGradient(cx - R * .3, cy - R * .35, R * .05, cx, cy, R);
+    g.addColorStop(0, '#173f70'); g.addColorStop(.55, '#0f2d58'); g.addColorStop(.88, '#0a2247'); g.addColorStop(1, '#0d2c5a');
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.fill();
+    g = x.createRadialGradient(cx + R * .1, cy + R * .08, R * .74, cx, cy, R);
+    g.addColorStop(0, 'rgba(80,160,255,0)'); g.addColorStop(.75, 'rgba(80,160,255,.14)'); g.addColorStop(1, 'rgba(150,210,255,.5)');
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.fill();
+    // graticule
+    x.strokeStyle = 'rgba(130,190,255,.07)'; x.lineWidth = 1; x.beginPath();
+    for (const line of GRID) { let on = false; for (const p of line) { const q = P(p); if (q[2] > 0) { on ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1]); on = true; } else on = false; } }
+    x.stroke();
+    // land dots, brighter towards the centre of the disc
+    const s = Math.max(1.1, R * .0056), buckets = [[], [], [], [], [], []];
+    for (let i = 0; i < LAND.length; i += 3) {
+      const px = LAND[i], py = LAND[i + 1], pz = LAND[i + 2];
+      const x1 = px * cL - pz * sL, z1 = px * sL + pz * cL, y2 = py * cT - z1 * sT, z2 = py * sT + z1 * cT;
+      if (z2 <= .02) continue;
+      buckets[Math.min(5, (z2 * z2 * 6.4) | 0)].push(cx + x1 * R, cy - y2 * R);
+    }
+    buckets.forEach((bk, i) => { x.fillStyle = `rgba(172,210,246,${(.16 + i * .15).toFixed(2)})`; x.beginPath(); for (let k = 0; k < bk.length; k += 2) x.rect(bk[k] - s / 2, bk[k + 1] - s / 2, s, s); x.fill(); });
+    // crisp atmospheric rim
+    x.save(); x.strokeStyle = 'rgba(150,210,255,.55)'; x.lineWidth = Math.max(1, R * .004); x.shadowColor = 'rgba(70,150,255,.9)'; x.shadowBlur = R * .05; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.stroke(); x.restore();
+    // flight routes from Dubai, each with a travelling light
+    x.lineWidth = Math.max(1, R * .0032);
+    ARCS.forEach((arc, i) => {
+      x.strokeStyle = 'rgba(240,200,110,.5)'; x.beginPath(); let on = false;
+      for (const p of arc) { const q = P(p); if (q[2] > 0 || q[3] > 1) { on ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1]); on = true; } else on = false; }
+      x.stroke();
+      const k = Math.floor(((t * .00012 + i * .17) % 1) * 48), q = P(arc[k]);
+      if (q[2] > 0 || q[3] > 1) { x.fillStyle = 'rgba(255,236,190,.85)'; x.beginPath(); x.arc(q[0], q[1], Math.max(1.4, R * .006), 0, 7); x.fill(); }
+    });
+    orbit(t, true);
+    // Dubai
+    const d = P(DXB);
+    if (d[2] > 0) {
+      const pr = (t % 2600) / 2600, r0 = R * .046;
+      g = x.createRadialGradient(d[0], d[1], 0, d[0], d[1], R * .13); g.addColorStop(0, 'rgba(255,214,120,.45)'); g.addColorStop(1, 'rgba(255,214,120,0)');
+      x.fillStyle = g; x.beginPath(); x.arc(d[0], d[1], R * .13, 0, 7); x.fill();
+      x.strokeStyle = `rgba(244,210,120,${(1 - pr) * .55})`; x.lineWidth = Math.max(1, R * .004); x.beginPath(); x.arc(d[0], d[1], r0 * (1 + pr * 1.6), 0, 7); x.stroke();
+      x.strokeStyle = '#f2cc72'; x.lineWidth = Math.max(1.5, R * .0068); x.beginPath(); x.arc(d[0], d[1], r0, 0, 7); x.stroke();
+      x.fillStyle = '#fff1c4'; x.shadowColor = 'rgba(255,200,90,.9)'; x.shadowBlur = R * .03; x.beginPath(); x.arc(d[0], d[1], R * .02, 0, 7); x.fill(); x.shadowBlur = 0;
+      const fs = Math.max(11, R * .062);
+      x.font = `650 ${fs}px "Inter Variable", Inter, "Segoe UI", sans-serif`; if ('letterSpacing' in x) x.letterSpacing = `${(fs * .06).toFixed(1)}px`;
+      x.textBaseline = 'middle'; x.fillStyle = '#f4d27c'; x.fillText('DUBAI', d[0] + R * .085, d[1] - R * .04);
+      if ('letterSpacing' in x) x.letterSpacing = '0px';
+    }
+  }
+  // two restrained orbits: a gold ring that fades out towards the copy column, and a faint blue ellipse
+  function orbit(t, front) {
+    const { cx, cy, R } = geo, x = ctx, N = 180;
+    x.lineWidth = Math.max(1, R * .003);
+    if (front) {
+      const a = 1.13 * R, bb = 1.05 * R, cr = Math.cos(-24 * DEG), sr = Math.sin(-24 * DEG); let prev = null;
+      for (let i = 0; i <= N; i++) {
+        const th = i / N * Math.PI * 2, ex = Math.cos(th) * a, ey = Math.sin(th) * bb, X = cx + ex * cr - ey * sr, Y = cy + ex * sr + ey * cr;
+        const k = Math.max(0, Math.min(1, (X - cx) / R + .15)), shimmer = .75 + .25 * Math.sin(th * 3 + t * .0004);
+        if (prev && k > 0) { x.strokeStyle = `rgba(240,200,110,${(.5 * k * k * shimmer).toFixed(3)})`; x.beginPath(); x.moveTo(prev[0], prev[1]); x.lineTo(X, Y); x.stroke(); }
+        prev = [X, Y];
+      }
+    }
+    const a = 1.16 * R, bb = .48 * R, cr = Math.cos(-12 * DEG), sr = Math.sin(-12 * DEG); let prev = null;
+    for (let i = 0; i <= N; i++) {
+      const th = i / N * Math.PI * 2, ex = Math.cos(th) * a, ey = Math.sin(th) * bb, X = cx + ex * cr - ey * sr, Y = cy + ex * sr + ey * cr;
+      const isFront = Math.sin(th) > 0, inside = (X - cx) ** 2 + (Y - cy) ** 2 < R * R;
+      if (prev && isFront === front && !(inside && !isFront)) { x.strokeStyle = `rgba(120,180,255,${isFront ? .3 : .18})`; x.beginPath(); x.moveTo(prev[0], prev[1]); x.lineTo(X, Y); x.stroke(); }
+      prev = [X, Y];
+    }
   }
   function loop(now) { if (!active || document.hidden) { raf = 0; return; } frame(now); raf = requestAnimationFrame(loop); }
   return {
-    init() { cv = $('#globeCanvas'); ctx = cv.getContext('2d'); new ResizeObserver(resize).observe(cv); resize(); },
+    init() {
+      cv = $('#globeCanvas'); ctx = cv.getContext('2d'); sky = $('#skylineCanvas'); sctx = sky.getContext('2d'); hero = $('#hero'); copy = $('.v4-copy');
+      const ro = new ResizeObserver(resize); ro.observe(hero); ro.observe(copy);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
+      resize();
+    },
     setActive(on) { active = on && !REDUCED; if (active && !raf) raf = requestAnimationFrame(loop); if (!active && REDUCED) frame(performance.now()); }
   };
 })();
@@ -407,21 +537,24 @@ function updateGlobe() { globe.setActive(state.view === 'home' && !state.wizard.
    NAVIGATION
    ===================================================================== */
 const NAV = [
-  { id: 'home', label: 'Home', icon: 'home' }, { id: 'news', label: 'Latest AI News', icon: 'news' }, { id: 'demos', label: 'Explore Demos', icon: 'demos' },
-  { id: 'tracks', label: 'Learning Tracks', icon: 'tracks' }, { id: 'sessions', label: 'Live Sessions', icon: 'sessions', badge: 'LIVE' },
-  { id: 'ask', label: 'Ask Cleared for Takeoff', icon: 'ask' }, { id: 'journey', label: 'My AI Journey', icon: 'journey', gold: true }
+  { id: 'home', label: 'Agentic AI', rail: 'Home', icon: 'home' },
+  { id: 'experiences', label: 'Experiences', icon: 'grid' },
+  { id: 'ask', label: 'AI Assistant', icon: 'ask' },
+  { id: 'about', label: 'About', rail: 'About Agentic AI', icon: 'info' }
 ];
+const VIEWS = ['home', 'experiences', 'news', 'demos', 'tracks', 'sessions', 'ask', 'journey', 'about'];
+const NAV_OF = { news: 'experiences', demos: 'experiences', tracks: 'experiences', sessions: 'experiences' }; // pages that live under Experiences
 function renderNav() {
-  $('#navItems').innerHTML = NAV.map(n => `<button class="nav-item${n.gold ? ' gold' : ''}" data-action="nav" data-view="${n.id}">${ic(n.icon)}<span>${esc(n.label)}</span>${n.badge ? `<span class="nav-badge">${n.badge}</span>` : ''}</button>`).join('');
+  $('#topNav').innerHTML = NAV.map(n => `<button class="tn-item" data-action="nav" data-view="${n.id}" data-label="${esc(n.label)}">${esc(n.label)}</button>`).join('');
+  $('#railItems').innerHTML = NAV.map(n => `<button class="rail-btn" data-action="nav" data-view="${n.id}" aria-label="${esc(n.rail || n.label)}" title="${esc(n.rail || n.label)}">${ic(n.icon)}<span class="rail-label">${esc(n.rail || n.label)}</span></button>`).join('');
 }
-const RENDER = { news: renderNews, demos: renderDemos, tracks: renderTracks, sessions: renderSessions, ask: renderAskSide, journey: renderJourney, home: renderHome };
+const RENDER = { home: () => {}, experiences: renderExperiences, news: renderNews, demos: renderDemos, tracks: renderTracks, sessions: renderSessions, ask: renderAskSide, journey: renderJourney, about: renderAbout };
 function navigate(view) {
-  if (!NAV.some(n => n.id === view)) view = 'home';
-  state.view = view;
+  if (!VIEWS.includes(view)) view = 'home';
+  state.view = view; document.body.dataset.view = view;
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
-  $$('.nav-item').forEach(b => { const on = b.dataset.view === view; b.classList.toggle('active', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-  const chat = $('#chat');
-  if (view === 'ask') $('#chatLarge').appendChild(chat); else if (view === 'home') $('#chatDock').appendChild(chat);
+  const navId = NAV_OF[view] || view;
+  $$('.tn-item, .rail-btn[data-view]').forEach(b => { const on = b.dataset.view === navId; b.classList.toggle('active', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   RENDER[view]();
   const sc = $('#view-' + view + ' .view-scroll'); if (sc) sc.scrollTop = 0;
   window.scrollTo(0, 0);
@@ -430,33 +563,41 @@ function navigate(view) {
 }
 
 /* =====================================================================
-   HOME
+   EXPERIENCES (hub for demos, learning tracks, news and live sessions)
    ===================================================================== */
-function renderHome() {
-  $('#heroStats').innerHTML = [[DATA.demos.length, 'Booth demos'], [DATA.sessions.length, 'Sessions today'], [DATA.tracks.length, 'Learning tracks'], ['4', 'Stage AI journey']]
-    .map(([n, l]) => `<div class="hero-stat"><b>${n}</b><span>${l}</span></div>`).join('');
-  const acts = [
-    { t: 'Latest AI News', d: 'Explore the latest developments in Agentic AI and government innovation.', i: 'news', a: 'data-action="nav" data-view="news"' },
-    { t: 'Explore Our Demos', d: 'Discover the demonstrations available at the GDRFA booth.', i: 'demos', a: 'data-action="nav" data-view="demos"' },
-    { t: 'Start Your AI Journey', d: 'Generate a personalized Agentic AI learning experience.', i: 'journey', a: 'data-action="start-journey"', gold: true }
+const EXP_TABS = [['experiences', 'Overview'], ['demos', 'Demos'], ['tracks', 'Learning tracks'], ['news', 'AI news'], ['sessions', 'Live sessions']];
+const expTabs = cur => `<nav class="xp-tabs" aria-label="Experiences">${EXP_TABS.map(([v, l]) => `<button class="xp-tab${v === cur ? ' active' : ''}" data-action="nav" data-view="${v}"${v === cur ? ' aria-current="page"' : ''}>${l}</button>`).join('')}</nav>`;
+const pageHead = (kicker, title, text) => `<header class="xp-head"><p class="xp-kicker">${esc(kicker)}<b aria-hidden="true"></b></p><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}</header>`;
+function renderExperiences() {
+  const ss = sessionsWithStatus(), live = ss.filter(s => s.status === 'live').length, left = ss.filter(s => s.status !== 'done').length;
+  const dest = [
+    { v: 'demos', i: 'demos', t: 'Booth demos', d: 'Six experiences showing how Agentic AI could shape residency, travel and government services.', m: `${DATA.demos.length} demos`, flag: sample(DATA.meta.demosAreIllustrative, 'Illustrative') },
+    { v: 'tracks', i: 'tracks', t: 'Learning tracks', d: 'Six curated tracks — from first steps with AI agents to leading innovation programmes.', m: `${DATA.tracks.length} tracks · ${CATALOG.courses.length} courses` },
+    { v: 'news', i: 'news', t: 'Latest AI news', d: 'Curated highlights on Agentic AI, government innovation, research and emerging technology.', m: `${DATA.news.length} stories`, flag: sample(DATA.meta.newsIsSample, 'Sample') },
+    { v: 'sessions', i: 'sessions', t: 'Live sessions', d: 'Talks, showcases and hands-on workshops running throughout the day.', m: live ? `${live} live now · ${left} left today` : `${left} left today`, flag: sample(DATA.meta.sessionsAreSample, 'Sample') }
   ];
-  $('#heroActions').innerHTML = acts.map(c => `<button class="action-card${c.gold ? ' gold' : ''}" ${c.a}><span class="ac-ic">${ic(c.i)}</span><span><h3>${c.t}</h3><p>${c.d}</p></span><span class="ac-go">${ic('arrow')}</span></button>`).join('');
-  $('#trackScroller').innerHTML = DATA.tracks.map(trackCard).join('');
+  $('#experiencesRoot').innerHTML = `<div class="xp">${expTabs('experiences')}
+    ${pageHead('Experiences', 'Explore the GDRFA booth', 'Demos, learning tracks, the latest AI news and today’s sessions.')}
+    <div class="xp-grid">${dest.map(c => `<button class="xp-card" data-action="nav" data-view="${c.v}"><span class="xp-ic">${ic(c.i)}</span><h3>${esc(c.t)}</h3><p>${esc(c.d)}</p><span class="xp-meta"><span>${esc(c.m)}${c.flag ? ' ' + c.flag : ''}</span>${ic('arrow')}</span></button>`).join('')}</div>
+    <div class="xp-lower">
+      <div class="glass booth" id="boothPanel"></div>
+      <section class="xp-journey" aria-label="My AI Journey"><span class="xp-ic gold">${ic('journey')}</span><h3>My AI Journey</h3>
+        <p>Answer three quick questions and Cleared for Takeoff will build a personalised Discover → Learn → Practice → Innovate journey.</p>
+        <p class="small">Build your journey in under 2 minutes and take home a personalised Agentic AI Passport.</p>
+        ${state.journey ? `<button class="btn btn-gold" data-action="nav" data-view="journey">${ic('journey')} View my journey</button>` : `<button class="btn btn-gold" data-action="start-journey">${ic('journey')} Start My AI Journey</button>`}
+      </section>
+    </div></div>`;
   renderBooth();
 }
 const levelPill = l => `<span class="pill${l === 'Advanced' ? ' gold' : ''}">${esc(l)}</span>`;
-function trackCard(t, i) {
-  return `<button class="track-card" data-action="open-track" data-id="${t.id}"><div class="track-art">${artSVG(t.colors, i)}<div class="ta-ic">${ic(t.icon)}</div><div class="ta-n">0${i + 1}</div></div>
-    <div class="track-body"><h4>${esc(t.title)}</h4><p>${esc(t.desc)}</p><div class="track-foot">${levelPill(t.level)}<span class="explore">Explore ${ic('arrow')}</span></div></div></button>`;
-}
 function renderBooth() {
   const ss = sessionsWithStatus(), live = ss.find(s => s.status === 'live'), up = ss.filter(s => s.status === 'upcoming'), next = up[0], later = up.slice(1, 3), now = Date.now();
-  let html = `<div class="panel-head">${ic('pin')}<h3>TODAY AT THE BOOTH</h3>${sample(DATA.meta.sessionsAreSample, 'Sample')}<span class="spacer"></span><button class="link-btn" data-action="nav" data-view="sessions">Full schedule ${ic('arrow')}</button></div><div class="booth-body">`;
+  let html = `<div class="panel-head">${ic('pin')}<h3>Today at the booth</h3>${sample(DATA.meta.sessionsAreSample, 'Sample')}<span class="spacer"></span><button class="link-btn" data-action="nav" data-view="sessions">Full schedule ${ic('arrow')}</button></div><div class="booth-body">`;
   if (live) { const pct = Math.round((now - live.start) / (live.end - live.start) * 100); html += `<button class="sess-live" data-action="open-session" data-id="${live.id}"><div class="sess-top"><i class="dot"></i>Live now · ${esc(live.type)}</div><div class="sess-title">${esc(live.title)}</div><div class="sess-meta"><span>${ic('clock')}${sessRange(live)}</span><span>${ic('pin')}${esc(zone(live.zone).label)}</span></div><div class="progress"><i style="width:${pct}%"></i></div></button>`; }
   if (next) { const mins = Math.max(1, Math.round((next.start - now) / 60000)); html += `<button class="sess-next" data-action="open-session" data-id="${next.id}"><div class="sess-top">${ic('clock')}Up next · starts in ${mins} min</div><div class="sess-title">${esc(next.title)}</div><div class="sess-meta"><span>${ic('clock')}${sessRange(next)}</span><span>${ic('pin')}${esc(zone(next.zone).label)}</span></div></button>`; }
   if (later.length) html += `<div class="sub-label">Later today</div>` + later.map(s => `<button class="sess-row" data-action="open-session" data-id="${s.id}"><time>${fmtTime(s.start)}</time><div><div class="t">${esc(s.title)}</div><div class="z">${esc(s.type)} · ${esc(zone(s.zone).label)}</div></div></button>`).join('');
   html += `<div class="sub-label">Available demos</div><div class="demo-chips">${DATA.demos.map(d => `<button class="demo-chip" data-action="open-demo" data-id="${d.id}">${ic(d.icon)}${esc(DEMO_SHORT[d.id])} <b>${esc(zone(d.zone).short)}</b></button>`).join('')}</div></div>`;
-  $('#boothPanel').innerHTML = html;
+  const el = $('#boothPanel'); if (el) el.innerHTML = html;
 }
 
 /* =====================================================================
@@ -464,8 +605,8 @@ function renderBooth() {
    ===================================================================== */
 const daysAgo = d => d === 0 ? 'Today' : d === 1 ? 'Yesterday' : `${d} days ago`;
 function renderNews() {
-  $('#newsRoot').innerHTML = `
-    <div class="view-head"><div><div class="eyebrow">${ic('live')} Cleared for Takeoff Intelligence Feed</div><h2>LATEST AI NEWS</h2><p>Curated highlights on Agentic AI, government innovation, research and emerging technology.</p></div>
+  $('#newsRoot').innerHTML = `${expTabs('news')}
+    <div class="view-head"><div><div class="eyebrow">${ic('live')} Cleared for Takeoff Intelligence Feed</div><h2>Latest AI News</h2><p>Curated highlights on Agentic AI, government innovation, research and emerging technology.</p></div>
       <div class="news-tools">${sample(DATA.meta.newsIsSample, ic('alert') + ' Sample content · not live news')}<label class="search">${ic('search')}<span class="sr-only">Search news</span><input id="newsSearch" placeholder="Search the feed" maxlength="60" value="${esc(state.newsQuery)}"></label></div></div>
     <div class="chips" id="newsChips" style="margin-bottom:1rem"></div>
     <div id="newsResults"></div>`;
@@ -491,8 +632,8 @@ function renderNewsResults() {
    DEMOS
    ===================================================================== */
 function renderDemos() {
-  $('#demosRoot').innerHTML = `
-    <div class="view-head"><div><div class="eyebrow">${ic('pin')} Around the GDRFA booth</div><h2>EXPLORE DEMOS</h2><p>Six experiences showing how Agentic AI could shape residency, travel and government services.</p></div>${sample(DATA.meta.demosAreIllustrative, ic('alert') + ' Illustrative capabilities · not all are deployed GDRFA services')}</div>
+  $('#demosRoot').innerHTML = `${expTabs('demos')}
+    <div class="view-head"><div><div class="eyebrow">${ic('pin')} Around the GDRFA booth</div><h2>Explore Demos</h2><p>Six experiences showing how Agentic AI could shape residency, travel and government services.</p></div>${sample(DATA.meta.demosAreIllustrative, ic('alert') + ' Illustrative capabilities · not all are deployed GDRFA services')}</div>
     <div class="grid grid-3">${DATA.demos.map((d, i) => `
       <button class="card" data-action="open-demo" data-id="${d.id}">
         <div class="dart">${artSVG(d.colors, i + 2, 'bg')}<span class="pill dz">${ic('pin')}${esc(zone(d.zone).label)}</span><span class="pill ${d.live ? 'live' : 'gold'} ds">${esc(d.status)}</span><div class="big-ic">${ic(d.icon)}</div></div>
@@ -507,8 +648,8 @@ function renderDemos() {
 function renderTracks() {
   const f = state.trackFilter, levels = ['all', 'Beginner', 'Intermediate', 'Advanced', 'All levels'];
   const list = DATA.tracks.filter(t => f === 'all' || t.level === f);
-  $('#tracksRoot').innerHTML = `
-    <div class="view-head"><div><div class="eyebrow">${ic('tracks')} Cleared for Takeoff Academy</div><h2>LEARNING TRACKS</h2><p>Six curated tracks — from first steps with AI agents to leading innovation programmes.</p></div>
+  $('#tracksRoot').innerHTML = `${expTabs('tracks')}
+    <div class="view-head"><div><div class="eyebrow">${ic('tracks')} Cleared for Takeoff Academy</div><h2>Learning Tracks</h2><p>Six curated tracks — from first steps with AI agents to leading innovation programmes.</p></div>
       <div class="chips">${levels.map(l => `<button class="chip${f === l ? ' active' : ''}" data-action="track-filter" data-filter="${l}">${l === 'all' ? 'All tracks' : esc(l)}</button>`).join('')}</div></div>
     <div class="grid grid-3">${list.map(t => { const i = DATA.tracks.indexOf(t); return `
       <button class="card tv-card" data-action="open-track" data-id="${t.id}">
@@ -524,8 +665,8 @@ function renderTracks() {
    LIVE SESSIONS
    ===================================================================== */
 function renderSessions() {
-  $('#sessionsRoot').innerHTML = `
-    <div class="view-head"><div><div class="eyebrow">${ic('live')} GDRFA booth programme</div><h2>LIVE SESSIONS</h2><p>Talks, showcases and hands-on workshops running throughout the day. Tap a session for details.</p></div>${sample(DATA.meta.sessionsAreSample, ic('alert') + ' Sample schedule')}</div>
+  $('#sessionsRoot').innerHTML = `${expTabs('sessions')}
+    <div class="view-head"><div><div class="eyebrow">${ic('live')} GDRFA booth programme</div><h2>Live Sessions</h2><p>Talks, showcases and hands-on workshops running throughout the day. Tap a session for details.</p></div>${sample(DATA.meta.sessionsAreSample, ic('alert') + ' Sample schedule')}</div>
     <div class="sessions-layout"><div><div class="chips" id="sessChips" style="margin-bottom:1rem"></div><div class="timeline" id="sessList"></div></div>
     <div><div class="glass map"><div class="panel-head">${ic('pin')}<h3>BOOTH MAP</h3><span class="spacer"></span><span class="small">Tap a zone to filter</span></div><div id="boothMap"></div><div class="zone-legend" id="zoneLegend"></div></div>
     <div class="glass side-box" style="margin-top:1rem;padding:1.1rem"><div class="panel-head" style="margin-bottom:.4rem">${ic('passport')}<h3 style="font-size:1.1rem">PASSPORT TIP</h3></div><p class="small" style="font-size:.82rem;line-height:1.5;color:var(--text-2)">Open a session and tap <b>“I attended this session”</b> to add it to your Agentic AI Passport.</p></div></div></div>`;
@@ -562,7 +703,19 @@ function renderSessionList() {
    ===================================================================== */
 function renderAskSide() {
   $('#askSide').innerHTML = DATA.askTopics.map(g => `<div class="glass topic-group"><h4>${ic(g.icon)}${esc(g.title)}</h4>${g.qs.map(q => `<button class="topic-q" data-action="ask" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>`).join('') +
-    `<div class="glass topic-group"><h4>${ic('info')}How this assistant works</h4><p class="small" style="font-size:.8rem;line-height:1.55;color:var(--text-2)">This booth assistant answers from the content and course catalogue in this application using transparent matching rules, so it also works without a connection. Personalised journeys use the Claude-powered course recommender. No conversation is stored.</p></div>`;
+    `<div class="glass topic-group"><h4>${ic('info')}How this assistant works</h4><p class="small" style="font-size:.8rem;line-height:1.55;color:var(--text-2)">This booth assistant answers from the content and course catalogue in this application using transparent matching rules, so it also works without a connection. Personalised journeys use the Claude-powered course recommender. No conversation is stored.</p></div>` +
+    `<div class="glass topic-group ask-journey"><h4>${ic('journey')}My AI Journey</h4><p class="small">Build your journey in under 2 minutes and take home a personalised Agentic AI Passport.</p>${state.journey ? `<button class="btn btn-gold btn-sm" data-action="nav" data-view="journey">View my journey</button>` : `<button class="btn btn-gold btn-sm" data-action="start-journey">Start My AI Journey</button>`}</div>`;
+}
+
+/* =====================================================================
+   ABOUT AGENTIC AI (built from the assistant's own answers, so the content stays in one place)
+   ===================================================================== */
+const blocksHTML = blocks => blocks.map(([t, v]) => t === 'p' ? `<p>${esc(v)}</p>` : t === 'ul' ? `<ul>${v.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="note">${esc(v)}</p>`).join('');
+function renderAbout() {
+  const sections = [['agent', 'What is Agentic AI?', R.agentic()], ['layers', 'Generative AI and Agentic AI', R.genVsAgentic()], ['gov', 'GDRFA at GITEX', R.about()], ['shield', 'Your privacy at this kiosk', R.privacy()]];
+  $('#aboutRoot').innerHTML = `<div class="xp">${pageHead('About', 'About Agentic AI', 'Your interactive guide to the Agentic AI future.')}
+    <div class="ab-grid">${sections.map(([i, t, r]) => `<section class="ab-card"><h3><span class="xp-ic">${ic(i)}</span>${esc(t)}</h3>${blocksHTML(r.blocks)}${i === 'shield' ? `<button class="btn btn-ghost btn-sm ab-reset" data-action="reset">${ic('reset')} Reset experience</button>` : ''}</section>`).join('')}</div>
+    <div class="ab-actions"><button class="btn btn-gold" data-action="nav" data-view="ask">${ic('chat')} Talk to AI</button><button class="btn btn-ghost" data-action="nav" data-view="experiences">${ic('stack')} Explore Experiences</button></div></div>`;
 }
 
 /* =====================================================================
@@ -805,7 +958,7 @@ function answer(q) {
 }
 
 function chatInit() {
-  const node = $('#chatTpl').content.firstElementChild.cloneNode(true); hydrateIcons(node); $('#chatDock').appendChild(node);
+  const node = $('#chatTpl').content.firstElementChild.cloneNode(true); hydrateIcons(node); $('#chatLarge').appendChild(node);
   $('#chatForm').addEventListener('submit', e => { e.preventDefault(); const v = $('#chatInput').value; if (state.chat.busy) { toast('One moment — the assistant is still answering.'); return; } $('#chatInput').value = ''; updateSend(); sendQuestion(v); });
   $('#chatInput').addEventListener('input', updateSend);
   chatWelcome();
@@ -1189,7 +1342,7 @@ function renderJourney() {
       <div class="stage-preview">${[['Discover', 'Explore a topic and visit a demo'], ['Learn', 'Resources and a live session'], ['Practice', 'A hands-on lab or exercise'], ['Innovate', 'Your practical next step']].map(([a, b], i) => `<div><span class="stage-num" style="margin-bottom:.6rem">${i + 1}</span><b>${a}</b><span>${b}</span></div>`).join('')}</div></div>`;
     return;
   }
-  root.innerHTML = `<div class="view-head"><div><div class="eyebrow">${ic('journey')} My AI Journey</div><h2>YOUR LEARNING ROADMAP</h2></div><div class="chips"><button class="btn btn-ghost btn-sm" data-action="start-journey">${ic('reset')} Edit my answers</button></div></div>
+  root.innerHTML = `<div class="view-head"><div><div class="eyebrow">${ic('journey')} My AI Journey</div><h2>Your Learning Roadmap</h2></div><div class="chips"><button class="btn btn-ghost btn-sm" data-action="start-journey">${ic('reset')} Edit my answers</button></div></div>
     <div class="glass profile-bar">${journeySummaryHTML(j)}</div>
     <div style="margin-top:1rem">${roadmapHTML(j)}</div>
     ${state.passport ? `<div class="passport-wrap"><canvas class="passport-canvas" id="ppCanvasView" aria-label="Your Agentic AI Passport"></canvas>${passportActionsHTML(false)}</div>` :
@@ -1256,8 +1409,7 @@ function resetExperience(silent) {
   state = freshState(); buildSchedule();
   $('#chatInput').value = ''; chatWelcome();
   $('#fileInput').value = '';
-  $('#trackScroller').scrollLeft = 0;
-  ['newsRoot', 'demosRoot', 'tracksRoot', 'sessionsRoot', 'journeyRoot'].forEach(id => { $('#' + id).innerHTML = ''; });
+  ['experiencesRoot', 'newsRoot', 'demosRoot', 'tracksRoot', 'sessionsRoot', 'journeyRoot', 'aboutRoot'].forEach(id => { $('#' + id).innerHTML = ''; });
   navigate('home');
   if (!silent) toast('Experience reset — all visitor data cleared. Ready for the next visitor!');
   return keepView;
@@ -1287,12 +1439,11 @@ const ACTIONS = {
   personalize: d => openWizard({ trackId: d.id }),
   'open-track': d => openTrack(d.id), 'open-course': d => openCourse(d.id), 'open-demo': d => openDemo(d.id), 'open-session': d => openSession(d.id), 'open-news': d => openNews(d.id),
   'close-modal': () => hideOverlay('modal'),
-  ask: d => { if (d.inchat) { sendQuestion(d.q); return; } hideOverlay('modal'); if (state.wizard.open) closeWizard(); if (state.view !== 'home' && state.view !== 'ask') navigate('ask'); sendQuestion(d.q); },
+  ask: d => { if (d.inchat) { sendQuestion(d.q); return; } hideOverlay('modal'); if (state.wizard.open) closeWizard(); if (state.view !== 'ask') navigate('ask'); sendQuestion(d.q); },
   'chat-clear': () => chatWelcome(),
   mic: () => toast('Voice input isn’t enabled in this demo — please type your question or tap a suggestion.'),
   reset: () => resetExperience(false),
   'idle-continue': () => { lastActivity = Date.now(); hideOverlay('idle'); },
-  'tracks-scroll': d => { const s = $('#trackScroller'), c = s.querySelector('.track-card'); s.scrollBy({ left: (+d.dir) * ((c ? c.offsetWidth : 280) + 14) * 2, behavior: REDUCED ? 'auto' : 'smooth' }); },
   'news-filter': d => { state.newsFilter = d.filter; if (d.clear) { state.newsQuery = ''; $('#newsSearch').value = ''; } renderNewsResults(); },
   'track-filter': d => { state.trackFilter = d.filter; renderTracks(); },
   'session-filter': d => { state.sessionFilter = d.filter; renderSessionList(); },
@@ -1347,14 +1498,8 @@ $('#fileInput').addEventListener('change', e => { handleFile(e.target.files && e
 document.addEventListener('visibilitychange', updateGlobe);
 
 /* =====================================================================
-   CLOCK + INIT
+   INIT
    ===================================================================== */
-function tickClock() {
-  const d = new Date();
-  const tz = CONFIG.eventTimezone || undefined;
-  $('#clockTime').innerHTML = `${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz })}<small>${String(d.getSeconds()).padStart(2, '0')}</small>`;
-  $('#clockDate').textContent = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
-}
 async function loadRuntimeConfig() {
   if (!CONFIG.served) return;
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 4000);
@@ -1369,15 +1514,12 @@ async function init() {
   await loadRuntimeConfig();
   buildSchedule();
   renderNav();
-  $('#skyline').innerHTML = skylineSVG();
-  $$('[data-action="tracks-scroll"]').forEach(b => { b.innerHTML = ic(+b.dataset.dir < 0 ? 'chevL' : 'chevR'); });
   hydrateIcons(document);
   chatInit();
   globe.init();
   navigate('home');
-  tickClock(); setInterval(tickClock, 1000);
   setInterval(idleTick, 1000);
-  setInterval(() => { if (state.view === 'home') renderBooth(); else if (state.view === 'sessions') renderSessionList(); }, 30000);
+  setInterval(() => { if (state.view === 'experiences') renderBooth(); else if (state.view === 'sessions') renderSessionList(); }, 30000);
 }
 init();
 
