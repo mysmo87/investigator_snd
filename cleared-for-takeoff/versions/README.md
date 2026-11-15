@@ -5,7 +5,7 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | Version | Commit | Tag | App code identical to | Screenshot (1920 × 1080) |
 |---|---|---|---|---|
 | `GOLDEN_BASELINE_V1`: original design | `da63427` | `golden-baseline-v1` | `2acec53` | `baseline/GOLDEN_BASELINE_V1.png` |
-| `HERO_REFINEMENT_V2`: first hero refinement | the commit that adds this file | `hero-refinement-v2` | `26ee83b` | `versions/HERO_REFINEMENT_V2.png` |
+| `HERO_REFINEMENT_V2`: first hero refinement | `1c1f45d` | `hero-refinement-v2` | `26ee83b` | `versions/HERO_REFINEMENT_V2.png` |
 
 Never move or delete these commits or tags. New work goes on new commits.
 
@@ -30,6 +30,6 @@ This restores the app files only; the screenshots and these notes stay as they a
 ```bash
 git fetch origin
 git tag -a golden-baseline-v1 da63427 -m "GOLDEN_BASELINE_V1"
-git tag -a hero-refinement-v2 <V2 commit> -m "HERO_REFINEMENT_V2"
+git tag -a hero-refinement-v2 1c1f45d -m "HERO_REFINEMENT_V2"
 git push origin golden-baseline-v1 hero-refinement-v2
 ```
