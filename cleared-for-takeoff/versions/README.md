@@ -8,7 +8,7 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | `HERO_REFINEMENT_V2`: first hero refinement | `1c1f45d` | `hero-refinement-v2` | `26ee83b` | `versions/HERO_REFINEMENT_V2.png` |
 | `HERO_FINAL_V3`: final hero polish | `0f542af` | `hero-final-v3` | `0f542af` | `versions/HERO_FINAL_V3.png` |
 | `PRE_V4_FULL_APP`: full app before the V4 homepage redesign (V3 plus the responsive fix) | `ccda35f` | `pre-v4-full-app` | `900a662` | `versions/PRE_V4_FULL_APP.png` |
-| `HOMEPAGE_V4_CANDIDATE`: minimal premium homepage; **candidate for review, not approved** | _set after commit_ | `homepage-v4-candidate` | _this commit_ | `versions/HOMEPAGE_V4_CANDIDATE.png` |
+| `HOMEPAGE_V4_CANDIDATE`: minimal premium homepage; **candidate for review, not approved** | `8a05c44` | `homepage-v4-candidate` | `8a05c44` | `versions/HOMEPAGE_V4_CANDIDATE.png` |
 
 Never move or delete these commits or tags. New work goes on new commits.
 
@@ -20,7 +20,7 @@ Fixes made after `HERO_FINAL_V3` keep its approved look:
 ## Look at a version without changing your branch
 ```bash
 git fetch origin
-git checkout <commit-or-tag>   # e.g. da63427, 1c1f45d, 0f542af or ccda35f
+git checkout <commit-or-tag>   # e.g. da63427, 1c1f45d, 0f542af, ccda35f or 8a05c44
 npm ci && npm start            # from the repository root, then open http://localhost:3000
 git switch -                   # back to your branch
 ```
@@ -41,5 +41,6 @@ git tag -a golden-baseline-v1 da63427 -m "GOLDEN_BASELINE_V1"
 git tag -a hero-refinement-v2 1c1f45d -m "HERO_REFINEMENT_V2"
 git tag -a hero-final-v3 0f542af -m "HERO_FINAL_V3"
 git tag -a pre-v4-full-app ccda35f -m "PRE_V4_FULL_APP"
-git push origin golden-baseline-v1 hero-refinement-v2 hero-final-v3 pre-v4-full-app
+git tag -a homepage-v4-candidate 8a05c44 -m "HOMEPAGE_V4_CANDIDATE"
+git push origin golden-baseline-v1 hero-refinement-v2 hero-final-v3 pre-v4-full-app homepage-v4-candidate
 ```
