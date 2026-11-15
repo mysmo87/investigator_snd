@@ -349,12 +349,13 @@ const globe = (() => {
     if (!W || !H) return;
     const t = now - t0, mobile = W < 700;
     ctx.clearRect(0, 0, W, H);
-    const cx = mobile ? W * .5 : W * .72, cy = mobile ? Math.min(H * .5, 340) : H * .4, R = mobile ? Math.min(W * .31, 145) : Math.min(W * .16, H * .26);
+    const cx = mobile ? W * .5 : W * .73, cy = mobile ? Math.min(H * .5, 340) : H * .4, R = mobile ? Math.min(W * .34, 160) : Math.min(W * .176, H * .286);
     const rot = theta0 + Math.sin(t * .00008) * 1.05;
     // halo + body
     ctx.lineWidth = 1;
-    let g = ctx.createRadialGradient(cx, cy, R * .6, cx, cy, R * 1.6); g.addColorStop(0, 'rgba(46,139,255,.12)'); g.addColorStop(1, 'rgba(46,139,255,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.6, 0, 7); ctx.fill();
+    // soft atmospheric bloom around the globe
+    let g = ctx.createRadialGradient(cx, cy, R * .85, cx, cy, R * 1.85); g.addColorStop(0, 'rgba(56,150,255,.2)'); g.addColorStop(.4, 'rgba(56,150,255,.07)'); g.addColorStop(1, 'rgba(56,150,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.85, 0, 7); ctx.fill();
     g = ctx.createRadialGradient(cx - R * .35, cy - R * .4, R * .1, cx, cy, R); g.addColorStop(0, 'rgba(46,120,240,.3)'); g.addColorStop(1, 'rgba(4,16,46,.92)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
     // radar sweep, kept inside a single range ring
