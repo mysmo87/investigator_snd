@@ -1,0 +1,35 @@
+# Design versions: Agentic AI: Cleared for Takeoff
+
+Every version below is a complete, working copy of the app: code, styles, assets, data, server, configuration and lockfiles. Each one is a commit on the branch `claude/gdrfa-future-radar-prototype-l65veo` of `mysmo87/investigator_snd`. The tags exist in the clone that made them; this session can't push tags, so publish them once from your own clone with the commands at the end.
+
+| Version | Commit | Tag | App code identical to | Screenshot (1920 × 1080) |
+|---|---|---|---|---|
+| `GOLDEN_BASELINE_V1`: original design | `da63427` | `golden-baseline-v1` | `2acec53` | `baseline/GOLDEN_BASELINE_V1.png` |
+| `HERO_REFINEMENT_V2`: first hero refinement | the commit that adds this file | `hero-refinement-v2` | `26ee83b` | `versions/HERO_REFINEMENT_V2.png` |
+
+Never move or delete these commits or tags. New work goes on new commits.
+
+## Look at a version without changing your branch
+```bash
+git fetch origin
+git checkout <commit-or-tag>   # e.g. da63427 or hero-refinement-v2
+npm ci && npm start            # from the repository root, then open http://localhost:3000
+git switch -                   # back to your branch
+```
+
+## Restore a version on your branch (keeps history)
+```bash
+git fetch origin
+git checkout <commit-or-tag> -- cleared-for-takeoff/public cleared-for-takeoff/server package.json package-lock.json railway.json
+git commit -m "Restore <VERSION>"
+git push                        # Railway redeploys it
+```
+This restores the app files only; the screenshots and these notes stay as they are.
+
+## Publish the tags (once, from your own clone)
+```bash
+git fetch origin
+git tag -a golden-baseline-v1 da63427 -m "GOLDEN_BASELINE_V1"
+git tag -a hero-refinement-v2 <V2 commit> -m "HERO_REFINEMENT_V2"
+git push origin golden-baseline-v1 hero-refinement-v2
+```
