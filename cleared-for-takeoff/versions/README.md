@@ -10,6 +10,9 @@ Every version below is a complete, working copy of the app: code, styles, assets
 
 Never move or delete these commits or tags. New work goes on new commits.
 
+Fixes made after `HERO_FINAL_V3` keep its approved look:
+- **Responsive fix, 1024 px overflow:** a one-line CSS fix that applies only at 1200 px and below; above that, the app looks exactly like V3. Details: `design-reviews/responsive-pass/NOTES.md`. If you restore V3 itself, the 1024 px overflow comes back.
+
 ## Look at a version without changing your branch
 ```bash
 git fetch origin
