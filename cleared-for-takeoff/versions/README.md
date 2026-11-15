@@ -7,6 +7,7 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | `GOLDEN_BASELINE_V1`: original design | `da63427` | `golden-baseline-v1` | `2acec53` | `baseline/GOLDEN_BASELINE_V1.png` |
 | `HERO_REFINEMENT_V2`: first hero refinement | `1c1f45d` | `hero-refinement-v2` | `26ee83b` | `versions/HERO_REFINEMENT_V2.png` |
 | `HERO_FINAL_V3`: final hero polish | `0f542af` | `hero-final-v3` | `0f542af` | `versions/HERO_FINAL_V3.png` |
+| `PRE_V4_FULL_APP`: full app before the V4 homepage redesign (V3 plus the responsive fix) | _set after commit_ | `pre-v4-full-app` | `900a662` | `versions/PRE_V4_FULL_APP.png` |
 
 Never move or delete these commits or tags. New work goes on new commits.
 
