@@ -314,13 +314,13 @@ function skylineSVG() {
       <linearGradient id="bkL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4d88f"/><stop offset="1" stop-color="#46d2ff" stop-opacity="0"/></linearGradient>
       <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#020817" stop-opacity=".9"/></linearGradient>
     </defs>
-    <style>.b rect{fill:url(#skyB);opacity:.75}.f>*{fill:url(#skyF);stroke:rgba(110,190,255,.45);stroke-width:1}.f .ln{fill:none;stroke:rgba(110,190,255,.7)}.f .mof{fill:none;stroke:url(#skyF)}.w rect{fill:#7cc4ff;opacity:.6}.w .wg{fill:#f4d88f}.sp line{stroke:rgba(110,190,255,.45);stroke-width:1}.sp circle{fill:#46d2ff;opacity:.8}</style>
+    <style>.b rect{fill:url(#skyB);opacity:.7}.f>*{fill:url(#skyF);stroke:rgba(110,190,255,.28);stroke-width:1}.f .ln{fill:none;stroke:rgba(110,190,255,.38)}.f .mof{fill:none;stroke:url(#skyF)}.w rect{fill:#7cc4ff;opacity:.42}.w .wg{fill:#f4d88f;opacity:.55}.sp line{stroke:rgba(110,190,255,.22);stroke-width:1}.sp circle{fill:#46d2ff;opacity:.4}</style>
     <g class="b">${back}</g>
     <g class="f">${front}${landmarks}</g>
-    <ellipse cx="763" cy="246" rx="44" ry="56" fill="none" stroke="rgba(110,190,255,.55)" stroke-width="1"/><ellipse cx="763" cy="246" rx="25" ry="37" fill="none" stroke="rgba(110,190,255,.55)" stroke-width="1"/>
+    <ellipse cx="763" cy="246" rx="44" ry="56" fill="none" stroke="rgba(110,190,255,.32)" stroke-width="1"/><ellipse cx="763" cy="246" rx="25" ry="37" fill="none" stroke="rgba(110,190,255,.32)" stroke-width="1"/>
     <g class="sp">${spokes}</g>
     <g class="w">${win}</g>
-    <line x1="${c}" y1="4" x2="${c}" y2="300" stroke="url(#bkL)" stroke-width="1.6"/>
+    <line x1="${c}" y1="4" x2="${c}" y2="300" stroke="url(#bkL)" stroke-width="1.1" opacity=".7"/>
     <circle cx="${c}" cy="2" r="2.5" fill="#f4d88f"><animate attributeName="opacity" values="1;.2;1" dur="2s" repeatCount="indefinite"/></circle>
     <rect y="230" width="${W}" height="90" fill="url(#fade)"/>
     <rect y="${H - 2}" width="${W}" height="2" fill="url(#skyG)"/>
@@ -330,15 +330,15 @@ function skylineSVG() {
 const globe = (() => {
   let cv, ctx, W = 0, H = 0, raf = 0, active = false;
   const t0 = performance.now();
-  const N = 900, pts = [];
+  const N = 700, pts = [];
   for (let i = 0; i < N; i++) { const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), phi = i * 2.399963; pts.push([Math.cos(phi) * r, y, Math.sin(phi) * r]); }
   const ll = (lat, lon) => { const a = lat * Math.PI / 180, b = -lon * Math.PI / 180; return [Math.cos(a) * Math.cos(b), Math.sin(a), Math.cos(a) * Math.sin(b)]; };
   const DXB = ll(25.2, 55.3);
-  const cities = [[51.5, -0.1], [1.35, 103.8], [40.7, -74], [35.7, 139.7], [-1.3, 36.8], [19.1, 72.9], [48.9, 2.35], [-33.9, 151.2], [30.0, 31.2], [22.3, 114.2], [24.7, 46.7], [-23.5, -46.6]].map(c => ll(c[0], c[1]));
+  // a few long-haul routes from Dubai: London, Singapore, New York, Tokyo, Nairobi, Mumbai
+  const cities = [[51.5, -0.1], [1.35, 103.8], [40.7, -74], [35.7, 139.7], [-1.3, 36.8], [19.1, 72.9]].map(c => ll(c[0], c[1]));
   const slerp = (a, b, s) => { const d = Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])), om = Math.acos(d), so = Math.sin(om) || 1; const k1 = Math.sin((1 - s) * om) / so, k2 = Math.sin(s * om) / so; return [a[0] * k1 + b[0] * k2, a[1] * k1 + b[1] * k2, a[2] * k1 + b[2] * k2]; };
   const arcs = cities.map(c => { const arr = []; for (let i = 0; i <= 40; i++) { const s = i / 40, p = slerp(DXB, c, s), l = 1 + .22 * Math.sin(Math.PI * s); arr.push([p[0] * l, p[1] * l, p[2] * l]); } return arr; });
   const theta0 = Math.atan2(-DXB[0], DXB[2]), TILT = .35;
-  const nr = rng(99), nodes = Array.from({ length: 26 }, () => ({ x: nr(), y: nr(), vx: (nr() - .5) * .00004, vy: (nr() - .5) * .00004 }));
   const grid = [];
   for (let lon = 0; lon < 360; lon += 30) { const line = []; for (let lat = -90; lat <= 90; lat += 6) line.push(ll(lat, lon)); grid.push(line); }
   for (const lat of [-60, -30, 0, 30, 60]) { const line = []; for (let lon = 0; lon <= 360; lon += 6) line.push(ll(lat, lon)); grid.push(line); }
@@ -349,58 +349,50 @@ const globe = (() => {
     if (!W || !H) return;
     const t = now - t0, mobile = W < 700;
     ctx.clearRect(0, 0, W, H);
-    const cx = mobile ? W * .5 : W * .68, cy = mobile ? Math.min(H * .5, 340) : H * .4, R = mobile ? Math.min(W * .36, 170) : Math.min(W * .19, H * .31);
+    const cx = mobile ? W * .5 : W * .72, cy = mobile ? Math.min(H * .5, 340) : H * .4, R = mobile ? Math.min(W * .31, 145) : Math.min(W * .16, H * .26);
     const rot = theta0 + Math.sin(t * .00008) * 1.05;
-    // background network
-    ctx.lineWidth = 1;
-    nodes.forEach(n => { n.x += n.vx * 16; n.y += n.vy * 16; if (n.x < 0 || n.x > 1) n.vx *= -1; if (n.y < 0 || n.y > 1) n.vy *= -1; });
-    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
-      const ax = nodes[i].x * W, ay = nodes[i].y * H, bx = nodes[j].x * W, by = nodes[j].y * H, d = Math.hypot(ax - bx, ay - by);
-      if (d < 190) { ctx.strokeStyle = `rgba(90,170,255,${(1 - d / 190) * .14})`; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); }
-    }
-    ctx.fillStyle = 'rgba(120,200,255,.35)'; nodes.forEach(n => { ctx.fillRect(n.x * W - 1, n.y * H - 1, 2, 2); });
     // halo + body
-    let g = ctx.createRadialGradient(cx, cy, R * .5, cx, cy, R * 1.75); g.addColorStop(0, 'rgba(46,139,255,.3)'); g.addColorStop(1, 'rgba(46,139,255,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.75, 0, 7); ctx.fill();
-    g = ctx.createRadialGradient(cx - R * .35, cy - R * .4, R * .1, cx, cy, R); g.addColorStop(0, 'rgba(46,120,240,.42)'); g.addColorStop(1, 'rgba(4,16,46,.9)');
+    ctx.lineWidth = 1;
+    let g = ctx.createRadialGradient(cx, cy, R * .6, cx, cy, R * 1.6); g.addColorStop(0, 'rgba(46,139,255,.12)'); g.addColorStop(1, 'rgba(46,139,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.6, 0, 7); ctx.fill();
+    g = ctx.createRadialGradient(cx - R * .35, cy - R * .4, R * .1, cx, cy, R); g.addColorStop(0, 'rgba(46,120,240,.3)'); g.addColorStop(1, 'rgba(4,16,46,.92)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
-    // radar sweep
-    const ang = (t * .0007) % (Math.PI * 2);
-    if (ctx.createConicGradient) { const cg = ctx.createConicGradient(ang - Math.PI * 2 * .9, cx, cy); cg.addColorStop(0, 'rgba(70,210,255,0)'); cg.addColorStop(.9, 'rgba(70,210,255,.28)'); cg.addColorStop(.9001, 'rgba(70,210,255,0)'); cg.addColorStop(1, 'rgba(70,210,255,0)'); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.5, 0, 7); ctx.fill(); }
-    ctx.strokeStyle = 'rgba(140,225,255,.55)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(ang) * R * 1.5, cy + Math.sin(ang) * R * 1.5); ctx.stroke();
-    // rings + ticks
-    ctx.strokeStyle = 'rgba(70,210,255,.22)'; ctx.beginPath(); ctx.arc(cx, cy, R * 1.2, 0, 7); ctx.stroke();
-    ctx.setLineDash([2, 7]); ctx.beginPath(); ctx.arc(cx, cy, R * 1.5, 0, 7); ctx.stroke(); ctx.setLineDash([]);
-    ctx.strokeStyle = 'rgba(70,210,255,.35)'; ctx.beginPath();
-    for (let k = 0; k < 72; k++) { const a = k * Math.PI / 36, l = k % 6 ? 4 : 10; ctx.moveTo(cx + Math.cos(a) * R * 1.5, cy + Math.sin(a) * R * 1.5); ctx.lineTo(cx + Math.cos(a) * (R * 1.5 + l), cy + Math.sin(a) * (R * 1.5 + l)); }
+    // radar sweep, kept inside a single range ring
+    const RR = R * 1.22, ang = (t * .00045) % (Math.PI * 2);
+    if (ctx.createConicGradient) { const cg = ctx.createConicGradient(ang - Math.PI * 2 * .9, cx, cy); cg.addColorStop(0, 'rgba(70,210,255,0)'); cg.addColorStop(.9, 'rgba(70,210,255,.12)'); cg.addColorStop(.9001, 'rgba(70,210,255,0)'); cg.addColorStop(1, 'rgba(70,210,255,0)'); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(cx, cy, RR, 0, 7); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(140,225,255,.2)'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(ang) * RR, cy + Math.sin(ang) * RR); ctx.stroke();
+    ctx.strokeStyle = 'rgba(70,210,255,.14)'; ctx.beginPath(); ctx.arc(cx, cy, RR, 0, 7); ctx.stroke();
+    ctx.strokeStyle = 'rgba(70,210,255,.22)'; ctx.beginPath();
+    for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; ctx.moveTo(cx + Math.cos(a) * RR, cy + Math.sin(a) * RR); ctx.lineTo(cx + Math.cos(a) * (RR + 5), cy + Math.sin(a) * (RR + 5)); }
     ctx.stroke();
     // graticule
-    ctx.strokeStyle = 'rgba(90,170,255,.16)'; ctx.beginPath();
+    ctx.strokeStyle = 'rgba(90,170,255,.09)'; ctx.beginPath();
     grid.forEach(line => { let prev = null; line.forEach(p => { const q = proj(p, rot, cx, cy, R); if (q[2] > 0) { prev ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); prev = q; } else prev = null; }); });
     ctx.stroke();
     // dots (bucketed by depth)
     const buckets = [[], [], [], [], []];
     pts.forEach(p => { const q = proj(p, rot, cx, cy, R); if (q[2] > 0) buckets[Math.min(4, (q[2] * 5) | 0)].push(q); });
-    buckets.forEach((b, i) => { ctx.fillStyle = `rgba(150,215,255,${.18 + i * .17})`; const s = .9 + i * .32; ctx.beginPath(); b.forEach(q => ctx.rect(q[0] - s / 2, q[1] - s / 2, s, s)); ctx.fill(); });
+    buckets.forEach((b, i) => { ctx.fillStyle = `rgba(150,215,255,${.12 + i * .12})`; const s = .8 + i * .26; ctx.beginPath(); b.forEach(q => ctx.rect(q[0] - s / 2, q[1] - s / 2, s, s)); ctx.fill(); });
     // arcs
     arcs.forEach((arr, i) => {
-      ctx.strokeStyle = 'rgba(244,216,143,.45)'; ctx.lineWidth = 1.2; ctx.beginPath(); let prev = null;
+      ctx.strokeStyle = 'rgba(244,216,143,.22)'; ctx.lineWidth = 1; ctx.beginPath(); let prev = null;
       arr.forEach(p => { const q = proj(p, rot, cx, cy, R); if (q[2] > -.05) { prev ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); prev = q; } else prev = null; });
       ctx.stroke();
       const s = (t * .00022 + i * .137) % 1, p = arr[Math.round(s * 40)], q = proj(p, rot, cx, cy, R);
-      if (q[2] > -.05) { ctx.fillStyle = 'rgba(255,240,200,.95)'; ctx.beginPath(); ctx.arc(q[0], q[1], 2.2, 0, 7); ctx.fill(); }
-      const e = proj(cities[i], rot, cx, cy, R); if (e[2] > 0) { ctx.fillStyle = 'rgba(70,210,255,.9)'; ctx.beginPath(); ctx.arc(e[0], e[1], 2.4, 0, 7); ctx.fill(); }
+      if (q[2] > -.05) { ctx.fillStyle = 'rgba(255,240,200,.55)'; ctx.beginPath(); ctx.arc(q[0], q[1], 1.6, 0, 7); ctx.fill(); }
+      const e = proj(cities[i], rot, cx, cy, R); if (e[2] > 0) { ctx.fillStyle = 'rgba(70,210,255,.5)'; ctx.beginPath(); ctx.arc(e[0], e[1], 1.7, 0, 7); ctx.fill(); }
     });
     ctx.lineWidth = 1;
     // Dubai
     const d = proj(DXB, rot, cx, cy, R);
     if (d[2] > 0) {
       const pr = (t % 2200) / 2200;
-      ctx.strokeStyle = `rgba(244,216,143,${1 - pr})`; ctx.beginPath(); ctx.arc(d[0], d[1], 4 + pr * 22, 0, 7); ctx.stroke();
-      ctx.fillStyle = '#f4d88f'; ctx.shadowColor = '#d8b15b'; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(d[0], d[1], 4.2, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
-      ctx.font = '600 11px Inter, Segoe UI, sans-serif'; ctx.fillStyle = 'rgba(244,216,143,.95)'; ctx.fillText('DUBAI', d[0] + 9, d[1] - 8);
+      ctx.strokeStyle = `rgba(244,216,143,${(1 - pr) * .7})`; ctx.beginPath(); ctx.arc(d[0], d[1], 4 + pr * 18, 0, 7); ctx.stroke();
+      ctx.fillStyle = '#f4d88f'; ctx.shadowColor = '#d8b15b'; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(d[0], d[1], 3.6, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.font = '600 10.5px Inter, Segoe UI, sans-serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '1.5px';
+      ctx.fillStyle = 'rgba(244,216,143,.9)'; ctx.fillText('DUBAI', d[0] + 9, d[1] - 8); if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
     }
-    ctx.strokeStyle = 'rgba(120,200,255,.35)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,200,255,.22)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
   }
   function loop(now) { if (!active || document.hidden) { raf = 0; return; } frame(now); raf = requestAnimationFrame(loop); }
   return {
