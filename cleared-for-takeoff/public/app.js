@@ -290,7 +290,7 @@ function paintAvatarInto(canvas, av) { const S = canvas.width; const x = canvas.
    ===================================================================== */
 const globe = (() => {
   const DEG = Math.PI / 180;
-  let cv, ctx, sky, sctx, hero, copy, W = 0, H = 0, raf = 0, active = false, geo = null;
+  let cv, ctx, sky, sctx, hero, copy, W = 0, H = 0, raf = 0, active = false, geo = null, stars = [];
   const t0 = performance.now();
   const vec = (lat, lon) => [Math.cos(lat * DEG) * Math.sin(lon * DEG), Math.sin(lat * DEG), Math.cos(lat * DEG) * Math.cos(lon * DEG)];
 
@@ -325,11 +325,12 @@ const globe = (() => {
   function layout() {
     const hr = hero.getBoundingClientRect(), cr = copy.getBoundingClientRect();
     const right = cr.right - hr.left, bottom = cr.bottom - hr.top;
-    if (W < 700) { const R = Math.min(W * .4, 190); return { cx: W * .5, cy: Math.min(H - R * .9, bottom + R + 40), R, horizon: H * .97 }; }
+    const box = { top: cr.top - hr.top, left: cr.left - hr.left, right, bottom };
+    if (W < 700) { const R = Math.min(W * .4, 190); return { cx: W * .5, cy: Math.min(H - R * .9, bottom + R + 40), R, horizon: H * .97, box, mobile: true }; }
     let R = Math.min(W * .1924, H * .3616), cx = W * .7557;
     const minLeft = right + Math.max(24, W * .02);
     if (cx - R < minLeft) { R = Math.min(R, (W - minLeft) / 1.95); cx = Math.max(cx, minLeft + R); }
-    return { cx, cy: H * .424, R, horizon: H * .821 };
+    return { cx, cy: H * .424, R, horizon: H * .821, box };
   }
 
   function resize() {
@@ -339,6 +340,7 @@ const globe = (() => {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     for (const [c, x] of [[cv, ctx], [sky, sctx]]) { c.width = Math.max(1, Math.round(W * dpr)); c.height = Math.max(1, Math.round(H * dpr)); x.setTransform(dpr, 0, 0, dpr, 0, 0); }
     geo = layout();
+    makeStars();
     drawSkyline();
     frame(performance.now());
   }
@@ -347,6 +349,7 @@ const globe = (() => {
   function drawSkyline() {
     const x = sctx, { cx, R, horizon: hy } = geo, u = H / 843, rnd = rng(20261015), dpr = sky.width / W;
     x.clearRect(0, 0, W, H);
+    drawAurora(x);
     const mobile = W < 700, x0 = mobile ? 0 : Math.max(W * .3, cx - R * 2.15), bx = cx - R * .02, mofX = bx + 150 * u, span = W - x0;
     // haze: the lower part of the globe dissolves into the city glow
     let g = x.createLinearGradient(0, hy - R * .9, 0, hy);
@@ -438,6 +441,82 @@ const globe = (() => {
     x.fillStyle = g; x.fillRect(x0, hy - .8 * u, W - x0, 1.4 * u);
     // the water fades into the page at the bottom edge
     g = x.createLinearGradient(0, H * .9, 0, H); g.addColorStop(0, 'rgba(5,17,42,0)'); g.addColorStop(1, 'rgba(5,17,42,.8)'); x.fillStyle = g; x.fillRect(0, H * .9, W, H * .1);
+    // soft vignette and a fine film grain over the whole scene (static, so it costs nothing per frame)
+    g = x.createRadialGradient(W * .6, H * .42, Math.min(W, H) * .45, W * .6, H * .42, Math.max(W, H) * .78); g.addColorStop(0, 'rgba(2,8,22,0)'); g.addColorStop(1, 'rgba(2,8,22,.45)');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    const T = 256, tile = document.createElement('canvas'); tile.width = tile.height = T;
+    const tc = tile.getContext('2d'), img = tc.createImageData(T, T), nr = rng(4242);
+    for (let i = 0; i < img.data.length; i += 4) { const v = nr(); img.data[i] = img.data[i + 1] = img.data[i + 2] = 255; img.data[i + 3] = v > .5 ? Math.round((v - .5) * 22) : 0; }
+    tc.putImageData(img, 0, 0);
+    x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = x.createPattern(tile, 'repeat'); x.fillRect(0, 0, sky.width, sky.height); x.restore();
+  }
+
+  /* ---------- night sky: sparse stars, denser towards the top, kept off the copy ---------- */
+  function makeStars() {
+    const rnd = rng(1971), n = Math.round(Math.min(170, W * H / 11000)), b = geo.box, pad = 28;
+    stars = [];
+    for (let i = 0; i < n * 3 && stars.length < n; i++) {
+      const sx = rnd() * W, sy = Math.pow(rnd(), 1.7) * geo.horizon * .7;
+      if (sx > b.left - pad && sx < b.right + pad && sy > b.top - pad && sy < b.bottom + pad) continue;
+      if ((sx - geo.cx) ** 2 + (sy - geo.cy) ** 2 < (geo.R * 1.05) ** 2) continue;
+      const big = rnd() < .06;
+      stars.push([sx, sy, big ? 1.5 + rnd() * .6 : .6 + rnd() * .8, .25 + rnd() * .55, rnd() * 6.28, .4 + rnd() * 1.2, big]);
+    }
+  }
+  /* ---------- aurora: soft light curtains across the upper sky, brightest around the globe ---------- */
+  // drawn into the static skyline layer, with the globe's disc cut out so the curtains sit behind the globe
+  function drawAurora(out) {
+    if (geo.mobile) return;
+    const dpr = cv.width / W, strips = document.createElement('canvas'); strips.width = cv.width; strips.height = cv.height;
+    const s = strips.getContext('2d'); s.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const rnd = rng(2026), ph = [0, 1, 2, 3].map(() => rnd() * 6.28), { cx } = geo;
+    const noise = x => .5 + .25 * Math.sin(x * .011 + ph[0]) + .15 * Math.sin(x * .029 + ph[1]) + .1 * Math.sin(x * .071 + ph[2]);
+    const ramp = (v, a, b) => { const k = Math.max(0, Math.min(1, (v - a) / (b - a))); return k * k * (3 - 2 * k); };
+    const left = W * .26;
+    for (let x0 = 0; x0 < W; x0 += 2) {
+      const e = ramp(x0, left, left + W * .22) * ramp(W * 1.02 - x0, 0, W * .12); if (e < .01) continue;
+      const n = noise(x0), yb = H * (.05 + .17 * Math.exp(-(((x0 - cx) / (W * .2)) ** 2))) + 10 * Math.sin(x0 * .02 + ph[3]), h = H * (.12 + .13 * n), a = e * (.2 + .8 * n) * .6;
+      const g = s.createLinearGradient(0, yb - h, 0, yb + 6);
+      g.addColorStop(0, 'rgba(96,86,220,0)'); g.addColorStop(.55, `rgba(70,124,255,${(a * .45).toFixed(3)})`); g.addColorStop(.92, `rgba(104,222,255,${a.toFixed(3)})`); g.addColorStop(1, 'rgba(104,222,255,0)');
+      s.fillStyle = g; s.fillRect(x0, yb - h, 2.2, h + 6);
+    }
+    const soft = document.createElement('canvas'); soft.width = cv.width; soft.height = cv.height;
+    const sc = soft.getContext('2d'); sc.filter = `blur(${Math.round(9 * dpr)}px)`; sc.drawImage(strips, 0, 0); sc.filter = 'none';
+    sc.globalCompositeOperation = 'destination-out'; sc.beginPath(); sc.arc(geo.cx * dpr, geo.cy * dpr, (geo.R + 1) * dpr, 0, 7); sc.fill();
+    out.save(); out.setTransform(1, 0, 0, 1, 0, 0); out.drawImage(soft, 0, 0); out.restore();
+  }
+  function drawStars(t) {
+    const x = ctx, bins = [[], [], [], [], [], []];
+    for (const st of stars) {
+      const [sx, sy, r, a, ph, sp, big] = st, tw = REDUCED ? 1 : .65 + .35 * Math.sin(t * .001 * sp + ph), al = a * tw * (1 - sy / (geo.horizon * .8));
+      if (al <= .02) continue;
+      bins[Math.min(5, (al * 7) | 0)].push(sx - r, sy - r, r * 2);
+      if (big) { const L = r * 5 * tw; x.strokeStyle = `rgba(214,232,255,${(al * .45).toFixed(3)})`; x.lineWidth = .6; x.beginPath(); x.moveTo(sx - L, sy); x.lineTo(sx + L, sy); x.moveTo(sx, sy - L); x.lineTo(sx, sy + L); x.stroke(); }
+    }
+    bins.forEach((bn, i) => { if (!bn.length) return; x.fillStyle = `rgba(214,232,255,${((i + .5) / 7).toFixed(3)})`; x.beginPath(); for (let k = 0; k < bn.length; k += 3) x.rect(bn[k], bn[k + 1], bn[k + 2], bn[k + 2]); x.fill(); });
+  }
+  /* ---------- the takeoff route: from off-screen top left, over the copy, landing on Dubai ---------- */
+  function routeAt(d, s) {
+    const top = geo.box.top, S = [-W * .02, top * .62], C1 = [W * .3, -top * .06], C2 = [W * .6, -top * .06], E = [d[0], d[1]], k = 1 - s;
+    return [k * k * k * S[0] + 3 * k * k * s * C1[0] + 3 * k * s * s * C2[0] + s * s * s * E[0], k * k * k * S[1] + 3 * k * k * s * C1[1] + 3 * k * s * s * C2[1] + s * s * s * E[1]];
+  }
+  function drawRoute(t, d) {
+    if (geo.mobile || d[2] <= 0) return;
+    const x = ctx, N = 140, pts = []; for (let i = 0; i <= N; i++) pts.push(routeAt(d, i / N));
+    // the planned route: a fine dotted line
+    x.save(); x.setLineDash([1.5, 7]); x.lineCap = 'round'; x.lineWidth = 1.4; x.strokeStyle = 'rgba(240,204,120,.32)';
+    x.beginPath(); pts.forEach((p, i) => i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1])); x.stroke(); x.restore();
+    // the aircraft light: eases along the route, leaving a fading contrail, then rests before the next departure
+    const period = 12000, travel = 8500, ph = REDUCED ? travel * .62 : t % period;
+    if (ph > travel) return;
+    const u = ph / travel, s = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2, head = Math.round(s * N), tail = Math.max(0, head - 34);
+    x.save(); x.lineCap = 'round';
+    for (let i = tail + 1; i <= head; i++) { const f = (i - tail) / (head - tail || 1); x.strokeStyle = `rgba(255,222,150,${(f * .8).toFixed(3)})`; x.lineWidth = .6 + f * 1.8; x.beginPath(); x.moveTo(pts[i - 1][0], pts[i - 1][1]); x.lineTo(pts[i][0], pts[i][1]); x.stroke(); }
+    const p = pts[head], fade = Math.min(1, ph / 500, (travel - ph) / 400);
+    let g = x.createRadialGradient(p[0], p[1], 0, p[0], p[1], 16); g.addColorStop(0, `rgba(255,232,170,${(.55 * fade).toFixed(3)})`); g.addColorStop(1, 'rgba(255,232,170,0)');
+    x.fillStyle = g; x.beginPath(); x.arc(p[0], p[1], 16, 0, 7); x.fill();
+    x.fillStyle = `rgba(255,250,232,${fade.toFixed(3)})`; x.beginPath(); x.arc(p[0], p[1], 2.2, 0, 7); x.fill();
+    x.restore();
   }
 
   /* ---------- globe (animated) ---------- */
@@ -446,6 +525,7 @@ const globe = (() => {
     const t = now - t0, { cx, cy, R } = geo, x = ctx;
     const lon0 = (41 + Math.sin(t * .000055) * 5) * DEG; cL = Math.cos(lon0); sL = Math.sin(lon0);
     x.clearRect(0, 0, W, H);
+    drawStars(t);
     // atmosphere: a wide soft bloom and a brighter rim
     let g = x.createRadialGradient(cx, cy, R * .9, cx, cy, R * 1.6); g.addColorStop(0, 'rgba(46,128,255,.2)'); g.addColorStop(.3, 'rgba(46,128,255,.07)'); g.addColorStop(1, 'rgba(46,128,255,0)');
     x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R * 1.6, 0, 7); x.fill();
@@ -486,6 +566,7 @@ const globe = (() => {
     orbit(t, true);
     // Dubai
     const d = P(DXB);
+    drawRoute(t, d);
     if (d[2] > 0) {
       const pr = (t % 2600) / 2600, r0 = R * .046;
       g = x.createRadialGradient(d[0], d[1], 0, d[0], d[1], R * .13); g.addColorStop(0, 'rgba(255,214,120,.45)'); g.addColorStop(1, 'rgba(255,214,120,0)');

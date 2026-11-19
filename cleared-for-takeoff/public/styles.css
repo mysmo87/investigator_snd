@@ -72,7 +72,9 @@ h1,h2,h3,h4,p{margin:0}
 
 /* header: brand left, navigation centred over the content column, GITEX identity right */
 .top{grid-column:1/-1;position:relative;z-index:3;display:flex;align-items:center;padding:0 3rem 0 4.3rem;
-  background:linear-gradient(90deg,#06142d 0%,#0a1b38 55%,#0b1d3b 100%);border-bottom:1px solid #22395a}
+  background:radial-gradient(34% 160% at 74% 150%,rgba(60,140,255,.2),rgba(60,140,255,0) 70%),linear-gradient(90deg,#06142d 0%,#0a1b38 55%,#0b1d3b 100%);border-bottom:1px solid #1c3150}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,rgba(120,170,230,0) 0%,rgba(120,170,230,.28) 30%,rgba(150,205,255,.7) 72%,rgba(120,170,230,.28) 92%,rgba(120,170,230,0) 100%)}
 .brand{display:flex;align-items:center;height:4.45rem;flex:none;border-radius:.4rem}
 .brand img{height:100%;width:auto;display:block}
 .logo-plate{height:5rem;padding:.35rem .75rem;border-radius:.75rem;background:#fff;display:flex;align-items:center;flex:none;box-shadow:0 0 0 1px rgba(216,177,91,.5),0 0 1.4rem rgba(46,139,255,.25)}
@@ -139,9 +141,16 @@ h1,h2,h3,h4,p{margin:0}
    HOME (V4): headline, two actions, globe and skyline
    ========================================================= */
 body[data-view="home"] .content{padding:0}
+/* background: night-sky glow along the top (brightest above the globe, fading before the headline), then the base gradient */
 .v4{position:relative;height:100%;min-height:30rem;isolation:isolate;
-  background:radial-gradient(52% 58% at 76% 40%,rgba(30,82,168,.3),rgba(30,82,168,0) 72%),linear-gradient(180deg,#041128 0%,#05132c 60%,#03112a 100%)}
+  background:radial-gradient(34% 30% at 76% 0%,rgba(64,150,255,.3),rgba(64,150,255,0) 70%),
+    radial-gradient(22% 20% at 91% 0%,rgba(110,210,255,.2),rgba(110,210,255,0) 70%),
+    radial-gradient(40% 26% at 47% 0%,rgba(44,96,214,.24),rgba(44,96,214,0) 72%),
+    radial-gradient(30% 24% at 16% 0%,rgba(46,92,206,.22),rgba(46,92,206,0) 72%),
+    radial-gradient(15% 11% at 61% 0%,rgba(236,196,118,.13),rgba(236,196,118,0) 70%),
+    radial-gradient(52% 58% at 76% 40%,rgba(30,82,168,.3),rgba(30,82,168,0) 72%),linear-gradient(180deg,#041128 0%,#05132c 60%,#03112a 100%)}
 .v4 canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+/* night-sky glow along the top of the hero: brightest above the globe, fading before it reaches the headline */
 /* --u scales the whole copy column; every size below is a multiple of it */
 .v4-copy{--u:1rem;position:absolute;left:calc(8.55 * var(--u));top:calc(11 * var(--u));z-index:2}
 .v4-title,.v4-lede{font-variation-settings:"opsz" 32} /* Inter's display cut at every viewport, so lines break the same way */
