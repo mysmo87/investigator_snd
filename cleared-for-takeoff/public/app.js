@@ -324,11 +324,12 @@ const globe = (() => {
   // where the globe goes: the V4 proportions when there is room, otherwise kept clear of the copy column
   function layout() {
     const hr = hero.getBoundingClientRect(), cr = copy.getBoundingClientRect();
-    const right = cr.right - hr.left, bottom = cr.bottom - hr.top;
-    const box = { top: cr.top - hr.top, left: cr.left - hr.left, right, bottom };
+    const ps = getComputedStyle(copy, '::before'), px = k => Math.max(0, -parseFloat(ps[k]) || 0);
+    const right = cr.right - hr.left + px('right'), bottom = cr.bottom - hr.top + px('bottom');
+    const box = { top: cr.top - hr.top - px('top'), left: cr.left - hr.left - px('left'), right, bottom };
     if (W < 700) { const R = Math.min(W * .4, 190); return { cx: W * .5, cy: Math.min(H - R * .9, bottom + R + 40), R, horizon: H * .97, box, mobile: true }; }
     let R = Math.min(W * .1924, H * .3616), cx = W * .7557;
-    const minLeft = right + Math.max(24, W * .02);
+    const minLeft = right + Math.max(18, W * .012);
     if (cx - R < minLeft) { R = Math.min(R, (W - minLeft) / 1.95); cx = Math.max(cx, minLeft + R); }
     return { cx, cy: H * .424, R, horizon: H * .821, box };
   }
@@ -355,6 +356,7 @@ const globe = (() => {
     let g = x.createLinearGradient(0, hy - R * .9, 0, hy);
     g.addColorStop(0, 'rgba(6,19,44,0)'); g.addColorStop(.7, 'rgba(6,19,44,.55)'); g.addColorStop(1, 'rgba(6,19,44,.88)');
     x.fillStyle = g; x.fillRect(0, hy - R * .9, W, R * .9);
+    if (!mobile) { x.save(); x.globalCompositeOperation = 'destination-out'; g = x.createLinearGradient(x0 - R * .5, 0, x0 + R * .4, 0); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, hy - R * .9 - 1, W, R * .9 + 2); x.restore(); }
     // dusk glow behind the city: a wide violet haze and a narrower warm band, centred near the Burj
     const glow = (gx, rx, ry, stops) => { x.save(); x.translate(gx, hy); x.scale(1, ry / rx); const gg = x.createRadialGradient(0, 0, 0, 0, 0, rx); stops.forEach(([o, c]) => gg.addColorStop(o, c)); x.fillStyle = gg; x.beginPath(); x.arc(0, 0, rx, 0, 7); x.fill(); x.restore(); };
     glow(bx - 60 * u, span * .62, 160 * u, [[0, 'rgba(186,130,148,.42)'], [.45, 'rgba(120,98,156,.2)'], [1, 'rgba(60,70,130,0)']]);

@@ -148,11 +148,27 @@ body[data-view="home"] .content{padding:0}
     radial-gradient(40% 26% at 47% 0%,rgba(44,96,214,.24),rgba(44,96,214,0) 72%),
     radial-gradient(30% 24% at 16% 0%,rgba(46,92,206,.22),rgba(46,92,206,0) 72%),
     radial-gradient(15% 11% at 61% 0%,rgba(236,196,118,.13),rgba(236,196,118,0) 70%),
+    radial-gradient(40% 48% at 4% 96%,rgba(52,106,230,.34),rgba(52,106,230,0) 70%),
+    radial-gradient(28% 32% at 33% 72%,rgba(116,88,220,.22),rgba(116,88,220,0) 70%),
+    radial-gradient(24% 34% at 0% 42%,rgba(40,156,232,.16),rgba(40,156,232,0) 70%),
     radial-gradient(52% 58% at 76% 40%,rgba(30,82,168,.3),rgba(30,82,168,0) 72%),linear-gradient(180deg,#041128 0%,#05132c 60%,#03112a 100%)}
 .v4 canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 /* night-sky glow along the top of the hero: brightest above the globe, fading before it reaches the headline */
 /* --u scales the whole copy column; every size below is a multiple of it */
 .v4-copy{--u:1rem;position:absolute;left:calc(8.55 * var(--u));top:calc(11 * var(--u));z-index:2}
+/* frosted glass pane behind the copy: translucent gradient fill, soft sheen, light-catching edge */
+.v4-copy::before,.v4-copy::after{content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:calc(1.6 * var(--u));
+  left:calc(-3.6 * var(--u));right:calc(-2.6 * var(--u));top:calc(-3.4 * var(--u));bottom:calc(-3.6 * var(--u))}
+.v4-copy::before{
+  background:linear-gradient(112deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.045) 38%,rgba(255,255,255,0) 47%),
+    radial-gradient(110% 90% at 0% 0%,rgba(190,215,255,.13),rgba(190,215,255,0) 60%),
+    radial-gradient(60% 55% at 45% 105%,rgba(52,46,170,.32),rgba(52,46,170,0) 70%),
+    radial-gradient(45% 70% at 104% 50%,rgba(20,80,200,.4),rgba(20,80,200,0) 70%),
+    linear-gradient(140deg,rgba(26,52,104,.5) 0%,rgba(2,30,82,.58) 45%,rgba(2,30,84,.6) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(255,255,255,.03),0 2.4rem 5rem rgba(1,6,20,.42)}
+.v4-copy::after{padding:1px;
+  background:linear-gradient(140deg,rgba(225,238,255,.5) 0%,rgba(160,200,255,.14) 32%,rgba(120,170,255,.06) 62%,rgba(240,204,124,.3) 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
 .v4-title,.v4-lede{font-variation-settings:"opsz" 32} /* Inter's display cut at every viewport, so lines break the same way */
 .v4-eyebrow{display:flex;align-items:center;gap:calc(1.45 * var(--u));font-size:calc(1.06 * var(--u));font-weight:500;line-height:1.2;letter-spacing:.32em;text-transform:uppercase;color:#aecbe3}
 .v4-eyebrow i{width:1px;height:1.1em;background:rgba(174,203,227,.7)}
@@ -674,9 +690,11 @@ body[data-view="home"] .content{padding:0}
   .logo-plate.clear{height:2.8rem;padding:0}
   .content{padding:.8rem 1rem 1.5rem}
   #view-home .v4{min-height:calc(100dvh - 4.4rem - 4.6rem)}
-  .v4-copy{--u:.6rem;position:relative;left:auto;top:auto;padding:2.2rem 1.2rem 0}
+  .v4-copy{--u:.6rem;position:relative;left:auto;top:auto;padding:2.2rem 1.2rem 1.4rem;margin:1rem .6rem 0}
+  .v4-copy::before,.v4-copy::after{left:0;right:0;top:0;bottom:0}
   .v4-title{white-space:normal}
-  .v4-lede{max-width:none}
+  .v4-eyebrow{letter-spacing:.2em;gap:.6rem}
+  .v4-eyebrow b{width:1.6rem}
   .v4-actions{flex-direction:column;align-items:stretch}
   .v4-btn-gold{min-width:0}
   .xp{padding:.4rem 0 1.5rem}
