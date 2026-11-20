@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GDRFA — Agentic AI: Cleared for Takeoff</title>
+<meta name="description" content="GDRFA Agentic AI: Cleared for Takeoff — interactive Agentic AI guide for the GITEX booth (demo prototype).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Inter is self-hosted (fonts/, SIL Open Font License). The optional web fonts below are used by the passport, booth map and Arabic text; the system font stack is used when offline. -->
+<link rel="preload" href="fonts/inter-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Noto+Kufi+Arabic:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="assets/gdrfa-logo.png">
+
+</head>
+<body data-view="home">
+<div class="bg-fx" aria-hidden="true"><div class="bg-grid"></div><div class="bg-stars"></div></div>
+
+<div class="app" id="app">
+  <!-- ================= NEWS TICKER ================= -->
+  <div class="ticker" id="ticker" role="region" aria-label="Latest AI news">
+    <span class="tk-label"><i class="tk-dot" aria-hidden="true"></i>AI News</span>
+    <div class="tk-viewport"><div class="tk-track" id="tickerTrack"></div></div>
+  </div>
+
+  <!-- ================= HEADER ================= -->
+  <header class="top">
+    <button class="brand" data-action="nav" data-view="home" aria-label="Home">
+      <img id="orgLogo" src="assets/gdrfa-logo-light.png" alt="Federal Authority for Identity &amp; Citizenship — General Directorate of Residency and Foreigners Affairs, Dubai">
+    </button>
+    <nav class="top-nav" id="topNav" aria-label="Main navigation"></nav>
+    <div class="clock" aria-live="off">
+      <div class="clock-time" id="clockTime">--:--</div>
+      <div class="clock-date" id="clockDate">&nbsp;</div>
+    </div>
+    <span class="gitex-badge">GITEX 2026</span>
+  </header>
+
+  <!-- ================= RAIL ================= -->
+  <nav class="rail" id="rail" aria-label="Quick navigation">
+    <div class="rail-items" id="railItems"></div>
+    <button class="rail-btn rail-reset" data-action="reset" aria-label="Reset experience: clear everything and return to the start" title="Reset experience" data-icon="reset"></button>
+  </nav>
+
+  <!-- ================= CONTENT ================= -->
+  <main class="content" id="content">
+    <!-- HOME -->
+    <section class="view active" id="view-home" aria-labelledby="homeTitle">
+      <div class="v4" id="hero">
+        <canvas id="globeCanvas" aria-hidden="true"></canvas>
+        <canvas id="skylineCanvas" aria-hidden="true"></canvas>
+        <div class="v4-copy">
+          <p class="v4-eyebrow"><span>Your passport to the future of AI</span><b aria-hidden="true"></b></p>
+          <h1 class="v4-title" id="homeTitle">Cleared for <span>Takeoff.</span></h1>
+          <p class="v4-lede">Your journey into the future of AI starts here with GDRFA.</p>
+          <div class="v4-actions">
+            <button class="v4-btn v4-btn-gold" data-action="nav" data-view="ask"><span class="v4-ic" data-icon="chat"></span><span class="v4-label">Meet Your AI Copilot</span><span class="v4-go" data-icon="arrow"></span></button>
+            <button class="v4-btn v4-btn-navy" data-action="nav" data-view="experiences"><span class="v4-ic" data-icon="stack"></span><span class="v4-label">Explore AI Destinations</span><span class="v4-go" data-icon="arrow"></span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-experiences" aria-label="Experiences"><div class="view-scroll" id="experiencesRoot"></div></section>
+    <section class="view" id="view-news" aria-label="Latest AI News"><div class="view-scroll" id="newsRoot"></div></section>
+    <section class="view" id="view-demos" aria-label="Explore Demos"><div class="view-scroll" id="demosRoot"></div></section>
+    <section class="view" id="view-tracks" aria-label="Learning Tracks"><div class="view-scroll" id="tracksRoot"></div></section>
+    <section class="view" id="view-sessions" aria-label="Live Sessions"><div class="view-scroll" id="sessionsRoot"></div></section>
+    <section class="view" id="view-ask" aria-label="AI Assistant">
+      <div class="ask-layout is-large">
+        <div class="glass ask-main" id="chatLarge"></div>
+        <div class="ask-side" id="askSide"></div>
+      </div>
+    </section>
+    <section class="view" id="view-journey" aria-label="My AI Journey"><div class="view-scroll" id="journeyRoot"></div></section>
+    <section class="view" id="view-about" aria-label="About Agentic AI"><div class="view-scroll" id="aboutRoot"></div></section>
+  </main>
+</div>
+
+<!-- Chat component (lives in the AI Assistant view) -->
+<template id="chatTpl">
+  <div class="chat" id="chat">
+    <div class="chat-head">
+      <div class="chat-ava" data-icon="radar"></div>
+      <div>
+        <h3>Ask Cleared for Takeoff</h3>
+        <p><i class="dot"></i>Booth assistant · answers from booth content</p>
+      </div>
+      <span class="spacer"></span>
+      <button class="icon-btn" data-action="chat-clear" aria-label="Start a new conversation" title="New conversation" data-icon="reset"></button>
+      <button class="icon-btn expand" data-action="nav" data-view="ask" aria-label="Open full assistant" title="Open full assistant" data-icon="expand"></button>
+    </div>
+    <div class="chat-log" id="chatLog" aria-live="polite" aria-label="Conversation"></div>
+    <div class="chat-suggest" id="chatSuggest" aria-label="Suggested questions"></div>
+    <form class="chat-input" id="chatForm" autocomplete="off">
+      <button type="button" class="mic" data-action="mic" aria-label="Voice input (not enabled in this demo)" title="Voice input is not enabled in this demo" data-icon="mic"></button>
+      <label class="sr-only" for="chatInput">Ask a question</label>
+      <input id="chatInput" maxlength="240" placeholder="Ask about Agentic AI, demos, sessions…" enterkeyhint="send">
+      <button type="submit" class="send" id="chatSend" aria-label="Send question" data-icon="send"></button>
+    </form>
+    <div class="chat-foot">Answers come from the booth’s content and course catalogue · conversations are not stored</div>
+  </div>
+</template>
+
+<!-- ================= OVERLAYS ================= -->
+<div class="overlay" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="glass modal" id="modalBox"></div></div>
+
+<div class="overlay" id="wizard" role="dialog" aria-modal="true" aria-label="Start your AI journey">
+  <div class="glass wiz">
+    <div class="wiz-head">
+      <h2>START YOUR <span>AI JOURNEY</span></h2>
+      <div class="stepper" id="wizStepper"></div>
+      <button class="icon-btn" data-action="wiz-close" aria-label="Close journey builder" data-icon="close"></button>
+    </div>
+    <div class="wiz-body" id="wizBody"></div>
+    <div class="wiz-foot" id="wizFoot"></div>
+  </div>
+</div>
+
+<div class="overlay" id="confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle"><div class="glass dialog" id="confirmBox"></div></div>
+
+<div class="overlay" id="idle" role="alertdialog" aria-modal="true" aria-labelledby="idleTitle">
+  <div class="glass dialog">
+    <div class="dialog-ic" data-icon="clock"></div>
+    <h3 id="idleTitle">Are you still there?</h3>
+    <p>For privacy, this kiosk will clear your session and return to the start screen.</p>
+    <div class="idle-count" id="idleCount">15</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-action="reset">Reset now</button>
+      <button class="btn btn-primary" data-action="idle-continue">I'm still here</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="bigscreen" aria-label="Big screen preview" role="dialog" aria-modal="true">
+  <canvas id="bsCanvas" aria-hidden="true"></canvas>
+  <div class="bs-brand" id="bsBrand"></div>
+  <button class="btn btn-ghost btn-sm bs-skip" data-action="bs-skip">Skip ✕</button>
+  <div class="bs-stage">
+    <div class="bs-ava"><img id="bsImg" alt=""></div>
+    <div class="bs-name" id="bsName"></div>
+    <div class="bs-welcome">Welcome to the Agentic AI Future</div>
+    <div class="bs-track" id="bsTrack"></div>
+  </div>
+  <div class="bs-bar"></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" hidden>
+
+<script src="data/content.js"></script>
+<script src="data/catalog.js"></script>
+<script src="shared/journey-rules.js"></script>
+<script src="shared/globe-land.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

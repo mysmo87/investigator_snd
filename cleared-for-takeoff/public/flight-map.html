@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Learning Flight Map — Agentic AI: Cleared for Takeoff</title>
+<meta name="description" content="Prototype: your AI learning agent plots a route through real courses in 3D, and re-plans when you steer it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="flight-map.css">
+<link rel="icon" href="assets/gdrfa-logo.png">
+</head>
+<body>
+<canvas id="scene" aria-label="3D map of 30 courses arranged by learning track and level. Use the panels to plan and steer your route."></canvas>
+<div id="labels" aria-hidden="true"></div>
+
+<header class="fm-top">
+  <div>
+    <p class="fm-eyebrow">Agentic AI: Cleared for Takeoff <span class="fm-proto">Prototype</span></p>
+    <h1>LEARNING <span>FLIGHT MAP</span></h1>
+    <p class="fm-sub">Your AI learning agent plots a route through 30 real courses — then re-plans when you steer it.</p>
+  </div>
+  <div class="fm-top-right">
+    <div class="fm-legend" id="legend"></div>
+    <a class="fm-btn ghost small" href="index.html">← Back to kiosk</a>
+  </div>
+</header>
+
+<!-- 1 · profile -->
+<aside class="fm-panel fm-left" id="profilePanel" aria-label="Your profile">
+  <h2><span class="num">1</span>Tell your agent about you</h2>
+  <p class="fm-label">Role</p><div class="fm-chips" id="roleChips"></div>
+  <p class="fm-label">Experience with AI</p><div class="fm-chips" id="expChips"></div>
+  <p class="fm-label">Interests <span>(pick any)</span></p><div class="fm-chips" id="interestChips"></div>
+  <button class="fm-btn gold wide" id="planBtn" data-action="plan">Plan my route</button>
+  <p class="fm-note">Only these answers are used. In this prototype the agent plans on this device; in the kiosk the same step calls Claude.</p>
+</aside>
+
+<!-- 2 · flight plan + steering -->
+<aside class="fm-panel fm-right" id="planPanel" aria-label="Flight plan">
+  <h2><span class="num">2</span>Your flight plan</h2>
+  <div id="planList" class="fm-plan"><p class="fm-empty">Plan a route to see your four waypoints here.</p></div>
+  <div class="fm-steer" id="steer">
+    <h3>Steer your agent</h3>
+    <p class="fm-label">Time per course</p>
+    <div class="fm-seg" id="timeSeg" role="radiogroup" aria-label="Time per course"></div>
+    <div class="fm-toggles">
+      <button class="fm-toggle" data-action="toggle" data-key="freeOnly" aria-pressed="false"><i></i>Free courses only</button>
+      <button class="fm-toggle" data-action="toggle" data-key="handsOn" aria-pressed="false"><i></i>Prefer hands-on</button>
+    </div>
+    <div id="pins"></div>
+  </div>
+  <button class="fm-btn gold wide" id="takeoffBtn" data-action="takeoff" disabled>Cleared for takeoff ✈</button>
+</aside>
+
+<!-- agent console -->
+<div class="fm-console" id="console" role="status" aria-live="polite">
+  <div class="fm-agent-dot"></div>
+  <div class="fm-console-body">
+    <div class="fm-steps" id="steps"></div>
+    <p id="consoleText">Your learning agent is standing by. Tell it about you, then press <b>Plan my route</b>.</p>
+  </div>
+</div>
+
+<!-- course card -->
+<section class="fm-card" id="courseCard" hidden aria-live="polite"></section>
+
+<!-- end card -->
+<section class="fm-end" id="endCard" hidden></section>
+
+<div class="fm-nogl" id="noWebgl" hidden>
+  <h2>3D isn’t available on this device</h2>
+  <p>This browser or graphics card can’t run WebGL. The full journey is still available in the kiosk.</p>
+  <a class="fm-btn gold" href="index.html">Open the kiosk</a>
+</div>
+
+<script src="data/content.js"></script>
+<script src="data/catalog.js"></script>
+<script src="shared/journey-rules.js"></script>
+<script type="module" src="flight-map.js"></script>
+</body>
+</html>
