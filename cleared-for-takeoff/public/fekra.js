@@ -106,9 +106,12 @@
   const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
   const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? String(u) : null;
   /* Plain text with "- " lists, **bold** and [S1] source markers -> safe HTML. */
-  function rich(text, sources) {
+  function inlineHTML(text, sources) {
     const srcMap = new Map((sources || []).map(s => [s.id, s]));
-    const inline = s => esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\[(S\d{1,2})\]/g, (m, id) => { const src = srcMap.get(id); const u = src && safeUrl(src.url); return u ? `<a class="fk-cite" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(src.title)}">${id.slice(1)}</a>` : ''; });
+    return esc(text).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\[(S\d{1,2})\]/g, (m, id) => { const src = srcMap.get(id); const u = src && safeUrl(src.url); return u ? `<a class="fk-cite" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(src.title)}">${id.slice(1)}</a>` : ''; });
+  }
+  function rich(text, sources) {
+    const inline = s => inlineHTML(s, sources);
     let html = '', list = [];
     const flush = () => { if (list.length) { html += `<ul>${list.map(li => `<li>${inline(li)}</li>`).join('')}</ul>`; list = []; } };
     String(text || '').split(/\n/).forEach(line => {
@@ -212,14 +215,15 @@
   }
   function checkHTML(c) {
     const L = t(), srcs = c.sources || [], cite = ids => (ids || []).map(id => { const s = srcs.find(x => x.id === id), u = s && safeUrl(s.url); return u ? `<a class="fk-cite" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(s.title)}">${esc(id.slice(1))}</a>` : ''; }).join('');
-    const list = (title, items) => items && items.length ? `<div><h5>${esc(title)}</h5><ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
+    const inl = x => inlineHTML(x, srcs);
+    const list = (title, items) => items && items.length ? `<div><h5>${esc(title)}</h5><ul>${items.map(x => `<li>${inl(x)}</li>`).join('')}</ul></div>` : '';
     return `<article class="fk-check st-${esc(c.status)}">
       <div class="fk-check-head"><span class="fk-badge">${esc(L.status[c.status] || c.status)}</span><span class="fk-check-meta">${esc(c.searched ? L.checkMeta(srcs.length, dateStr(c.checkedAt)) : L.checkMetaNone(dateStr(c.checkedAt)))}</span></div>
-      ${c.summary ? `<p class="fk-check-sum">${esc(c.summary)}</p>` : ''}
-      ${c.similar && c.similar.length ? `<h5>${esc(L.similar)}</h5><ul class="fk-similar">${c.similar.map(x => `<li><b>${esc(x.name)}</b>${x.where ? ` <span class="fk-where">${esc(x.where)}</span>` : ''}${L.closeness[x.closeness] ? ` <span class="fk-close c-${esc(x.closeness)}">${esc(L.closeness[x.closeness])}</span>` : ''}<br>${esc(x.description)} ${cite(x.sources)}</li>`).join('')}</ul>` : ''}
+      ${c.summary ? `<p class="fk-check-sum">${inl(c.summary)}</p>` : ''}
+      ${c.similar && c.similar.length ? `<h5>${esc(L.similar)}</h5><ul class="fk-similar">${c.similar.map(x => `<li><b>${esc(x.name)}</b>${x.where ? ` <span class="fk-where">${esc(x.where)}</span>` : ''}${L.closeness[x.closeness] ? ` <span class="fk-close c-${esc(x.closeness)}">${esc(L.closeness[x.closeness])}</span>` : ''}<br>${inl(x.description)} ${cite(x.sources)}</li>`).join('')}</ul>` : ''}
       <div class="fk-cols">${list(L.exists, c.alreadyExists)}${list(L.different, c.different)}</div>
       ${list(L.opportunities, c.opportunities)}
-      <h5>${esc(L.limitations)}</h5><ul>${(c.limitations || []).map(x => `<li>${esc(x)}</li>`).join('')}<li>${esc(L.notProof)}</li></ul>
+      <h5>${esc(L.limitations)}</h5><ul>${(c.limitations || []).map(x => `<li>${inl(x)}</li>`).join('')}<li>${esc(L.notProof)}</li></ul>
       ${srcs.length ? `<h5>${esc(L.sources)}</h5><ol class="fk-sources">${srcs.map(s => { const u = safeUrl(s.url); return u ? `<li><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(s.title || host(u))}</a> <small>${esc(host(u))}</small></li>` : ''; }).join('')}</ol>` : ''}
       <p class="fk-ai-note">${ic('info')}${esc(L.aiWritten)}</p>
     </article>`;
