@@ -10,6 +10,7 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | `PRE_V4_FULL_APP`: full app before the V4 homepage redesign (V3 plus the responsive fix) | `ccda35f` | `pre-v4-full-app` | `900a662` | `versions/PRE_V4_FULL_APP.png` |
 | `HOMEPAGE_V4_CANDIDATE`: minimal premium homepage; **candidate for review, not approved** | `8a05c44` | `homepage-v4-candidate` | `8a05c44` | `versions/HOMEPAGE_V4_CANDIDATE.png` |
 | **`MASTER_V4`: the master version.** V4 homepage with the new copy, night sky, liquid-glass card, glass header, clock and aligned logo | `ec48b96` | `master-v4` | `ec48b96` | `versions/MASTER_V4.png` |
+| `NEWS_TICKER_V1`: MASTER_V4 plus a TV-style news ticker across the top (experiment) | `4be3630` | | `4be3630` | `versions/NEWS_TICKER_V1.png` |
 
 Never move or delete these commits or tags. New work goes on new commits.
 
