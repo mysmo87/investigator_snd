@@ -599,7 +599,8 @@ const globe = (() => {
     for (let i = 0; i <= N; i++) {
       const th = i / N * Math.PI * 2, ex = Math.cos(th) * a, ey = Math.sin(th) * bb, X = cx + ex * cr - ey * sr, Y = cy + ex * sr + ey * cr;
       const isFront = Math.sin(th) > 0, inside = (X - cx) ** 2 + (Y - cy) ** 2 < R * R;
-      if (prev && isFront === front && !(inside && !isFront)) { x.strokeStyle = `rgba(120,180,255,${isFront ? .3 : .18})`; x.beginPath(); x.moveTo(prev[0], prev[1]); x.lineTo(X, Y); x.stroke(); }
+      const clear = Math.max(0, Math.min(1, (X - geo.box.right - 12) / (R * .12))); // fades out before the glass card
+      if (prev && clear > 0 && isFront === front && !(inside && !isFront)) { x.strokeStyle = `rgba(120,180,255,${((isFront ? .3 : .18) * clear).toFixed(3)})`; x.beginPath(); x.moveTo(prev[0], prev[1]); x.lineTo(X, Y); x.stroke(); }
       prev = [X, Y];
     }
   }
