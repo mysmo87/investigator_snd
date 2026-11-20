@@ -11,6 +11,7 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | `HOMEPAGE_V4_CANDIDATE`: minimal premium homepage; **candidate for review, not approved** | `8a05c44` | `homepage-v4-candidate` | `8a05c44` | `versions/HOMEPAGE_V4_CANDIDATE.png` |
 | **`MASTER_V4`: the master version.** V4 homepage with the new copy, night sky, liquid-glass card, glass header, clock and aligned logo | `ec48b96` | `master-v4` | `ec48b96` | `versions/MASTER_V4.png` |
 | `NEWS_TICKER_V1`: MASTER_V4 plus a TV-style news ticker across the top (experiment) | `4be3630` | | `4be3630` | `versions/NEWS_TICKER_V1.png` |
+| `FEKRA_OPTION_B`: NEWS_TICKER_V1 plus the Fekra \| Submit a Proposal button under the two main actions | `a754b9e` | | `a754b9e` | `versions/FEKRA_OPTION_B.png` |
 
 Never move or delete these commits or tags. New work goes on new commits.
 
