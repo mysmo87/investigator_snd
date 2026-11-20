@@ -72,7 +72,7 @@ h1,h2,h3,h4,p{margin:0}
 
 /* header: brand left, navigation centred over the content column, GITEX identity right */
 /* translucent deep-navy glass: the space behind shows through softly, with a little more blue towards the globe */
-.top{grid-column:1/-1;position:relative;z-index:3;display:flex;align-items:center;padding:0 3rem 0 4.3rem;
+.top{grid-column:1/-1;position:relative;z-index:3;display:flex;align-items:center;padding:0 3rem 0 calc((var(--rail) - 1px - 4rem) / 2 - 6.2rem * 8 / 163); /* logo's visible edge lines up with the rail buttons */
   background:radial-gradient(38% 190% at 78% 135%,rgba(70,150,255,.12),rgba(70,150,255,0) 72%),
     linear-gradient(90deg,rgba(4,12,30,.2) 0%,rgba(4,12,30,0) 55%),
     linear-gradient(180deg,rgba(5,15,36,.8) 0%,rgba(6,18,42,.64) 58%,rgba(8,24,54,.4) 100%);
