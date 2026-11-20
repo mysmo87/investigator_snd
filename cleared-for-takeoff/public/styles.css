@@ -91,7 +91,7 @@ body[data-view="home"] .app::before{content:"";position:absolute;left:var(--rail
     radial-gradient(40% 16rem at 47% 100%,rgba(44,96,214,.24),rgba(44,96,214,0) 72%),
     radial-gradient(30% 14.5rem at 16% 100%,rgba(46,92,206,.22),rgba(46,92,206,0) 72%),
     #041128}
-.brand{display:flex;align-items:center;height:4.45rem;flex:none;border-radius:.4rem}
+.brand{display:flex;align-items:center;height:6.2rem;flex:none;border-radius:.4rem}
 .brand img{height:100%;width:auto;display:block}
 .logo-plate{height:5rem;padding:.35rem .75rem;border-radius:.75rem;background:#fff;display:flex;align-items:center;flex:none;box-shadow:0 0 0 1px rgba(216,177,91,.5),0 0 1.4rem rgba(46,139,255,.25)}
 .logo-plate img{height:100%;width:auto;display:block}
@@ -102,7 +102,12 @@ body[data-view="home"] .app::before{content:"";position:absolute;left:var(--rail
 .tn-item:hover{color:#fff}
 .tn-item.active{color:#fff;font-weight:600}
 .tn-item.active::after{content:"";position:absolute;left:50%;bottom:1.55rem;width:3.5rem;height:.19rem;transform:translateX(-50%);border-radius:.2rem;background:linear-gradient(90deg,#f0cb72,#d8ac52)}
-.gitex-badge{margin-left:auto;padding:.72rem 1.35rem;font-size:1.05rem;font-weight:600;line-height:1;letter-spacing:.12em;color:#f3d27a;white-space:nowrap;
+/* the original clock: large time with small seconds, the date underneath, right-aligned next to the badge */
+.clock{margin-left:auto;margin-right:1.6rem;text-align:right}
+.clock-time{font-family:"Rajdhani","Bahnschrift","Segoe UI",system-ui,sans-serif;font-size:2.05rem;font-weight:600;letter-spacing:.06em;line-height:1;font-variant-numeric:tabular-nums}
+.clock-time small{font-size:.9rem;color:var(--text-3);margin-left:.25rem}
+.clock-date{font-size:.78rem;color:var(--text-2);margin-top:.25rem;letter-spacing:.04em}
+.gitex-badge{padding:.72rem 1.35rem;font-size:1.05rem;font-weight:600;line-height:1;letter-spacing:.12em;color:#f3d27a;white-space:nowrap;
   border:1.5px solid rgba(216,177,91,.78);border-radius:.5rem;background:rgba(8,22,46,.55)}
 .dot{width:.5rem;height:.5rem;border-radius:50%;background:var(--live);box-shadow:0 0 .6rem var(--live);display:inline-block;flex:none;animation:blink 2s infinite}
 @keyframes blink{50%{opacity:.45}}
@@ -674,7 +679,7 @@ body[data-view="home"] .content{padding:0}
    RESPONSIVE
    ========================================================= */
 @media (max-width:1400px){ .booth .panel-head{flex-wrap:wrap;row-gap:.35rem} }
-@media (max-width:1100px) and (min-width:761px){ .v4-copy{--u:.85rem} }
+@media (max-width:1100px) and (min-width:761px){ .v4-copy{--u:.85rem} .clock-date{display:none} .clock{margin-right:1.1rem} }
 @media (max-width:1200px){
   body{overflow:auto;height:auto}
   .app{height:auto;min-height:100dvh}
@@ -701,6 +706,7 @@ body[data-view="home"] .content{padding:0}
   .top-nav{display:none}
   .brand{height:2.9rem}
   .gitex-badge{font-size:.72rem;padding:.45rem .7rem}
+  .clock{margin-right:.6rem}.clock-time{font-size:1.4rem}.clock-date{display:none}
   .rail{position:fixed;left:0;right:0;bottom:0;z-index:40;flex-direction:row;padding:.35rem .4rem calc(.35rem + env(safe-area-inset-bottom));gap:.1rem;border-right:0;border-top:1px solid var(--line-2);background:rgba(4,12,30,.97)}
   .rail-items{flex-direction:row;flex:1;gap:.1rem}
   .rail-btn{flex:1 1 0;width:auto;height:auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:.2rem;padding:.4rem .1rem;font-size:.6rem;line-height:1.15;text-align:center}

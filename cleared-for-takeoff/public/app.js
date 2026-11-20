@@ -1584,6 +1584,12 @@ document.addEventListener('visibilitychange', updateGlobe);
 /* =====================================================================
    INIT
    ===================================================================== */
+function tickClock() {
+  const d = new Date();
+  const tz = CONFIG.eventTimezone || undefined;
+  $('#clockTime').innerHTML = `${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz })}<small>${String(d.getSeconds()).padStart(2, '0')}</small>`;
+  $('#clockDate').textContent = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
+}
 async function loadRuntimeConfig() {
   if (!CONFIG.served) return;
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 4000);
@@ -1602,6 +1608,7 @@ async function init() {
   chatInit();
   globe.init();
   navigate('home');
+  tickClock(); setInterval(tickClock, 1000);
   setInterval(idleTick, 1000);
   setInterval(() => { if (state.view === 'experiences') renderBooth(); else if (state.view === 'sessions') renderSessionList(); }, 30000);
 }

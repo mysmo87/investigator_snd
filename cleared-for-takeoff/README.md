@@ -80,7 +80,7 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `ANTHROPIC_API_KEY` | **Yes, for AI** | — | Claude API key (mark it as a secret). Without it the kiosk runs on the offline rules. |
 | `PUBLIC_BASE_URL` | Recommended | page URL | Base URL put in passport QR codes, e.g. `https://takeoff.example.ae`. Set it if you use a custom domain. |
 | `SCHEDULE_MODE` | Recommended on event day | `relative` | `relative` builds a demo schedule around "now"; `fixed` uses each session's `time` in `content.js`. |
-| `EVENT_TIMEZONE` | No | `Asia/Dubai` | Time zone for fixed session times. |
+| `EVENT_TIMEZONE` | No | `Asia/Dubai` | Time zone for fixed session times and the on-screen clock. |
 | `ANTHROPIC_MODEL` | No | `claude-opus-5-5` | Model used by the recommender. |
 | `AI_EFFORT` | No | `low` | `low`, `medium`, `high`, `xhigh` or `max`. Higher means slower and more expensive per journey. |
 | `AI_TIMEOUT_MS` | No | `20000` | After this, the offline rules are used. |
