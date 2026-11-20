@@ -1584,6 +1584,17 @@ document.addEventListener('visibilitychange', updateGlobe);
 /* =====================================================================
    INIT
    ===================================================================== */
+/* news ticker: the latest headlines crawl across the top; each one opens its story */
+function renderTicker() {
+  const items = [...DATA.news].sort((a, b) => a.days - b.days);
+  const run = hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}>${items.map(n => `<button class="tk-item" data-action="open-news" data-id="${n.id}"${hidden ? ' tabindex="-1"' : ''}><span class="tk-cat">${esc(CAT_LABEL[n.cat])}</span>${esc(n.title)}</button><i class="tk-sep" aria-hidden="true"></i>`).join('')}${DATA.meta.newsIsSample ? '<span class="tk-note">Sample headlines</span><i class="tk-sep" aria-hidden="true"></i>' : ''}</div>`;
+  const track = $('#tickerTrack'); track.innerHTML = run(false) + run(true);
+  // a constant reading speed whatever the screen size or number of headlines
+  const pace = () => { const w = track.firstElementChild.getBoundingClientRect().width, rem = parseFloat(getComputedStyle(document.documentElement).fontSize); if (w) track.style.animationDuration = `${(w / (rem * 4.6)).toFixed(1)}s`; };
+  new ResizeObserver(pace).observe(track.firstElementChild);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(pace);
+  pace();
+}
 function tickClock() {
   const d = new Date();
   const tz = CONFIG.eventTimezone || undefined;
@@ -1608,6 +1619,7 @@ async function init() {
   chatInit();
   globe.init();
   navigate('home');
+  renderTicker();
   tickClock(); setInterval(tickClock, 1000);
   setInterval(idleTick, 1000);
   setInterval(() => { if (state.view === 'experiences') renderBooth(); else if (state.view === 'sessions') renderSessionList(); }, 30000);

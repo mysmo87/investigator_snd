@@ -19,7 +19,7 @@
   --f-display:"Inter Variable","Inter","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
   --f-body:"Inter Variable","Inter","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
   --f-ar:"Noto Kufi Arabic","Segoe UI","Tahoma",sans-serif;
-  --rail:6.3rem; --hdr:7rem;
+  --rail:6.3rem; --hdr:7rem; --tick:2.8rem;
   --ease:cubic-bezier(.22,.8,.26,1);
 }
 /* 1rem = 16px at 1920×1080; scales with the smaller of width/height */
@@ -60,7 +60,7 @@ h1,h2,h3,h4,p{margin:0}
 /* =========================================================
    SHELL
    ========================================================= */
-.app{position:relative;z-index:1;display:grid;grid-template-columns:var(--rail) minmax(0,1fr);grid-template-rows:var(--hdr) minmax(0,1fr);height:100vh;height:100dvh}
+.app{position:relative;z-index:1;display:grid;grid-template-columns:var(--rail) minmax(0,1fr);grid-template-rows:var(--tick) var(--hdr) minmax(0,1fr);height:100vh;height:100dvh}
 .glass{
   position:relative;border-radius:var(--r-lg);border:1px solid var(--line);
   background:linear-gradient(160deg,var(--panel-a),var(--panel-b));
@@ -72,7 +72,7 @@ h1,h2,h3,h4,p{margin:0}
 
 /* header: brand left, navigation centred over the content column, GITEX identity right */
 /* translucent deep-navy glass: the space behind shows through softly, with a little more blue towards the globe */
-.top{grid-column:1/-1;position:relative;z-index:3;display:flex;align-items:center;padding:0 3rem 0 calc((var(--rail) - 1px - 4rem) / 2 - 6.2rem * 8 / 163); /* logo's visible edge lines up with the rail buttons */
+.top{grid-column:1/-1;grid-row:2;position:relative;z-index:3;display:flex;align-items:center;padding:0 3rem 0 calc((var(--rail) - 1px - 4rem) / 2 - 6.2rem * 8 / 163); /* logo's visible edge lines up with the rail buttons */
   background:radial-gradient(38% 190% at 78% 135%,rgba(70,150,255,.12),rgba(70,150,255,0) 72%),
     linear-gradient(90deg,rgba(4,12,30,.2) 0%,rgba(4,12,30,0) 55%),
     linear-gradient(180deg,rgba(5,15,36,.8) 0%,rgba(6,18,42,.64) 58%,rgba(8,24,54,.4) 100%);
@@ -84,7 +84,7 @@ h1,h2,h3,h4,p{margin:0}
 /* on Home the starfield behind the app is fully covered by the hero, so its twinkle is paused there (no visible change)
    and the header's blur does not have to be recomputed every frame */
 body[data-view="home"] .bg-stars{animation:none}
-body[data-view="home"] .app::before{content:"";position:absolute;left:var(--rail);right:0;top:0;height:calc(var(--hdr) + 2px);z-index:-1;pointer-events:none;
+body[data-view="home"] .app::before{content:"";position:absolute;left:var(--rail);right:0;top:var(--tick);height:calc(var(--hdr) + 2px);z-index:-1;pointer-events:none;
   background:radial-gradient(34% 9rem at 60% 100%,rgba(70,170,240,.24),rgba(70,170,240,0) 70%),
     radial-gradient(34% 18rem at 76% 100%,rgba(64,150,255,.3),rgba(64,150,255,0) 70%),
     radial-gradient(22% 12rem at 91% 100%,rgba(110,210,255,.2),rgba(110,210,255,0) 70%),
@@ -113,7 +113,7 @@ body[data-view="home"] .app::before{content:"";position:absolute;left:var(--rail
 @keyframes blink{50%{opacity:.45}}
 
 /* rail: the slim icon navigation from the V4 design, with Reset at the foot */
-.rail{grid-row:2;display:flex;flex-direction:column;align-items:center;padding:5.2rem 0 1.6rem;min-height:0;z-index:2;background:#06142d;border-right:1px solid #0f2343}
+.rail{grid-row:3;display:flex;flex-direction:column;align-items:center;padding:5.2rem 0 1.6rem;min-height:0;z-index:2;background:#06142d;border-right:1px solid #0f2343}
 .rail-items{display:flex;flex-direction:column;align-items:center;gap:1.2rem}
 .rail-btn{width:4rem;height:4rem;display:grid;place-items:center;border-radius:.6rem;color:rgba(162,194,234,.85);border:1px solid transparent;transition:color .2s,background-color .2s,border-color .2s}
 .rail-btn .ic{width:1.75rem;height:1.75rem;stroke-width:1.5}
@@ -124,7 +124,29 @@ body[data-view="home"] .app::before{content:"";position:absolute;left:var(--rail
 .rail-reset .ic{width:1.45rem;height:1.45rem}
 
 /* content */
-.content{position:relative;min-height:0;min-width:0;padding:1rem 1.25rem 1.25rem}
+.content{grid-row:3;grid-column:2;position:relative;min-height:0;min-width:0;padding:1rem 1.25rem 1.25rem}
+
+/* news ticker: a TV-style crawl across the top, label aligned with the logo and rail */
+.ticker{grid-column:1/-1;grid-row:1;position:relative;z-index:4;display:flex;align-items:stretch;height:var(--tick);overflow:hidden;
+  background:linear-gradient(90deg,#030b1f 0%,#05112a 55%,#071631 100%);border-bottom:1px solid rgba(200,222,255,.08)}
+.tk-label{position:relative;flex:none;display:flex;align-items:center;gap:.65rem;padding:0 2.1rem 0 calc((var(--rail) - 1px - 4rem) / 2);
+  font-size:.9rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#1a1306;
+  background:linear-gradient(180deg,#f0cd78 0%,#d6a952 100%);clip-path:polygon(0 0,100% 0,calc(100% - 1rem) 100%,0 100%)}
+.tk-dot{width:.55rem;height:.55rem;border-radius:50%;background:#c2261c;box-shadow:0 0 0 .2rem rgba(194,38,28,.22);animation:tkPulse 1.6s ease-in-out infinite}
+@keyframes tkPulse{50%{opacity:.35}}
+.tk-viewport{position:relative;flex:1;min-width:0;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 2.5rem,#000 calc(100% - 4rem),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 2.5rem,#000 calc(100% - 4rem),transparent 100%)}
+.tk-track{display:flex;width:max-content;height:100%;animation:tkCrawl 90s linear infinite;will-change:transform}
+@media (hover:hover) and (pointer:fine){.ticker:hover .tk-track{animation-play-state:paused}} /* touch taps don't leave it frozen */
+.ticker:has(:focus-visible) .tk-track{animation-play-state:paused}
+@keyframes tkCrawl{to{transform:translateX(-50%)}}
+.tk-run{flex:none;display:flex;align-items:center;padding-left:2.2rem}
+.tk-item{display:inline-flex;align-items:center;gap:.75rem;height:100%;font-size:1.02rem;font-weight:500;color:#e6edf8;white-space:nowrap;transition:color .2s}
+.tk-item:hover{color:#fff}
+.tk-cat{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#7fd0ff}
+.tk-sep{flex:none;width:.4rem;height:.4rem;margin:0 1.7rem;transform:rotate(45deg);background:#d8b15b;opacity:.85}
+.tk-note{font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--warn);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.tk-track{animation:none}.tk-viewport{overflow-x:auto}}
 .view{display:none;height:100%;min-height:0}
 .view.active{display:block;animation:viewIn .5s var(--ease)}
 @keyframes viewIn{from{opacity:0;transform:translateY(.6rem)}to{opacity:1;transform:none}}
@@ -686,7 +708,7 @@ body[data-view="home"] .content{padding:0}
   .content{padding-bottom:1.5rem}
   .view.active{height:auto}
   .view-scroll{height:auto;overflow:visible}
-  #view-home .v4{height:auto;min-height:calc(100vh - var(--hdr));min-height:calc(100dvh - var(--hdr))}
+  #view-home .v4{height:auto;min-height:calc(100vh - var(--hdr) - var(--tick));min-height:calc(100dvh - var(--hdr) - var(--tick))}
   .xp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .xp-lower,.ab-grid{grid-template-columns:1fr}
   .grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -699,9 +721,11 @@ body[data-view="home"] .content{padding:0}
 }
 @media (max-width:760px){
   html{font-size:15px}
-  :root{--hdr:auto}
+  :root{--hdr:auto;--tick:2.4rem}
   html,body{overflow-x:hidden}
   .app{grid-template-columns:minmax(0,1fr);padding-bottom:4.6rem}
+  .content{grid-column:1}
+  .tk-label{padding:0 1.5rem 0 1rem;font-size:.72rem}.tk-item{font-size:.86rem}
   .top{padding:.7rem 1rem;gap:.6rem}
   .top-nav{display:none}
   .brand{height:2.9rem}
@@ -716,7 +740,7 @@ body[data-view="home"] .content{padding:0}
   .logo-plate{height:3rem;padding:.25rem .5rem}
   .logo-plate.clear{height:2.8rem;padding:0}
   .content{padding:.8rem 1rem 1.5rem}
-  #view-home .v4{min-height:calc(100dvh - 4.4rem - 4.6rem)}
+  #view-home .v4{min-height:calc(100dvh - 4.4rem - 4.6rem - var(--tick))}
   .v4-copy{--u:.6rem;position:relative;left:auto;top:auto;padding:2.2rem 1.2rem 1.4rem;margin:1rem .6rem 0}
   .v4-copy::before,.v4-copy::after{left:0;right:0;top:0;bottom:0}
   .v4-title{white-space:normal}
