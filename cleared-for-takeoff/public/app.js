@@ -422,6 +422,8 @@ const globe = (() => {
     for (let k = 0; k < 34; k++) { const yy = -ry + rnd() * ry * 2, xx = -rx + rnd() * rx * 2; b.beginPath(); b.moveTo(xx, yy); b.bezierCurveTo(xx + 4 * u, yy - 4 * u, xx + 9 * u, yy + 3 * u, xx + 13 * u, yy - 1 * u); b.stroke(); }
     b.restore();
     b.strokeStyle = 'rgba(255,224,170,.55)'; b.lineWidth = Math.max(1, .9 * u); b.beginPath(); b.ellipse(mofX, my, rx * .6, ry * .5, 0, 0, 7); b.stroke();
+    // keep the glass card clean: no buildings (or their reflections) show through it
+    if (!mobile && geo.box) { const k = geo.box, pad = 22 * u; b.save(); b.globalCompositeOperation = 'destination-out'; b.filter = `blur(${Math.round(12 * u)}px)`; b.beginPath(); b.roundRect(k.left - pad, k.top - pad, k.right - k.left + pad * 2, k.bottom - k.top + pad * 2, 30 * u); b.fill(); b.restore(); }
     // fade the left end of the skyline into the open water
     if (!mobile) { b.globalCompositeOperation = 'destination-in'; g = b.createLinearGradient(x0, 0, x0 + R * .9, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)'); b.fillStyle = g; b.fillRect(0, 0, W, H); b.globalCompositeOperation = 'source-over'; }
 
@@ -499,22 +501,23 @@ const globe = (() => {
   }
   /* ---------- the takeoff route: from off-screen top left, over the copy, landing on Dubai ---------- */
   function routeAt(d, s) {
-    const top = geo.box.top, S = [-W * .02, top * .62], C1 = [W * .3, -top * .06], C2 = [W * .6, -top * .06], E = [d[0], d[1]], k = 1 - s;
+    const bx = geo.box, top = bx.top, S = [-W * .02, top * .62], C1 = [W * .3, -top * .06], C2 = [Math.max(W * .6, bx.right + (d[0] - bx.right) * .45), -top * .1], E = [d[0], d[1]], k = 1 - s; // stays above the card, descends after it
     return [k * k * k * S[0] + 3 * k * k * s * C1[0] + 3 * k * s * s * C2[0] + s * s * s * E[0], k * k * k * S[1] + 3 * k * k * s * C1[1] + 3 * k * s * s * C2[1] + s * s * s * E[1]];
   }
   function drawRoute(t, d) {
     if (geo.mobile || d[2] <= 0) return;
-    const x = ctx, N = 140, pts = []; for (let i = 0; i <= N; i++) pts.push(routeAt(d, i / N));
+    const x = ctx, N = 140, pts = [], bx = geo.box, m = 10, clear = p => !(p[0] > bx.left - m && p[0] < bx.right + m && p[1] > bx.top - m && p[1] < bx.bottom + m);
+    for (let i = 0; i <= N; i++) { const p = routeAt(d, i / N); p.ok = clear(p); pts.push(p); } // never drawn behind the glass card
     // the planned route: a fine dotted line
     x.save(); x.setLineDash([1.5, 7]); x.lineCap = 'round'; x.lineWidth = 1.4; x.strokeStyle = 'rgba(240,204,120,.32)';
-    x.beginPath(); pts.forEach((p, i) => i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1])); x.stroke(); x.restore();
+    x.beginPath(); pts.forEach((p, i) => (i && p.ok && pts[i - 1].ok) ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1])); x.stroke(); x.restore();
     // the aircraft light: eases along the route, leaving a fading contrail, then rests before the next departure
     const period = 12000, travel = 8500, ph = REDUCED ? travel * .62 : t % period;
     if (ph > travel) return;
     const u = ph / travel, s = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2, head = Math.round(s * N), tail = Math.max(0, head - 34);
     x.save(); x.lineCap = 'round';
-    for (let i = tail + 1; i <= head; i++) { const f = (i - tail) / (head - tail || 1); x.strokeStyle = `rgba(255,222,150,${(f * .8).toFixed(3)})`; x.lineWidth = .6 + f * 1.8; x.beginPath(); x.moveTo(pts[i - 1][0], pts[i - 1][1]); x.lineTo(pts[i][0], pts[i][1]); x.stroke(); }
-    const p = pts[head], fade = Math.min(1, ph / 500, (travel - ph) / 400);
+    for (let i = tail + 1; i <= head; i++) { if (!pts[i].ok || !pts[i - 1].ok) continue; const f = (i - tail) / (head - tail || 1); x.strokeStyle = `rgba(255,222,150,${(f * .8).toFixed(3)})`; x.lineWidth = .6 + f * 1.8; x.beginPath(); x.moveTo(pts[i - 1][0], pts[i - 1][1]); x.lineTo(pts[i][0], pts[i][1]); x.stroke(); }
+    const p = pts[head], fade = Math.min(1, ph / 500, (travel - ph) / 400) * (p.ok ? 1 : 0);
     let g = x.createRadialGradient(p[0], p[1], 0, p[0], p[1], 16); g.addColorStop(0, `rgba(255,232,170,${(.55 * fade).toFixed(3)})`); g.addColorStop(1, 'rgba(255,232,170,0)');
     x.fillStyle = g; x.beginPath(); x.arc(p[0], p[1], 16, 0, 7); x.fill();
     x.fillStyle = `rgba(255,250,232,${fade.toFixed(3)})`; x.beginPath(); x.arc(p[0], p[1], 2.2, 0, 7); x.fill();
@@ -1523,6 +1526,7 @@ const ACTIONS = {
   personalize: d => openWizard({ trackId: d.id }),
   'open-track': d => openTrack(d.id), 'open-course': d => openCourse(d.id), 'open-demo': d => openDemo(d.id), 'open-session': d => openSession(d.id), 'open-news': d => openNews(d.id),
   'close-modal': () => hideOverlay('modal'),
+  fekra: () => toast('Fekra: proposal submission is coming soon.'), // design preview; the submission flow is not built yet
   ask: d => { if (d.inchat) { sendQuestion(d.q); return; } hideOverlay('modal'); if (state.wizard.open) closeWizard(); if (state.view !== 'ask') navigate('ask'); sendQuestion(d.q); },
   'chat-clear': () => chatWelcome(),
   mic: () => toast('Voice input isn’t enabled in this demo — please type your question or tap a suggestion.'),

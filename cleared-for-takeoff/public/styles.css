@@ -241,6 +241,28 @@ body[data-view="home"] .content{padding:0}
 .v4-btn-navy{color:#fff;background:linear-gradient(180deg,rgba(21,40,68,.88),rgba(16,33,59,.88));border:1px solid rgba(150,172,204,.45)}
 .v4-btn-navy:hover{border-color:rgba(190,208,236,.7);background:linear-gradient(180deg,rgba(26,48,80,.92),rgba(19,38,66,.92))}
 .v4-btn-navy .v4-label{font-weight:600}
+/* third action, Fekra: a clear glass button (tertiary to the gold and navy) */
+.v4-btn-glass{color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border:1px solid rgba(190,215,255,.34);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+.v4-btn-glass:hover{border-color:rgba(225,238,255,.6);background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.04))}
+.v4-btn-glass .v4-ic{color:#f0cb72}
+.v4-btn-glass .v4-label b{font-weight:700;color:#f0cb72}
+.v4-btn-glass .v4-label i{font-style:normal;font-weight:300;opacity:.5;margin:0 .45em}
+.v4-btn-glass .v4-go{margin-left:auto}
+/* option B (default): the two approved buttons, Fekra full width underneath */
+.v4-actions{display:grid;grid-template-columns:auto auto;justify-content:start}
+.v4-btn-glass{grid-column:1/-1;height:calc(4.7 * var(--u))}
+@media (min-width:761px){.v4-copy:not(.row3){top:calc(9.4 * var(--u))}}
+/* option A: three in one row */
+.row3 .v4-actions{grid-template-columns:auto auto auto}
+.row3 .v4-btn{height:calc(5.2 * var(--u));padding:0 calc(1.5 * var(--u)) 0 calc(1.7 * var(--u));gap:calc(.9 * var(--u))}
+.row3 .v4-btn-gold{min-width:0}
+.row3 .v4-label{font-size:1.3em}
+.row3 .v4-ic svg{width:1.8em;height:1.8em}
+.row3 .v4-go svg{width:1.25em;height:1.25em}
+.row3 .v4-btn-glass{grid-column:auto}
+.row3 .v4-btn-glass .v4-label{display:flex;flex-direction:column;align-items:flex-start;line-height:1.12}
+.row3 .v4-btn-glass .v4-label i{display:none}
+.row3 .v4-btn-glass .v4-label b{font-size:.72em;letter-spacing:.14em;text-transform:uppercase}
 
 /* =========================================================
    EXPERIENCES + ABOUT (pages reached from the V4 navigation)
@@ -746,7 +768,7 @@ body[data-view="home"] .content{padding:0}
   .v4-title{white-space:normal}
   .v4-eyebrow{letter-spacing:.2em;gap:.6rem}
   .v4-eyebrow b{width:1.6rem}
-  .v4-actions{flex-direction:column;align-items:stretch}
+  .v4-actions{flex-direction:column;align-items:stretch;grid-template-columns:1fr}
   .v4-btn-gold{min-width:0}
   .xp{padding:.4rem 0 1.5rem}
   .xp-grid{grid-template-columns:1fr}
