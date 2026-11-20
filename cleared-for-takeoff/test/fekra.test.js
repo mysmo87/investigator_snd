@@ -76,9 +76,26 @@ test('innovation check only cites URLs that came back from the search', async ()
   assert.match(client.calls[1].params.messages[0].content, /A queue app exists\. \[S1\]/);
   assert.equal(r.searched, true);
   assert.equal(r.status, 'partially_implemented');
-  assert.deepEqual(r.sources.map(s => s.url), ['https://gov.example/queue', 'https://news.example/b']); // the invented URL never appears
+  assert.deepEqual(r.sources.map(s => s.url), ['https://gov.example/queue']); // the invented URL never appears; uncited results are not listed
   assert.deepEqual(r.similar[0].sources, ['S1']);                                                        // S9 does not exist, so it is dropped
   assert.ok(r.checkedAt);
+});
+
+test('citations of fetched pages are mapped back to the fetched URL', async () => {
+  const client = fakeClient((params, opts, n) => n === 1 ? {
+    model: 'claude-opus-5-5', stop_reason: 'end_turn', usage,
+    content: [
+      { type: 'web_search_tool_result', tool_use_id: 's1', content: [{ type: 'web_search_result', url: 'https://a.example/', title: 'A' }] },
+      { type: 'web_fetch_tool_result', tool_use_id: 'f1', content: { type: 'web_fetch_result', url: 'https://b.example/page', content: { type: 'document', title: 'Page B' } } },
+      { type: 'text', text: 'B does this.', citations: [{ type: 'char_location', document_index: 0, document_title: 'Page B', cited_text: 'x' }] },
+      { type: 'text', text: 'Unknown.', citations: [{ type: 'char_location', document_index: 5, document_title: 'Nope', cited_text: 'y' }] }
+    ]
+  } : json(checkOut));
+  const fk = createFekra({ config: config(), logger: silentLogger, client });
+  const r = await fk.check({ draft });
+  assert.deepEqual(client.calls[0].params.tools[1].citations, { enabled: true });
+  assert.deepEqual(r.sources, [{ id: 'S1', title: 'Page B', url: 'https://b.example/page' }]);
+  assert.match(client.calls[1].params.messages[0].content, /B does this\. \[S1\]Unknown\./);
 });
 
 test('when web search is not available the check is inconclusive and says why', async () => {

@@ -257,7 +257,7 @@ function createFekra({ config, logger, client }) {
 
   /* Step 1 of the innovation check: research with web search; returns notes with [S#] markers and the sources that really came back. */
   async function research(draft, l) {
-    const tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: fk.maxSearches }, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 3 }];
+    const tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: fk.maxSearches }, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 3, citations: { enabled: true } }];
     const idea = `Language for the findings: ${LANG_NAME[l]}.\nThe employee's idea (JSON): ${JSON.stringify({ title: draft.title, problem: draft.problem, beneficiaries: draft.beneficiaries, currentProcess: draft.currentProcess, solution: draft.solution, innovation: draft.innovation })}\nResearch whether this or something similar already exists, and write your findings.`;
     let messages = [{ role: 'user', content: idea }];
     const blocks = [];
@@ -269,8 +269,9 @@ function createFekra({ config, logger, client }) {
       messages = [...messages, { role: 'assistant', content: res.content }];
     }
     if (res.stop_reason === 'refusal') throw fail('refusal', 'Fekra cannot research that request.', 422);
-    // sources: every URL the search returned, numbered in the order the text cites them
+    // sources: only URLs that the search or fetch tools returned, numbered in the order the text cites them
     const known = new Map(); // url -> { title }
+    const fetched = []; // fetched pages in order: { url, title } (their citations carry a title and index, not a URL)
     let searchErrors = 0, searches = 0;
     for (const b of blocks) {
       if (b.type === 'web_search_tool_result') {
@@ -278,19 +279,32 @@ function createFekra({ config, logger, client }) {
         if (Array.isArray(b.content)) b.content.forEach(r => { if (r && r.url && !known.has(r.url)) known.set(r.url, { title: r.title || r.url }); });
         else searchErrors += 1; // error object, e.g. max_uses_exceeded or unavailable
       }
-      if (b.type === 'web_fetch_tool_result' && b.content && b.content.url && !known.has(b.content.url)) known.set(b.content.url, { title: (b.content.content && b.content.content.title) || b.content.url });
+      if (b.type === 'web_fetch_tool_result' && b.content && b.content.url) {
+        const title = (b.content.content && b.content.content.title) || b.content.url;
+        fetched.push({ url: b.content.url, title });
+        if (!known.has(b.content.url)) known.set(b.content.url, { title });
+      }
     }
+    const citedUrl = c => {
+      if (!c) return null;
+      if (c.url) return c.url;
+      if (c.type === 'char_location' && fetched.length) {
+        const byTitle = c.document_title && fetched.find(f => f.title === c.document_title);
+        const f = byTitle || fetched[c.document_index];
+        return f ? f.url : null;
+      }
+      return null;
+    };
     const ids = new Map(); // url -> S#
     const idFor = (url, title) => { if (!known.has(url)) return null; if (!ids.has(url)) ids.set(url, { id: `S${ids.size + 1}`, title: title || known.get(url).title, url }); return ids.get(url).id; };
     let notes = '';
     for (const b of blocks) {
       if (b.type !== 'text') continue;
       notes += b.text;
-      const marks = [...new Set((b.citations || []).map(c => c && c.url ? idFor(c.url, c.title) : null).filter(Boolean))];
+      const marks = [...new Set((b.citations || []).map(c => { const u = citedUrl(c); return u ? idFor(u, c.title || c.document_title) : null; }).filter(Boolean))];
       if (marks.length) notes += ' ' + marks.map(m => `[${m}]`).join('');
     }
-    // keep uncited search results as further reading, after the cited ones
-    for (const [url, v] of known) if (ids.size < 12 && !ids.has(url)) idFor(url, v.title);
+    // uncited search results are not listed: every source shown supports something in the findings
     return { notes: notes.trim(), sources: [...ids.values()], searches, searchErrors, model: res.model, usage: res.usage };
   }
 
@@ -308,7 +322,8 @@ function createFekra({ config, logger, client }) {
           if (!searched) unavailable = 'search_error';
         } catch (err) {
           const reason = classify(err);
-          if (reason === 'bad_request' || reason === 'permission') { webSearchAvailable = false; unavailable = 'web_search_not_enabled'; logger.error('fekra_web_search_unavailable', { detail: String(err.message).slice(0, 300) }); }
+          // research refused: give an honest "inconclusive" result; stop trying only when the organisation has not enabled web search
+          if (reason === 'bad_request' || reason === 'permission') { if (reason === 'permission') webSearchAvailable = false; unavailable = 'web_search_not_enabled'; logger.error('fekra_web_search_unavailable', { reason, detail: String(err.message).slice(0, 300) }); }
           else throw err;
         }
       } else unavailable = 'web_search_disabled';
