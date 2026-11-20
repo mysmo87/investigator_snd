@@ -71,10 +71,26 @@ h1,h2,h3,h4,p{margin:0}
   background:linear-gradient(90deg,transparent,rgba(70,210,255,.7),transparent);opacity:.7;pointer-events:none}
 
 /* header: brand left, navigation centred over the content column, GITEX identity right */
+/* translucent deep-navy glass: the space behind shows through softly, with a little more blue towards the globe */
 .top{grid-column:1/-1;position:relative;z-index:3;display:flex;align-items:center;padding:0 3rem 0 4.3rem;
-  background:radial-gradient(34% 160% at 74% 150%,rgba(60,140,255,.2),rgba(60,140,255,0) 70%),linear-gradient(90deg,#06142d 0%,#0a1b38 55%,#0b1d3b 100%);border-bottom:1px solid #1c3150}
+  background:radial-gradient(38% 190% at 78% 135%,rgba(70,150,255,.12),rgba(70,150,255,0) 72%),
+    linear-gradient(90deg,rgba(4,12,30,.2) 0%,rgba(4,12,30,0) 55%),
+    linear-gradient(180deg,rgba(5,15,36,.8) 0%,rgba(6,18,42,.64) 58%,rgba(8,24,54,.4) 100%);
+  -webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%);
+  border-bottom:1px solid rgba(200,222,255,.09)}
 .top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;pointer-events:none;
-  background:linear-gradient(90deg,rgba(120,170,230,0) 0%,rgba(120,170,230,.28) 30%,rgba(150,205,255,.7) 72%,rgba(120,170,230,.28) 92%,rgba(120,170,230,0) 100%)}
+  background:linear-gradient(90deg,rgba(200,222,255,0) 40%,rgba(200,222,255,.07) 76%,rgba(200,222,255,0) 100%)}
+/* Home: the hero's night sky continues behind the header row, so the glass has the same atmosphere to show through */
+/* on Home the starfield behind the app is fully covered by the hero, so its twinkle is paused there (no visible change)
+   and the header's blur does not have to be recomputed every frame */
+body[data-view="home"] .bg-stars{animation:none}
+body[data-view="home"] .app::before{content:"";position:absolute;left:var(--rail);right:0;top:0;height:calc(var(--hdr) + 2px);z-index:-1;pointer-events:none;
+  background:radial-gradient(34% 9rem at 60% 100%,rgba(70,170,240,.24),rgba(70,170,240,0) 70%),
+    radial-gradient(34% 18rem at 76% 100%,rgba(64,150,255,.3),rgba(64,150,255,0) 70%),
+    radial-gradient(22% 12rem at 91% 100%,rgba(110,210,255,.2),rgba(110,210,255,0) 70%),
+    radial-gradient(40% 16rem at 47% 100%,rgba(44,96,214,.24),rgba(44,96,214,0) 72%),
+    radial-gradient(30% 14.5rem at 16% 100%,rgba(46,92,206,.22),rgba(46,92,206,0) 72%),
+    #041128}
 .brand{display:flex;align-items:center;height:4.45rem;flex:none;border-radius:.4rem}
 .brand img{height:100%;width:auto;display:block}
 .logo-plate{height:5rem;padding:.35rem .75rem;border-radius:.75rem;background:#fff;display:flex;align-items:center;flex:none;box-shadow:0 0 0 1px rgba(216,177,91,.5),0 0 1.4rem rgba(46,139,255,.25)}
