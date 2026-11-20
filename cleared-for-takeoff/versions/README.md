@@ -9,8 +9,11 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | `HERO_FINAL_V3`: final hero polish | `0f542af` | `hero-final-v3` | `0f542af` | `versions/HERO_FINAL_V3.png` |
 | `PRE_V4_FULL_APP`: full app before the V4 homepage redesign (V3 plus the responsive fix) | `ccda35f` | `pre-v4-full-app` | `900a662` | `versions/PRE_V4_FULL_APP.png` |
 | `HOMEPAGE_V4_CANDIDATE`: minimal premium homepage; **candidate for review, not approved** | `8a05c44` | `homepage-v4-candidate` | `8a05c44` | `versions/HOMEPAGE_V4_CANDIDATE.png` |
+| **`MASTER_V4`: the master version.** V4 homepage with the new copy, night sky, liquid-glass card, glass header, clock and aligned logo | `ec48b96` | `master-v4` | `ec48b96` | `versions/MASTER_V4.png` |
 
 Never move or delete these commits or tags. New work goes on new commits.
+
+**`MASTER_V4` is the reference version.** Every later experiment starts from it. To return to the master at any time, restore commit `ec48b96` with the restore commands below.
 
 To go back from the V4 candidate, restore `PRE_V4_FULL_APP` with the restore commands below. The V4 review, with screenshots, differences from the reference and checks, is in `design-reviews/homepage-v4/NOTES.md`.
 
@@ -42,5 +45,6 @@ git tag -a hero-refinement-v2 1c1f45d -m "HERO_REFINEMENT_V2"
 git tag -a hero-final-v3 0f542af -m "HERO_FINAL_V3"
 git tag -a pre-v4-full-app ccda35f -m "PRE_V4_FULL_APP"
 git tag -a homepage-v4-candidate 8a05c44 -m "HOMEPAGE_V4_CANDIDATE"
-git push origin golden-baseline-v1 hero-refinement-v2 hero-final-v3 pre-v4-full-app homepage-v4-candidate
+git tag -a master-v4 ec48b96 -m "MASTER_V4"
+git push origin golden-baseline-v1 hero-refinement-v2 hero-final-v3 pre-v4-full-app homepage-v4-candidate master-v4
 ```
