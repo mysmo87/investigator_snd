@@ -67,6 +67,21 @@ function loadConfig(env = process.env) {
       maxCallsPerHour: int(env, 'AI_MAX_CALLS_PER_HOUR', 500, 0, 100000)
     },
 
+    // Fekra, the innovation assistant (uses the same ANTHROPIC_API_KEY)
+    fekra: {
+      enabled: bool(env, 'FEKRA_ENABLED', true),
+      model: str(env, 'FEKRA_MODEL', str(env, 'ANTHROPIC_MODEL', 'claude-opus-5-5')),
+      chatEffort: oneOf(env, 'FEKRA_CHAT_EFFORT', 'low', EFFORTS),
+      effort: oneOf(env, 'FEKRA_EFFORT', 'medium', EFFORTS),
+      webSearch: bool(env, 'FEKRA_WEB_SEARCH', true),
+      maxSearches: int(env, 'FEKRA_MAX_SEARCHES', 6, 1, 20),
+      timeoutMs: int(env, 'FEKRA_TIMEOUT_MS', 150000, 10000, 600000),
+      maxCallsPerHour: int(env, 'FEKRA_MAX_CALLS_PER_HOUR', 300, 0, 100000),
+      idleResetSeconds: int(env, 'FEKRA_IDLE_RESET_SECONDS', 600, 60, 7200),
+      submitUrl: url(env, 'FEKRA_SUBMIT_URL'),
+      submitToken: str(env, 'FEKRA_SUBMIT_TOKEN', null)
+    },
+
     rateLimitPerMinute: int(env, 'RATE_LIMIT_PER_MINUTE', 30, 1, 10000),
 
     kiosk: {

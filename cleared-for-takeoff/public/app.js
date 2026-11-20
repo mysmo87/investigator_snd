@@ -16,7 +16,8 @@ const CONFIG = {
   served: /^https?:$/.test(location.protocol),
   aiEnabled: false, aiTimeoutMs: 20000, publicBaseUrl: null,
   scheduleMode: 'relative', eventTimezone: 'Asia/Dubai',
-  idleWarnSeconds: 75, idleResetSeconds: 90
+  idleWarnSeconds: 75, idleResetSeconds: 90,
+  fekra: null // Fekra innovation assistant availability (set from /api/config; see fekra.js)
 };
 
 /* =====================================================================
@@ -1497,16 +1498,20 @@ function resetExperience(silent) {
   $('#chatInput').value = ''; chatWelcome();
   $('#fileInput').value = '';
   ['experiencesRoot', 'newsRoot', 'demosRoot', 'tracksRoot', 'sessionsRoot', 'journeyRoot', 'aboutRoot'].forEach(id => { $('#' + id).innerHTML = ''; });
+  if (window.fekraReset) window.fekraReset(); // Fekra keeps its conversation only in the page
   navigate('home');
   if (!silent) toast('Experience reset — all visitor data cleared. Ready for the next visitor!');
   return keepView;
 }
 let lastActivity = Date.now();
 ['pointerdown', 'keydown', 'wheel', 'touchstart', 'input'].forEach(ev => document.addEventListener(ev, () => { lastActivity = Date.now(); if ($('#idle').classList.contains('open')) hideOverlay('idle'); }, { passive: true, capture: true }));
-const isPristine = () => !state.journey && !state.passport && !state.wizard.open && !state.wizard.role && !state.wizard.experience && !state.wizard.interests.length && !state.draft.name && !state.attended && $('#chatLog').querySelectorAll('.msg.user').length === 0;
+const isPristine = () => !state.journey && !state.passport && !state.wizard.open && !state.wizard.role && !state.wizard.experience && !state.wizard.interests.length && !state.draft.name && !state.attended && $('#chatLog').querySelectorAll('.msg.user').length === 0 && !(window.fekraHasWork && window.fekraHasWork());
 function idleTick() {
   if (bigscreen.playing) { lastActivity = Date.now(); return; }
-  const idle = (Date.now() - lastActivity) / 1000, IDLE_WARN = CONFIG.idleWarnSeconds, IDLE_RESET = CONFIG.idleResetSeconds;
+  let IDLE_WARN = CONFIG.idleWarnSeconds, IDLE_RESET = CONFIG.idleResetSeconds;
+  // writing up an idea takes longer than browsing: Fekra gets a longer allowance while it holds work
+  if (state.view === 'fekra' && CONFIG.fekra && window.fekraHasWork && window.fekraHasWork()) { IDLE_RESET = Math.max(IDLE_RESET, CONFIG.fekra.idleResetSeconds || 0); IDLE_WARN = IDLE_RESET - (CONFIG.idleResetSeconds - CONFIG.idleWarnSeconds); }
+  const idle = (Date.now() - lastActivity) / 1000;
   if (isPristine()) {
     if (idle >= IDLE_RESET && (state.view !== 'home' || $('#modal').classList.contains('open') || state.chat.busy)) { resetExperience(true); lastActivity = Date.now(); }
     return;
@@ -1526,7 +1531,6 @@ const ACTIONS = {
   personalize: d => openWizard({ trackId: d.id }),
   'open-track': d => openTrack(d.id), 'open-course': d => openCourse(d.id), 'open-demo': d => openDemo(d.id), 'open-session': d => openSession(d.id), 'open-news': d => openNews(d.id),
   'close-modal': () => hideOverlay('modal'),
-  fekra: () => toast('Fekra: proposal submission is coming soon.'), // design preview; the submission flow is not built yet
   ask: d => { if (d.inchat) { sendQuestion(d.q); return; } hideOverlay('modal'); if (state.wizard.open) closeWizard(); if (state.view !== 'ask') navigate('ask'); sendQuestion(d.q); },
   'chat-clear': () => chatWelcome(),
   mic: () => toast('Voice input isn’t enabled in this demo — please type your question or tap a suggestion.'),
@@ -1612,7 +1616,7 @@ async function loadRuntimeConfig() {
     const res = await fetch('api/config', { cache: 'no-store', signal: ctrl.signal });
     if (!res.ok) return;
     const c = await res.json();
-    ['aiEnabled', 'aiTimeoutMs', 'publicBaseUrl', 'scheduleMode', 'eventTimezone', 'idleWarnSeconds', 'idleResetSeconds'].forEach(k => { if (c[k] !== undefined) CONFIG[k] = c[k]; });
+    ['aiEnabled', 'aiTimeoutMs', 'publicBaseUrl', 'scheduleMode', 'eventTimezone', 'idleWarnSeconds', 'idleResetSeconds', 'fekra'].forEach(k => { if (c[k] !== undefined) CONFIG[k] = c[k]; });
   } catch (e) { /* offline: keep defaults */ } finally { clearTimeout(timer); }
 }
 async function init() {

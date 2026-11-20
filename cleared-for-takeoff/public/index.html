@@ -11,6 +11,7 @@
 <link rel="preload" href="fonts/inter-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Noto+Kufi+Arabic:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="fekra.css">
 <link rel="icon" href="assets/gdrfa-logo.png">
 
 </head>
@@ -57,7 +58,7 @@
           <div class="v4-actions">
             <button class="v4-btn v4-btn-gold" data-action="nav" data-view="ask"><span class="v4-ic" data-icon="chat"></span><span class="v4-label">Meet Your AI Copilot</span><span class="v4-go" data-icon="arrow"></span></button>
             <button class="v4-btn v4-btn-navy" data-action="nav" data-view="experiences"><span class="v4-ic" data-icon="stack"></span><span class="v4-label">Explore AI Destinations</span><span class="v4-go" data-icon="arrow"></span></button>
-            <button class="v4-btn v4-btn-glass" data-action="fekra"><span class="v4-ic" data-icon="bulb"></span><span class="v4-label"><b>Fekra</b><i aria-hidden="true">|</i><span>Submit a Proposal</span></span><span class="v4-go" data-icon="arrow"></span></button>
+            <button class="v4-btn v4-btn-glass" data-action="nav" data-view="fekra"><span class="v4-ic" data-icon="bulb"></span><span class="v4-label"><b>Fekra</b><i aria-hidden="true">|</i><span>Submit a Proposal</span></span><span class="v4-go" data-icon="arrow"></span></button>
           </div>
         </div>
       </div>
@@ -76,6 +77,7 @@
     </section>
     <section class="view" id="view-journey" aria-label="My AI Journey"><div class="view-scroll" id="journeyRoot"></div></section>
     <section class="view" id="view-about" aria-label="About Agentic AI"><div class="view-scroll" id="aboutRoot"></div></section>
+    <section class="view" id="view-fekra" aria-label="Fekra – Your Idea, Our Future"><div id="fekraRoot"></div></section>
   </main>
 </div>
 
@@ -148,6 +150,7 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="fkPrint" aria-hidden="true"></div>
 <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" hidden>
 
 <script src="data/content.js"></script>
@@ -155,5 +158,6 @@
 <script src="shared/journey-rules.js"></script>
 <script src="shared/globe-land.js"></script>
 <script src="app.js"></script>
+<script src="fekra.js"></script>
 </body>
 </html>

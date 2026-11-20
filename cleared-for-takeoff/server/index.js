@@ -6,6 +6,7 @@ const path = require('path');
 const { loadConfig } = require('./config');
 const { createLogger } = require('./log');
 const { createRecommender } = require('./recommender');
+const { createFekra } = require('./fekra');
 const { createApp } = require('./app');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -30,9 +31,10 @@ if (contentErrors.length) {
 }
 
 const recommender = createRecommender({ config, content, catalog, rules, logger });
-const handler = createApp({ config, recommender, rules, content, logger, publicDir: PUBLIC_DIR, version });
+const fekra = createFekra({ config, logger });
+const handler = createApp({ config, recommender, fekra, rules, content, logger, publicDir: PUBLIC_DIR, version });
 const server = http.createServer(handler);
-server.requestTimeout = config.ai.timeoutMs + 15000;
+server.requestTimeout = Math.max(config.ai.timeoutMs, config.fekra.timeoutMs * 2) + 15000; // an innovation check is two calls
 server.headersTimeout = 20000;
 server.keepAliveTimeout = 65000; // longer than typical proxy idle timeouts
 
@@ -40,6 +42,7 @@ server.listen(config.port, config.host, () => {
   logger.info('server_started', {
     port: config.port, version,
     ai: config.ai.enabled ? { model: config.ai.model, effort: config.ai.effort, fallbacks: config.ai.fallbacks } : (config.ai.apiKeySet ? 'disabled (AI_ENABLED=false)' : 'disabled (no ANTHROPIC_API_KEY — using offline rules)'),
+    fekra: fekra.status(),
     scheduleMode: config.kiosk.scheduleMode, trustProxy: config.trustProxy, courses: catalog.courses.length
   });
 });

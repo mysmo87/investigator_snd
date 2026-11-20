@@ -6,6 +6,7 @@ Interactive touchscreen kiosk for the GDRFA booth at GITEX 2026. Visitors answer
 cleared-for-takeoff/
   public/                 static kiosk (no build step)
     index.html, styles.css, app.js
+    fekra.js, fekra.css   Fekra, the innovation assistant page
     journey.html/.js/.css phone page opened from the passport QR code
     data/content.js       tracks, demos, sessions, news, journey rules  ← edit content here
     data/catalog.js       the course catalogue Claude may choose from   ← edit courses here
@@ -35,7 +36,31 @@ cleared-for-takeoff/
 4. On a timeout, rate limit, refusal or outage, or with no API key, the deterministic offline rules build the journey instead. The kiosk never shows an error. The journey screen tells the visitor which source was used.
 5. Results are cached per profile (6 h by default). Calls are capped per hour (`AI_MAX_CALLS_PER_HOUR`), and the API is skipped for 60 s after three consecutive failures.
 
-The booth chat assistant is rule-based. It answers from `content.js` and the catalogue, so it also works without a connection. Only the course recommender calls Claude.
+The booth chat assistant is rule-based. It answers from `content.js` and the catalogue, so it also works without a connection. The course recommender and Fekra (below) are the only parts that call Claude.
+
+## Fekra (فكرة): the innovation assistant
+
+Fekra helps GDRFA employees turn an idea into a management-ready innovation proposal. Open it from the **Fekra | Submit a Proposal** button on Home. It works in English and Arabic (right-to-left).
+
+- **Conversation (`POST /api/fekra/chat`):**
+  - Claude guides the employee through five flexible stages: Discover → Validate → Design → Evaluate → Propose.
+  - Each turn uses structured outputs and returns the reply, the stage, tap-to-send suggestions, and the updated working draft shown in the live proposal panel.
+  - The employee can edit any earlier message to take the conversation back to that point.
+- **Innovation check (`POST /api/fekra/check`):**
+  - Claude searches the web with Anthropic's server-side web search and web fetch tools. A second call turns the research notes into a structured assessment: *already implemented*, *partially implemented*, *no equivalent found* or *inconclusive*.
+  - **Only URLs that the search actually returned can be shown as sources.** Citations to anything else are dropped.
+  - If web search is not available, the result is *inconclusive* and says so. The page always adds that not finding a match does not prove the idea is new.
+- **Proposal (`POST /api/fekra/proposal`, `/revise`):**
+  - Writes the 13-part proposal from the conversation, the draft and the check results.
+  - The employee can edit any section by hand, or ask Claude to improve it (with undo).
+  - **Export PDF** uses the browser's print dialog with a print layout.
+  - **Save draft / Open draft** downloads and reopens a JSON file.
+- **Honesty rules in the prompts:** never invent GDRFA facts, ROI or impact figures, or research findings; keep verified findings, proposals and assumptions separate.
+- **Submission (`POST /api/fekra/submit`) is an integration point.**
+  - With `FEKRA_SUBMIT_URL` set, the proposal is POSTed there as JSON (`{ source, version, submittedAt, lang, proposal, check }`, with `Authorization: Bearer FEKRA_SUBMIT_TOKEN` if set). A `reference`, `id` or `ticket` in the response is shown to the employee.
+  - Without it, the page says submission is not connected yet and that **nothing was sent**.
+- **No storage:** the conversation lives only in the page. Reset and inactivity (`FEKRA_IDLE_RESET_SECONDS`, longer than the kiosk default while an idea is in progress) clear it, and the server keeps nothing.
+- **Without an API key** the page shows that the AI service isn't connected and disables input. It never shows canned answers.
 
 ## Learning Flight Map (prototype)
 
@@ -93,6 +118,16 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `IDLE_WARN_SECONDS` / `IDLE_RESET_SECONDS` | No | `75` / `90` | Kiosk inactivity warning and auto-reset. |
 | `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn` or `error` (JSON lines). |
 | `TRUST_PROXY` | No | `true` on Railway | Use `X-Forwarded-*` headers for client IP and HTTPS. |
+| `FEKRA_ENABLED` | No | `true` | Turns the Fekra assistant on or off (it also needs `ANTHROPIC_API_KEY`). |
+| `FEKRA_MODEL` | No | `ANTHROPIC_MODEL` | Model used by Fekra. |
+| `FEKRA_CHAT_EFFORT` / `FEKRA_EFFORT` | No | `low` / `medium` | Effort for conversation turns / for research and proposals. |
+| `FEKRA_WEB_SEARCH` | No | `true` | Live web research for the innovation check. Web search must also be allowed for your organisation in the Claude Console. |
+| `FEKRA_MAX_SEARCHES` | No | `6` | Web searches per innovation check. |
+| `FEKRA_TIMEOUT_MS` | No | `150000` | Timeout per Claude call (research can take a minute or two). |
+| `FEKRA_MAX_CALLS_PER_HOUR` | No | `300` | Spend guard for Fekra (an innovation check counts as 2). |
+| `FEKRA_IDLE_RESET_SECONDS` | No | `600` | Inactivity reset while an idea is in progress. |
+| `FEKRA_SUBMIT_URL` | No | — | Management review endpoint that receives submitted proposals. Without it, submission reports "not connected". |
+| `FEKRA_SUBMIT_TOKEN` | No | — | Bearer token sent to `FEKRA_SUBMIT_URL` (mark it as a secret). |
 | `PORT` | — | set by Railway | Do not set this on Railway. |
 
 `GET /api/health` reports the model, cache size and calls used this hour. Logs record each recommendation's source, latency and token usage, including cache reads. They never contain visitor data.
@@ -111,9 +146,15 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
   - Serve over HTTPS (Railway does this); the camera needs HTTPS or localhost.
   - Run Chrome in kiosk mode, e.g. `chrome --kiosk --noerrdialogs --disable-pinch --overscroll-history-navigation=0 https://your-domain/`.
 - **Anthropic Console:** set a monthly spend limit on the workspace that holds the key.
+- **Fekra:**
+  - Confirm with your data-governance team that employees may send idea descriptions to Claude. The page asks them not to share personal or classified information.
+  - Connect the management review system with `FEKRA_SUBMIT_URL` (and `FEKRA_SUBMIT_TOKEN`).
+  - Fekra does not see internal GDRFA projects. The innovation check searches only the public web, and its limitations say so.
 
 ## Security notes
 
-- The API accepts only enum values and a 4 KB JSON body. It rejects cross-origin POSTs and rate-limits per IP. Visitor text never reaches the model.
+- The recommender accepts only enum values and a 4 KB JSON body; visitor names and photos never reach the model.
+- Fekra sends the employee's conversation (up to 256 KB per request) to Claude. The page says so. The server stores none of it and logs only operation, model, latency and token counts.
+- All API routes reject cross-origin POSTs and rate-limit per IP. The API key and `FEKRA_SUBMIT_TOKEN` stay on the server.
 - Strict Content-Security-Policy (`script-src 'self'`), no inline scripts, HSTS behind HTTPS, `Permissions-Policy` limiting the camera to this origin, and no storage of visitor data (no `localStorage`, no server-side records).
 - The passport QR code contains only a journey code, track, level and short course codes, in the URL fragment, which is never sent to the server.

@@ -3,6 +3,7 @@
      GET  /api/health     liveness/readiness for Railway health checks
      GET  /api/config     runtime settings for the kiosk (no secrets)
      POST /api/recommend  { role, experience, interests[], focusTrack?, sessions[] } -> journey plan
+     POST /api/fekra/chat | check | proposal | revise | submit   Fekra innovation assistant (see server/fekra.js)
    No framework: Node's http module keeps the dependency surface small. */
 
 const fs = require('fs');
@@ -16,6 +17,7 @@ const MIME = {
 };
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt']);
 const MAX_BODY = 4 * 1024;
+const FEKRA_MAX_BODY = 256 * 1024; // Fekra sends the conversation with each request
 
 const CSP = [
   "default-src 'self'",
@@ -71,18 +73,18 @@ function createRateLimiter(perMinute) {
   };
 }
 
-function readJsonBody(req) {
+function readJsonBody(req, limit = MAX_BODY) {
   return new Promise((resolve, reject) => {
     const type = String(req.headers['content-type'] || '');
     if (!/^application\/json\b/i.test(type)) return reject(Object.assign(new Error('Content-Type must be application/json'), { status: 415 }));
     let size = 0; const chunks = [];
     req.on('data', c => {
       size += c.length;
-      if (size > MAX_BODY * 16) { req.destroy(); return; } // abusive upload: drop the connection
-      if (size <= MAX_BODY) chunks.push(c);              // otherwise drain so a clean 413 can be sent
+      if (size > limit * 16) { req.destroy(); return; } // abusive upload: drop the connection
+      if (size <= limit) chunks.push(c);              // otherwise drain so a clean 413 can be sent
     });
     req.on('end', () => {
-      if (size > MAX_BODY) return reject(Object.assign(new Error('Request body too large'), { status: 413 }));
+      if (size > limit) return reject(Object.assign(new Error('Request body too large'), { status: 413 }));
       try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); }
       catch { reject(Object.assign(new Error('Invalid JSON'), { status: 400 })); }
     });
@@ -97,7 +99,7 @@ const DEPLOY = {
   deploymentId: process.env.RAILWAY_DEPLOYMENT_ID || null
 };
 
-function createApp({ config, recommender, rules, content, logger, publicDir, version }) {
+function createApp({ config, recommender, fekra, rules, content, logger, publicDir, version }) {
   const limiter = createRateLimiter(config.rateLimitPerMinute);
   const root = path.resolve(publicDir);
   const startedAt = Date.now();
@@ -158,6 +160,22 @@ function createApp({ config, recommender, rules, content, logger, publicDir, ver
     sendJson(res, 200, { source: result.source, model: result.source === 'ai' ? result.model : undefined, cached: !!result.cached, plan: result.plan });
   }
 
+  const FEKRA_OPS = { chat: 'chat', check: 'check', proposal: 'proposal', revise: 'revise', submit: 'submit' };
+  async function handleFekra(req, res, op) {
+    if (!sameOrigin(req)) return sendJson(res, 403, { error: 'Cross-origin requests are not allowed.' });
+    const rl = limiter.take(clientIp(req, config.trustProxy));
+    if (!rl.ok) return sendJson(res, 429, { error: 'Too many requests. Please wait a moment.' }, { 'Retry-After': String(rl.retryAfter) });
+    let body;
+    try { body = await readJsonBody(req, FEKRA_MAX_BODY); } catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
+    if (!fekra) return sendJson(res, 503, { error: 'Fekra is not available.', reason: 'not_configured' });
+    try {
+      return sendJson(res, 200, await fekra[op](body));
+    } catch (err) {
+      const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 502;
+      return sendJson(res, status, { error: err.message && status < 500 ? err.message : 'Fekra could not complete the request.', reason: err.reason || 'error' });
+    }
+  }
+
   return async function handler(req, res) {
     const started = Date.now();
     securityHeaders(req, res, config.trustProxy);
@@ -169,7 +187,7 @@ function createApp({ config, recommender, rules, content, logger, publicDir, ver
     try {
       if (pathname === '/api/health') {
         if (req.method !== 'GET' && req.method !== 'HEAD') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
-        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() } });
+        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() }, fekra: fekra ? { ...fekra.status(), ...fekra.stats() } : { enabled: false } });
       }
       if (pathname === '/api/config') {
         if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
@@ -181,12 +199,18 @@ function createApp({ config, recommender, rules, content, logger, publicDir, ver
           eventTimezone: config.kiosk.eventTimezone,
           idleWarnSeconds: config.kiosk.idleWarnSeconds,
           idleResetSeconds: config.kiosk.idleResetSeconds,
+          fekra: fekra ? { ...fekra.status(), idleResetSeconds: config.fekra.idleResetSeconds } : { enabled: false },
           version
         });
       }
       if (pathname === '/api/recommend') {
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });
         return await handleRecommend(req, res);
+      }
+      const fm = /^\/api\/fekra\/([a-z]+)$/.exec(pathname);
+      if (fm && FEKRA_OPS[fm[1]]) {
+        if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });
+        return await handleFekra(req, res, FEKRA_OPS[fm[1]]);
       }
       if (pathname.startsWith('/api/')) return sendJson(res, 404, { error: 'Not found' });
       if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405, { Allow: 'GET, HEAD' }); return res.end(); }
