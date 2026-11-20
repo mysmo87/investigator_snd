@@ -156,18 +156,24 @@ body[data-view="home"] .content{padding:0}
 /* night-sky glow along the top of the hero: brightest above the globe, fading before it reaches the headline */
 /* --u scales the whole copy column; every size below is a multiple of it */
 .v4-copy{--u:1rem;position:absolute;left:calc(8.55 * var(--u));top:calc(11 * var(--u));z-index:2}
-/* frosted glass pane behind the copy: translucent gradient fill, soft sheen, light-catching edge */
-.v4-copy::before,.v4-copy::after{content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:calc(1.6 * var(--u));
+/* liquid-glass pane behind the copy: nearly clear, tinted by the scene around it, with a lit lip,
+   inner refraction along the edges, light that changes around the rim and faint water caustics */
+.v4-copy::before,.v4-copy::after{content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:calc(2 * var(--u));
   left:calc(-3.6 * var(--u));right:calc(-2.6 * var(--u));top:calc(-3.4 * var(--u));bottom:calc(-3.6 * var(--u))}
 .v4-copy::before{
-  background:linear-gradient(112deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.045) 38%,rgba(255,255,255,0) 47%),
-    radial-gradient(110% 90% at 0% 0%,rgba(190,215,255,.13),rgba(190,215,255,0) 60%),
-    radial-gradient(60% 55% at 45% 105%,rgba(52,46,170,.32),rgba(52,46,170,0) 70%),
-    radial-gradient(45% 70% at 104% 50%,rgba(20,80,200,.4),rgba(20,80,200,0) 70%),
-    linear-gradient(140deg,rgba(26,52,104,.5) 0%,rgba(2,30,82,.58) 45%,rgba(2,30,84,.6) 100%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(255,255,255,.03),0 2.4rem 5rem rgba(1,6,20,.42)}
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 560' preserveAspectRatio='none'%3E%3Cdefs%3E%3CradialGradient id='m' cx='.42' cy='.46' r='.72'%3E%3Cstop offset='.38' stop-color='%23000'/%3E%3Cstop offset='1' stop-color='%23fff'/%3E%3C/radialGradient%3E%3Cmask id='k'%3E%3Crect width='100%25' height='100%25' fill='url%28%23m%29'/%3E%3C/mask%3E%3Cfilter id='c' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='.0055 .0085' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 .86 0 0 0 0 .93 0 0 0 0 1 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 .16 0 0 0 0 0 0 0 0 0 0'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3C/defs%3E%3Crect width='100%25' height='100%25' filter='url%28%23c%29' mask='url%28%23k%29'/%3E%3C/svg%3E") center/100% 100% no-repeat,
+    radial-gradient(38% 46% at 6% 0%,rgba(255,255,255,.13),rgba(255,255,255,0) 70%),
+    linear-gradient(115deg,rgba(255,255,255,0) 22%,rgba(255,255,255,.045) 31%,rgba(255,255,255,0) 40%),
+    radial-gradient(55% 60% at 38% 108%,rgba(140,110,255,.15),rgba(140,110,255,0) 70%),
+    radial-gradient(45% 75% at 104% 45%,rgba(70,175,255,.15),rgba(70,175,255,0) 70%),
+    radial-gradient(50% 70% at -4% 60%,rgba(60,150,255,.1),rgba(60,150,255,0) 70%),
+    linear-gradient(160deg,rgba(170,205,255,.085) 0%,rgba(120,160,245,.045) 50%,rgba(90,130,230,.055) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(170,200,255,.12),inset 0 0 1.6rem rgba(160,205,255,.08),
+    inset 1.4rem 1.4rem 2.6rem -1.6rem rgba(255,255,255,.1),inset -1.4rem -1.4rem 2.6rem -1.6rem rgba(90,150,255,.14),
+    0 0 4rem rgba(70,130,255,.08),0 1.2rem 3rem rgba(1,6,20,.16)}
 .v4-copy::after{padding:1px;
-  background:linear-gradient(140deg,rgba(225,238,255,.5) 0%,rgba(160,200,255,.14) 32%,rgba(120,170,255,.06) 62%,rgba(240,204,124,.3) 100%);
+  background:conic-gradient(from 0deg,rgba(220,235,255,.34) 0%,rgba(190,220,255,.18) 12%,rgba(110,205,255,.4) 25%,rgba(240,204,124,.42) 36%,
+    rgba(150,120,255,.14) 50%,rgba(170,200,255,.06) 64%,rgba(180,210,255,.16) 75%,rgba(255,255,255,.72) 83%,rgba(220,235,255,.34) 100%);
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
 .v4-title,.v4-lede{font-variation-settings:"opsz" 32} /* Inter's display cut at every viewport, so lines break the same way */
 .v4-eyebrow{display:flex;align-items:center;gap:calc(1.45 * var(--u));font-size:calc(1.06 * var(--u));font-weight:500;line-height:1.2;letter-spacing:.32em;text-transform:uppercase;color:#aecbe3}
