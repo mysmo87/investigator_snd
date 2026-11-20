@@ -257,7 +257,9 @@ function createFekra({ config, logger, client }) {
 
   /* Step 1 of the innovation check: research with web search; returns notes with [S#] markers and the sources that really came back. */
   async function research(draft, l) {
-    const tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: fk.maxSearches }, { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 3, citations: { enabled: true } }];
+    // The basic tool versions put results straight into Claude's context, so every claim in the findings carries a
+    // citation to a result. (The _20260209 versions filter results in code first, and their findings came back uncited.)
+    const tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: fk.maxSearches }, { type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 3, citations: { enabled: true } }];
     const idea = `Language for the findings: ${LANG_NAME[l]}.\nThe employee's idea (JSON): ${JSON.stringify({ title: draft.title, problem: draft.problem, beneficiaries: draft.beneficiaries, currentProcess: draft.currentProcess, solution: draft.solution, innovation: draft.innovation })}\nResearch whether this or something similar already exists, and write your findings.`;
     let messages = [{ role: 'user', content: idea }];
     const blocks = [];
@@ -297,15 +299,16 @@ function createFekra({ config, logger, client }) {
     };
     const ids = new Map(); // url -> S#
     const idFor = (url, title) => { if (!known.has(url)) return null; if (!ids.has(url)) ids.set(url, { id: `S${ids.size + 1}`, title: title || known.get(url).title, url }); return ids.get(url).id; };
-    let notes = '';
+    let notes = '', citations = 0;
     for (const b of blocks) {
       if (b.type !== 'text') continue;
       notes += b.text;
+      citations += (b.citations || []).length;
       const marks = [...new Set((b.citations || []).map(c => { const u = citedUrl(c); return u ? idFor(u, c.title || c.document_title) : null; }).filter(Boolean))];
       if (marks.length) notes += ' ' + marks.map(m => `[${m}]`).join('');
     }
     // uncited search results are not listed: every source shown supports something in the findings
-    return { notes: notes.trim(), sources: [...ids.values()], searches, searchErrors, model: res.model, usage: res.usage };
+    return { notes: notes.trim(), sources: [...ids.values()], searches, searchErrors, fetches: fetched.length, citations, model: res.model, usage: res.usage };
   }
 
   /* The innovation check: research (when available), then a structured assessment. */
@@ -315,7 +318,7 @@ function createFekra({ config, logger, client }) {
     guard(2);
     const started = Date.now();
     try {
-      let r = { notes: '', sources: [], searches: 0, searchErrors: 0 }, searched = false, unavailable = null;
+      let r = { notes: '', sources: [], searches: 0, searchErrors: 0, fetches: 0, citations: 0 }, searched = false, unavailable = null;
       if (webSearchAvailable) {
         try {
           r = await research(draft, l); searched = r.searches > 0 && r.searchErrors < r.searches;
@@ -339,7 +342,8 @@ function createFekra({ config, logger, client }) {
       result.similar = searched ? result.similar.map(x => ({ ...x, sources: x.sources.filter(id => valid.has(id)) })) : [];
       result.checkedAt = new Date().toISOString();
       if (unavailable) result.unavailable = unavailable;
-      breaker.failures = 0; log('check', started, res, { searched, searches: r.searches, sources: r.sources.length });
+      result.research = { searches: r.searches, fetches: r.fetches, citations: r.citations }; // counts only, for transparency and monitoring
+      breaker.failures = 0; log('check', started, res, { searched, ...result.research, sources: r.sources.length });
       return result;
     } catch (err) { throw noteFailure('check', err, started); }
   }

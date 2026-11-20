@@ -72,13 +72,15 @@ test('innovation check only cites URLs that came back from the search', async ()
   });
   const fk = createFekra({ config: config(), logger: silentLogger, client });
   const r = await fk.check({ lang: 'en', draft });
-  assert.equal(client.calls[0].params.tools[0].type, 'web_search_20260209');
+  assert.equal(client.calls[0].params.tools[0].type, 'web_search_20250305');
+  assert.equal(client.calls[0].params.tools[1].type, 'web_fetch_20250910');
   assert.match(client.calls[1].params.messages[0].content, /A queue app exists\. \[S1\]/);
   assert.equal(r.searched, true);
   assert.equal(r.status, 'partially_implemented');
   assert.deepEqual(r.sources.map(s => s.url), ['https://gov.example/queue']); // the invented URL never appears; uncited results are not listed
   assert.deepEqual(r.similar[0].sources, ['S1']);                                                        // S9 does not exist, so it is dropped
   assert.ok(r.checkedAt);
+  assert.deepEqual(r.research, { searches: 1, fetches: 0, citations: 2 });
 });
 
 test('citations of fetched pages are mapped back to the fetched URL', async () => {
