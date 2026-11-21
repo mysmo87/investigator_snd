@@ -1198,7 +1198,7 @@ function renderWizard() {
   } else if (w.step === 5) {
     renderPassportForm();
   } else {
-    body.innerHTML = `<div class="passport-wrap" style="margin-top:0"><canvas class="passport-canvas" id="ppCanvasWiz" aria-label="Your Agentic AI Passport"></canvas>${passportActionsHTML(true)}</div>`;
+    body.innerHTML = `<div class="passport-wrap" style="margin-top:0">${passportPreviewHTML('ppCanvasWiz')}${passportActionsHTML(true)}</div>`;
     paintPassport($('#ppCanvasWiz'));
     foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-step" data-id="5">${ic('chevL')} Edit passport</button><span class="spacer"></span><button class="btn btn-primary" data-action="wiz-done">Done ${ic('check')}</button>`;
   }
@@ -1332,67 +1332,271 @@ function fitText(x, text, maxW, size, weight, family, min = 16) {
   let t = text; while (x.measureText(t).width > maxW && t.length > 3) t = t.slice(0, -2) + '…';
   return t;
 }
-const FD = 'Rajdhani, Bahnschrift, "Segoe UI", sans-serif', FB = 'Inter, "Segoe UI", sans-serif', FA = '"Noto Kufi Arabic", "Segoe UI", Tahoma, sans-serif';
+const FB = '"Inter Variable", Inter, "Segoe UI", sans-serif', FA = '"Noto Kufi Arabic", "Segoe UI", Tahoma, sans-serif';
+const FM = '"OCR-B", "OCRB", "OCR B Std", "Courier New", "Liberation Mono", "DejaVu Sans Mono", Consolas, monospace';
 function spacing(x, v) { if ('letterSpacing' in x) x.letterSpacing = v; }
-function drawPassport(cv, p) {
-  const W = 1400, H = 880; cv.width = W; cv.height = H; const x = cv.getContext('2d'), j = p.journey;
-  x.clearRect(0, 0, W, H); rrect(x, 0, 0, W, H, 44); x.save(); x.clip();
-  let g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#0b2a66'); g.addColorStop(.5, '#05133a'); g.addColorStop(1, '#020817'); x.fillStyle = g; x.fillRect(0, 0, W, H);
-  g = x.createRadialGradient(W - 260, 300, 20, W - 260, 300, 520); g.addColorStop(0, 'rgba(46,139,255,.28)'); g.addColorStop(1, 'rgba(46,139,255,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
-  x.strokeStyle = 'rgba(124,196,255,.07)'; x.lineWidth = 1.2;
-  for (let k = 0; k < 24; k++) { x.beginPath(); for (let px = 0; px <= W; px += 8) { const py = H * .52 + Math.sin(px / 85 + k * .45) * (50 + k * 7) * Math.cos(px / 420 + k * .12); px ? x.lineTo(px, py) : x.moveTo(px, py); } x.stroke(); }
-  x.strokeStyle = 'rgba(124,196,255,.09)';
-  for (let r = 80; r <= 360; r += 40) { x.beginPath(); x.arc(W - 250, 330, r, 0, 7); x.stroke(); }
-  for (let k = 1; k < 6; k++) { x.beginPath(); x.ellipse(W - 250, 330, 280 * Math.sin(k * Math.PI / 6), 280, 0, 0, 7); x.stroke(); }
-  // header band
-  g = x.createLinearGradient(0, 0, 0, 140); g.addColorStop(0, 'rgba(46,139,255,.22)'); g.addColorStop(1, 'rgba(46,139,255,0)'); x.fillStyle = g; x.fillRect(0, 0, W, 140);
-  g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, 'rgba(216,177,91,0)'); g.addColorStop(.5, 'rgba(244,216,143,.9)'); g.addColorStop(1, 'rgba(216,177,91,0)'); x.fillStyle = g; x.fillRect(40, 138, W - 80, 2);
-  // official logo on a white plate
-  x.fillStyle = '#ffffff'; rrect(x, 44, 14, 452, 116, 16); x.fill();
-  const logo = ORG_LOGO;
-  if (logo && logo.complete && logo.naturalWidth) { const lh = 104, lw = lh * logo.naturalWidth / logo.naturalHeight; x.drawImage(logo, 44 + (452 - lw) / 2, 20, lw, lh); }
-  x.textAlign = 'right'; x.direction = 'rtl'; x.fillStyle = '#f4d88f'; x.font = `600 23px ${FA}`; x.fillText('جواز الذكاء الاصطناعي الوكيل', W - 60, 52); x.direction = 'ltr';
-  x.font = `700 32px ${FD}`; spacing(x, '7px'); x.fillStyle = '#f4d88f'; x.fillText('AGENTIC AI PASSPORT', W - 60, 92); x.font = `600 17px ${FB}`; spacing(x, '4px'); x.fillStyle = '#46d2ff'; x.fillText('CLEARED FOR TAKEOFF · GITEX 2026', W - 60, 122); spacing(x, '0px'); x.textAlign = 'left';
-  // photo
-  const px = 70, py = 180, pw = 340, ph = 420;
-  x.save(); rrect(x, px, py, pw, ph, 30); x.clip(); drawAvatar(x, p.avatar, px, py, pw, ph);
-  g = x.createLinearGradient(0, py + ph - 120, 0, py + ph); g.addColorStop(0, 'rgba(2,8,23,0)'); g.addColorStop(1, 'rgba(2,8,23,.55)'); x.fillStyle = g; x.fillRect(px, py, pw, ph); x.restore();
-  g = x.createLinearGradient(px, py, px + pw, py + ph); g.addColorStop(0, '#f8e1a0'); g.addColorStop(1, '#9a7426'); x.strokeStyle = g; x.lineWidth = 4; rrect(x, px, py, pw, ph, 30); x.stroke();
-  // level pill
-  g = x.createLinearGradient(px, 0, px + pw, 0); g.addColorStop(0, '#f8e1a0'); g.addColorStop(1, '#c49a45'); x.fillStyle = g; rrect(x, px, 622, pw, 66, 33); x.fill();
-  x.fillStyle = '#1b1204'; x.textAlign = 'center'; x.font = `700 32px ${FD}`; spacing(x, '8px'); x.fillText(j.levelName.toUpperCase(), px + pw / 2 + 4, 666); spacing(x, '0px'); x.textAlign = 'left';
-  // fields
-  const fx = 470, fw = 560;
-  const label = (t, a, b) => { x.fillStyle = '#7189b2'; x.font = `600 16px ${FB}`; spacing(x, '3px'); x.fillText(t, a, b); spacing(x, '0px'); };
-  label('NAME', fx, 205); x.fillStyle = '#ffffff'; const nm = fitText(x, p.name, fw, 58, 700, FD, 30); x.fillText(nm, fx, 262);
-  label('ORGANIZATION', fx, 312); x.fillStyle = '#eaf3ff'; x.fillText(fitText(x, p.org || '—', fw, 30, 500, FB, 18), fx, 352);
-  label('LEARNING TRACK', fx, 405); x.fillStyle = '#46d2ff'; x.fillText(fitText(x, j.primary.title, fw, 36, 700, FD, 22), fx, 447);
-  const att = state.attended ? getSession(state.attended) : null;
-  label('SESSION ATTENDED', fx, 500); x.fillStyle = att ? '#eaf3ff' : '#7189b2'; x.fillText(fitText(x, att ? att.title : 'Not yet recorded', fw, 24, 500, FB, 16), fx, 536);
-  const dt = p.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-  label('DATE OF ISSUE', fx, 594); x.fillStyle = '#eaf3ff'; x.font = `600 28px ${FD}`; x.fillText(dt, fx, 630);
-  label('PASSPORT NO.', fx + 290, 594); x.fillStyle = '#f4d88f'; x.font = `700 28px ${FD}`; spacing(x, '2px'); x.fillText(p.number, fx + 290, 630); spacing(x, '0px');
-  label('JOURNEY', fx, 670); x.fillStyle = '#a9bfdf'; x.font = `600 20px ${FD}`; spacing(x, '3px'); x.fillText('DISCOVER  →  LEARN  →  PRACTICE  →  INNOVATE', fx, 700); spacing(x, '0px');
-  // QR
-  const qx = 1080, qy = 300, qs = 262;
-  x.fillStyle = '#ffffff'; rrect(x, qx, qy, qs, qs, 22); x.fill();
-  try { const qr = QR.encode(p.qrText); QR.draw(x, qr, qx + 6, qy + 6, qs - 12); }
-  catch (e) { x.fillStyle = '#04102e'; x.textAlign = 'center'; x.font = `600 20px ${FB}`; x.fillText('QR unavailable', qx + qs / 2, qy + qs / 2 - 10); x.font = `700 24px ${FD}`; x.fillText(p.number, qx + qs / 2, qy + qs / 2 + 22); x.textAlign = 'left'; }
-  x.fillStyle = '#a9bfdf'; x.textAlign = 'center'; x.font = `600 15px ${FB}`; spacing(x, '2px'); x.fillText('SCAN · YOUR COURSES', qx + qs / 2, qy + qs + 30); spacing(x, '0px'); x.textAlign = 'left';
-  // MRZ band
-  x.fillStyle = 'rgba(255,255,255,.045)'; x.fillRect(0, 724, W, H - 724); x.fillStyle = 'rgba(96,170,255,.3)'; x.fillRect(0, 724, W, 1);
-  const mrzName = (p.name.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z ]/g, '').trim().replace(/\s+/g, '<') || 'VISITOR');
-  const ymd = p.date.toISOString().slice(0, 10).replace(/-/g, '');
-  const l1 = ('P<FRD<GDRFA<<' + mrzName).padEnd(48, '<').slice(0, 48), l2 = (p.number.replace('-', '') + '<' + j.primary.id.toUpperCase() + '<' + j.levelName.toUpperCase() + '<<' + ymd).padEnd(48, '<').slice(0, 48);
-  x.fillStyle = 'rgba(234,243,255,.75)'; x.font = '500 29px "Courier New", Consolas, monospace'; spacing(x, '4px'); x.fillText(l1, 60, 778); x.fillText(l2, 60, 820); spacing(x, '0px');
-  x.textAlign = 'right'; x.fillStyle = '#ffb648'; x.font = `700 15px ${FB}`; spacing(x, '2px'); x.fillText('KEEPSAKE · NOT AN OFFICIAL TRAVEL OR IDENTITY DOCUMENT', W - 60, 858); spacing(x, '0px'); x.textAlign = 'left';
-  x.restore();
-  g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#f8e1a0'); g.addColorStop(.5, 'rgba(216,177,91,.35)'); g.addColorStop(1, '#d8b15b');
-  x.strokeStyle = g; x.lineWidth = 4; rrect(x, 2, 2, W - 4, H - 4, 42); x.stroke();
-  x.strokeStyle = 'rgba(96,170,255,.25)'; x.lineWidth = 1.5; rrect(x, 18, 18, W - 36, H - 36, 32); x.stroke();
+/* The passport is an identity page in the TD3 passport format (landscape, about 16:10), drawn on
+   one canvas so the preview and the downloaded PNG are the same image. Light-blue security paper
+   throughout; navy only for text and small marks. */
+const PP = { W: 1600, H: 1000, S: 1.5, paper: '#E5F3FF', pattern: '#B5D9F5', line: '#8FC5EF', ink: '#102B53', accent: '#438FCB' };
+const LEVEL_AR = { Explorer: 'مستكشف', Practitioner: 'ممارس', Innovator: 'مبتكر' };
+const isArabic = s => /[\u0600-\u06ff]/.test(s);
+function ppOffscreen(w, h) { const c = document.createElement('canvas'); c.width = Math.ceil(w * PP.S); c.height = Math.ceil(h * PP.S); const o = c.getContext('2d'); o.scale(PP.S, PP.S); return [c, o]; }
+function ppPaper(x, R) {
+  const { W, H } = PP;
+  x.fillStyle = PP.paper; x.fillRect(0, 0, W, H);
+  for (let i = 0; i < 12000; i++) { x.fillStyle = R() < .55 ? 'rgba(16,43,83,.03)' : 'rgba(255,255,255,.55)'; x.fillRect(R() * W, R() * H, .9, .9); } // paper grain
+  x.lineWidth = .7; // security fibres
+  for (let i = 0; i < 40; i++) {
+    const a = R() * W, b = R() * H, ang = R() * Math.PI * 2, len = 9 + R() * 16;
+    x.strokeStyle = `rgba(67,143,203,${(.14 + R() * .18).toFixed(2)})`;
+    x.beginPath(); x.moveTo(a, b); x.quadraticCurveTo(a + Math.cos(ang + .7) * len * .6, b + Math.sin(ang + .7) * len * .6, a + Math.cos(ang) * len, b + Math.sin(ang) * len); x.stroke();
+  }
 }
-function fontsReady() { const logo = ORG_LOGO, l = logo && logo.decode ? logo.decode().catch(() => {}) : Promise.resolve(); return Promise.race([Promise.all([document.fonts ? document.fonts.ready : null, l]), wait(1500)]); }
-function paintPassport(cv) { if (!cv || !state.passport) return; drawPassport(cv, state.passport); fontsReady().then(() => { if (document.contains(cv) && state.passport) drawPassport(cv, state.passport); }); }
+/* the fine interlaced wave mesh of passport security paper */
+function ppWaves(x, alpha = 1) {
+  const { W, H } = PP; x.lineWidth = .7;
+  for (let f = 0; f < 2; f++) {
+    x.strokeStyle = f ? `rgba(143,197,239,${.42 * alpha})` : `rgba(181,217,245,${.8 * alpha})`;
+    for (let i = -3; i < H / 13 + 3; i++) {
+      x.beginPath();
+      for (let px = 0; px <= W; px += 5) { const py = i * 13 + (f ? -1 : 1) * (6.5 * Math.sin(px / 44 + i * .52) + 4 * Math.sin(px / 210 + i * .11)); px ? x.lineTo(px, py) : x.moveTo(px, py); }
+      x.stroke();
+    }
+  }
+}
+/* guilloché rosette: interlaced wave rings around a centre */
+function ppRosette(x, cx, cy, bands, color, lw = .65) {
+  x.strokeStyle = color; x.lineWidth = lw;
+  bands.forEach(([r0, amp, n, copies]) => {
+    for (let k = 0; k < copies; k++) {
+      x.beginPath();
+      for (let s = 0; s <= 1440; s++) { const t = s / 1440 * Math.PI * 2, r = r0 + amp * Math.sin(n * t + k * Math.PI * 2 / copies); const px = cx + r * Math.cos(t), py = cy + r * Math.sin(t); s ? x.lineTo(px, py) : x.moveTo(px, py); }
+      x.closePath(); x.stroke();
+    }
+  });
+}
+function ppBorder(x) {
+  const { W, H } = PP, o = 22, i = 40, mid = (o + i) / 2, amp = (i - o) / 2 - 3, e = o + 16;
+  x.strokeStyle = PP.line; x.lineWidth = 1.4; rrect(x, o, o, W - 2 * o, H - 2 * o, 16); x.stroke();
+  x.lineWidth = .9; rrect(x, i, i, W - 2 * i, H - 2 * i, 8); x.stroke();
+  x.strokeStyle = 'rgba(67,143,203,.5)'; x.lineWidth = .65;
+  for (const ph of [0, Math.PI]) {
+    for (const y of [mid, H - mid]) { x.beginPath(); for (let px = e; px <= W - e; px += 1.5) { const py = y + amp * Math.sin(px / 6 + ph); px === e ? x.moveTo(px, py) : x.lineTo(px, py); } x.stroke(); }
+    for (const X of [mid, W - mid]) { x.beginPath(); for (let py = e; py <= H - e; py += 1.5) { const px = X + amp * Math.sin(py / 6 + ph); py === e ? x.moveTo(px, py) : x.lineTo(px, py); } x.stroke(); }
+  }
+}
+function ppMicro(x, text, a, b, w) {
+  x.font = `600 7px ${FB}`; x.fillStyle = 'rgba(67,143,203,.8)'; spacing(x, '.5px'); x.textAlign = 'left'; x.direction = 'ltr';
+  let s = text; while (x.measureText(s + text).width < w) s += text;
+  x.fillText(s, a, b); spacing(x, '0px');
+}
+/* watermark: the falcon from the authority's emblem, printed in pale blue */
+function ppFalcon(x, cx, cy, h, alpha) {
+  const logo = ORG_LOGO; if (!logo || !logo.complete || !logo.naturalWidth) return;
+  const k = logo.naturalWidth / 600, sx = 8 * k, sy = 8 * k, sw = 157 * k, sh = 147 * k, w = h * sw / sh;
+  const [c, o] = ppOffscreen(w, h);
+  o.drawImage(logo, sx, sy, sw, sh, 0, 0, w, h);
+  o.globalCompositeOperation = 'source-in'; o.fillStyle = PP.accent; o.fillRect(0, 0, w, h);
+  x.save(); x.globalAlpha = alpha; x.drawImage(c, cx - w / 2, cy - h / 2, w, h); x.restore();
+}
+/* Dubai skyline as an engraved line illustration (local units: base at y = 0, up is negative) */
+function ppSkylineShapes() {
+  const R = (a, b, h) => [[a, 0], [a, -h], [b, -h], [b, 0]];
+  const burj = []; const tiers = [[34, 70], [28, 140], [22, 210], [16, 275], [11, 335], [7, 385], [4, 425], [1.6, 480]], cx = 400;
+  burj.push([cx - 34, 0]); let y = 0; tiers.forEach(([hw, top]) => { burj.push([cx - hw, -y], [cx - hw, -top]); y = top; }); burj.push([cx, -500]);
+  for (let t = tiers.length - 1; t >= 0; t--) { const [hw, top] = tiers[t], bot = t ? tiers[t - 1][1] : 0; burj.push([cx + hw, -top], [cx + hw, -bot]); }
+  const sail = [[658, 0], [658, -218], [664, -218]]; for (let s = 0; s <= 24; s++) { const v = 1 - s / 24; sail.push([666 + 60 * (1 - Math.pow(v, 1.6)), -205 * v]); }
+  const step = (a, b, h, h2, inset) => [[a, 0], [a, -h], [a + inset, -h], [a + inset, -h2], [b - inset, -h2], [b - inset, -h], [b, -h], [b, 0]];
+  return {
+    polys: [R(0, 26, 46), step(30, 66, 96, 112, 7), [[47, -112], [47, -136], [49, -136], [49, -112]], R(70, 86, 64), R(160, 182, 74), step(184, 200, 52, 60, 3),
+      [[205, 0], [205, -150], [225, -186], [245, -150], [245, 0]], [[252, 0], [252, -120], [268, -150], [284, -120], [284, 0]], step(292, 324, 70, 88, 6), R(330, 350, 54),
+      burj, [[450, 0], [450, -128], [482, -146], [482, 0]], R(505, 556, 10), R(574, 600, 162), [[578, -162], [587, -176], [596, -162]], step(604, 640, 92, 104, 8), R(644, 654, 40),
+      sail, step(736, 770, 46, 54, 6), R(774, 800, 34)],
+    frame: [[90, 0, 150, -122], [101, -10, 139, -110]], ring: [530, -62, 32, 46, 11]
+  };
+}
+function ppSkyline(x, x0, base, s, alpha) {
+  const { W, H } = PP, sh = ppSkylineShapes(), P = ([a, b]) => [x0 + a * s, base + b * s];
+  const [c, o] = ppOffscreen(W, H);
+  o.fillStyle = '#000';
+  sh.polys.forEach(poly => { o.beginPath(); poly.forEach((pt, i) => { const [a, b] = P(pt); i ? o.lineTo(a, b) : o.moveTo(a, b); }); o.closePath(); o.fill(); });
+  o.beginPath(); sh.frame.forEach(([a1, b1, a2, b2]) => { const [p1, q1] = P([a1, b1]), [p2, q2] = P([a2, b2]); o.rect(p1, q2, p2 - p1, q1 - q2); }); o.fill('evenodd');
+  const [rx, ry, rw, rh, th] = sh.ring, [mx, my] = P([rx, ry]); o.lineWidth = th * s; o.strokeStyle = '#000'; o.beginPath(); o.ellipse(mx, my, rw * s, rh * s, 0, 0, 7); o.stroke();
+  // engrave: keep only horizontal hairlines inside the silhouettes (one path: source-in clears outside each stroke)
+  o.globalCompositeOperation = 'source-in'; o.strokeStyle = PP.accent; o.lineWidth = .9; o.beginPath();
+  for (let yy = base - 540 * s; yy <= base; yy += 3.4) { o.moveTo(x0 - 10, yy); o.lineTo(x0 + 820 * s, yy); }
+  o.stroke();
+  x.save(); x.globalAlpha = alpha; x.drawImage(c, 0, 0, W, H); x.restore();
+  // outlines, as in an engraving
+  x.strokeStyle = `rgba(67,143,203,${(alpha * 1.15).toFixed(2)})`; x.lineWidth = .8;
+  sh.polys.forEach(poly => { x.beginPath(); poly.forEach((pt, i) => { const [a, b] = P(pt); i ? x.lineTo(a, b) : x.moveTo(a, b); }); x.stroke(); });
+  x.beginPath(); sh.frame.forEach(([a1, b1, a2, b2]) => { const [p1, q1] = P([a1, b1]), [p2, q2] = P([a2, b2]); x.rect(p1, q2, p2 - p1, q1 - q2); }); x.stroke();
+  x.beginPath(); x.ellipse(mx, my, (rw + th / 2) * s, (rh + th / 2) * s, 0, 0, 7); x.stroke(); x.beginPath(); x.ellipse(mx, my, (rw - th / 2) * s, (rh - th / 2) * s, 0, 0, 7); x.stroke();
+  // waterline and a few ripples
+  x.lineWidth = .9; x.beginPath(); x.moveTo(x0 - 16 * s, base); x.lineTo(x0 + 816 * s, base); x.stroke();
+  x.lineWidth = .6;
+  [[5, 0, 1], [10, .08, .86], [15, .2, .64]].forEach(([dy, inset, len]) => {
+    x.beginPath(); const a = x0 + 800 * s * inset, b = a + 800 * s * len * (1 - inset);
+    for (let px = a; px <= b; px += 2) { const py = base + dy + 1.2 * Math.sin(px / 5); px === a ? x.moveTo(px, py) : x.lineTo(px, py); }
+    x.stroke();
+  });
+}
+function ppArcText(x, text, r, size, bottom) {
+  x.font = `700 ${size}px ${FB}`; spacing(x, '0px'); x.textAlign = 'center';
+  const ws = [...text].map(ch => x.measureText(ch).width + size * .18), total = ws.reduce((a, b) => a + b, 0) / r;
+  let ang = -total / 2;
+  [...text].forEach((ch, i) => {
+    const da = ws[i] / r, mid = ang + da / 2; x.save();
+    if (bottom) { x.rotate(-mid); x.translate(0, r); x.fillText(ch, 0, size * .35); }
+    else { x.rotate(mid); x.translate(0, -r); x.fillText(ch, 0, size * .35); }
+    x.restore(); ang += da;
+  });
+}
+/* ink stamps are drawn on their own layer, then lightly speckled so they look stamped, not printed */
+function ppInk(w, h, draw, R) {
+  const [c, o] = ppOffscreen(w, h);
+  o.fillStyle = PP.accent; o.strokeStyle = PP.accent; draw(o);
+  o.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < w * h / 55; i++) { o.fillStyle = `rgba(0,0,0,${(.25 + R() * .6).toFixed(2)})`; o.fillRect(R() * w, R() * h, .5 + R() * 1.6, .5 + R() * 1.6); }
+  return c;
+}
+function ppLevelStamp(x, cx, cy, level, R) {
+  const r = 90, size = 2 * r + 12;
+  const c = ppInk(size, size, o => {
+    o.translate(size / 2, size / 2);
+    o.lineWidth = 3; o.beginPath(); o.arc(0, 0, r, 0, 7); o.stroke();
+    o.lineWidth = 1.2; o.beginPath(); o.arc(0, 0, r - 7, 0, 7); o.stroke(); o.beginPath(); o.arc(0, 0, r - 31, 0, 7); o.stroke();
+    ppArcText(o, 'AGENTIC AI PASSPORT', r - 19, 12, false); ppArcText(o, 'ENDORSEMENT · GDRFA', r - 19, 12, true);
+    o.textAlign = 'center'; spacing(o, '1px'); o.fillText(fitText(o, level.toUpperCase(), 2 * (r - 31) - 18, 16, 800, FB, 10), 0, 4); spacing(o, '0px');
+    o.font = `600 15px ${FA}`; o.direction = 'rtl'; o.fillText(LEVEL_AR[level] || '', 0, 28); o.direction = 'ltr';
+    o.lineWidth = 1; o.beginPath(); o.moveTo(-24, -16); o.lineTo(24, -16); o.stroke();
+    o.font = `700 9px ${FB}`; spacing(o, '1.5px'); o.fillText('LEVEL', 0, -24); spacing(o, '0px');
+  }, R);
+  x.save(); x.translate(cx, cy); x.rotate(-.17); x.globalAlpha = .6; x.drawImage(c, -size / 2, -size / 2, size, size); x.restore();
+}
+function ppSessionStamp(x, cx, cy, session, date, R) {
+  const w = 330, h = 116;
+  const c = ppInk(w, h, o => {
+    o.lineWidth = 2.6; rrect(o, 3, 3, w - 6, h - 6, 10); o.stroke(); o.lineWidth = 1; rrect(o, 10, 10, w - 20, h - 20, 6); o.stroke();
+    o.textAlign = 'center'; o.font = `800 14px ${FB}`; spacing(o, '2.5px'); o.fillText('SESSION ATTENDED', w / 2, 34); spacing(o, '0px');
+    o.fillText(fitText(o, session.title, w - 44, 17, 700, FB, 11), w / 2, 62);
+    o.font = `700 13px ${FB}`; spacing(o, '2px'); o.fillText(date, w / 2, 88); spacing(o, '0px');
+  }, R);
+  x.save(); x.translate(cx, cy); x.rotate(.06); x.globalAlpha = .55; x.drawImage(c, -w / 2, -h / 2, w, h); x.restore();
+}
+/* ICAO biometric (e-passport) symbol */
+function ppChip(x, a, b, w, h) {
+  const cy = b + h / 2, r = h * .22;
+  x.strokeStyle = PP.ink; x.lineWidth = 2.2; rrect(x, a, b, w, h, 3); x.stroke();
+  x.beginPath(); x.moveTo(a, cy - r); x.lineTo(a + w, cy - r); x.moveTo(a, cy + r); x.lineTo(a + w, cy + r); x.stroke();
+  x.beginPath(); x.arc(a + w / 2, cy, r, 0, 7); x.stroke();
+}
+/* two 44-character lines in the passport machine-readable style (a keepsake: not a valid travel-document MRZ) */
+function passportMRZ(p) {
+  const j = p.journey;
+  const latin = s => String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z ]/g, ' ').trim().split(/\s+/).filter(Boolean);
+  const nm = latin(p.name), name = nm.length > 1 ? nm[nm.length - 1] + '<<' + nm.slice(0, -1).join('<') : (nm[0] || 'VISITOR');
+  const d = p.date, ymd = String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+  const num = p.number.replace(/[^A-Za-z0-9]/g, '').toUpperCase().padEnd(9, '<').slice(0, 9);
+  const l1 = ('P<ARE' + name).padEnd(44, '<').slice(0, 44);
+  const l2 = (num + '<' + ymd + '<' + j.levelName.toUpperCase().slice(0, 3) + '<' + latin(j.primary.id).join('').slice(0, 12) + '<<GDRFA').padEnd(44, '<').slice(0, 44);
+  return [l1, l2];
+}
+function drawPassport(cv, p) {
+  const { W, H, S } = PP, j = p.journey, R = rng(hashStr(p.number || 'passport'));
+  cv.width = W * S; cv.height = H * S;
+  const x = cv.getContext('2d'); x.setTransform(S, 0, 0, S, 0, 0); x.clearRect(0, 0, W, H);
+  x.save(); rrect(x, 0, 0, W, H, 26); x.clip();
+  // security paper: grain, fibres, wave mesh, rosettes, watermarks
+  ppPaper(x, R);
+  ppWaves(x);
+  ppRosette(x, 820, 520, [[150, 16, 30, 6], [215, 20, 40, 6], [282, 14, 52, 5]], 'rgba(143,197,239,.32)');
+  ppRosette(x, 1338, 400, [[95, 12, 22, 6], [160, 18, 34, 6], [228, 14, 46, 5]], 'rgba(143,197,239,.55)');
+  ppRosette(x, 245, 405, [[120, 14, 28, 5], [190, 16, 38, 5]], 'rgba(143,197,239,.35)');
+  ppFalcon(x, 1362, 372, 350, .2);
+  ppSkyline(x, 1000, 800, .69, .3);
+  ppBorder(x);
+  // header: authority logo (left), bilingual title and biometric symbol (right), all on the same paper
+  const logo = ORG_LOGO;
+  if (logo && logo.complete && logo.naturalWidth) { const lh = 104, lw = lh * logo.naturalWidth / logo.naturalHeight; x.drawImage(logo, 60, 46, lw, lh); }
+  x.fillStyle = PP.ink; x.textAlign = 'right'; x.direction = 'rtl'; x.font = `600 32px ${FA}`; x.fillText('جواز الذكاء الاصطناعي الوكيل', 1452, 92); x.direction = 'ltr';
+  x.font = `700 33px ${FB}`; spacing(x, '4px'); x.fillText('AGENTIC AI PASSPORT', 1452, 138); spacing(x, '0px'); x.textAlign = 'left';
+  ppChip(x, 1478, 96, 56, 38);
+  ppMicro(x, 'AGENTIC AI PASSPORT · GDRFA · UNITED ARAB EMIRATES · جواز الذكاء الاصطناعي · ', 60, 168, W - 120);
+  // labels: English / Arabic, in the order passports print them
+  const label = (en, ar, a, b) => {
+    x.textAlign = 'left'; x.direction = 'ltr'; x.fillStyle = 'rgba(16,43,83,.68)';
+    x.font = `600 15px ${FB}`; spacing(x, '1.2px'); x.fillText(en, a, b); const w = x.measureText(en).width; spacing(x, '0px');
+    x.fillText(' / ', a + w, b); const s = x.measureText(' / ').width;
+    x.font = `500 15px ${FA}`; x.direction = 'rtl'; x.fillText(ar, a + w + s, b); x.direction = 'ltr';
+  };
+  const value = (t, a, b, size, maxW, weight = 600, track = 0) => {
+    const ar = isArabic(t); x.direction = ar ? 'rtl' : 'ltr'; x.textAlign = 'left'; x.fillStyle = PP.ink; spacing(x, ar ? '0px' : track + 'px');
+    x.fillText(fitText(x, t, maxW, size, weight, ar ? FA : FB, 16), a, b); spacing(x, '0px'); x.direction = 'ltr';
+  };
+  /* long names and organisations shrink a little, then wrap onto a second line, as passports print them */
+  const valueWrap = (t, a, b, size, maxW, weight, track, minSize, lineSize) => {
+    const ar = isArabic(t), fam = ar ? FA : FB; spacing(x, ar ? '0px' : track + 'px');
+    for (let sz = size; sz >= minSize; sz -= 2) { x.font = `${weight} ${sz}px ${fam}`; if (x.measureText(t).width <= maxW) { value(t, a, b, sz, maxW, weight, track); return; } }
+    x.font = `${weight} ${lineSize}px ${fam}`;
+    const words = t.split(/\s+/); let l1 = '';
+    while (words.length && x.measureText((l1 ? l1 + ' ' : '') + words[0]).width <= maxW) l1 += (l1 ? ' ' : '') + words.shift();
+    if (!l1) l1 = words.shift();
+    spacing(x, '0px');
+    value(l1, a, b - lineSize * .45, lineSize, maxW, weight, track); value(words.join(' '), a, b + lineSize * .62, lineSize, maxW, weight, track);
+  };
+  const C0 = 520, C1 = 870, C2 = 1060;
+  label('Type', 'النوع', C0, 206); value('P', C0, 242, 28, 120, 700);
+  label('Country Code', 'رمز الدولة', 670, 206); value('ARE', 670, 242, 28, 160, 700, 2);
+  label('Passport No.', 'رقم الجواز', C2 - 120, 206); value(p.number, C2 - 120, 242, 28, 300, 700, 2.5);
+  // portrait (photo or avatar) with a thin border and the security print running across it
+  const px = 62, py = 190, pw = 414, ph = 530;
+  x.save(); rrect(x, px, py, pw, ph, 16); x.clip(); drawAvatar(x, p.avatar, px, py, pw, ph);
+  ppWaves(x, .14); x.restore();
+  x.strokeStyle = PP.line; x.lineWidth = 2; rrect(x, px, py, pw, ph, 16); x.stroke();
+  x.strokeStyle = 'rgba(143,197,239,.6)'; x.lineWidth = 1; rrect(x, px - 6, py - 6, pw + 12, ph + 12, 20); x.stroke();
+  // identity details
+  label('Name', 'الاسم', C0, 306); valueWrap(isArabic(p.name) ? p.name : p.name.toUpperCase(), C0, 350, 40, 610, 700, 1, 32, 28);
+  label('Organization', 'الجهة', C0, 402); valueWrap(p.org ? (isArabic(p.org) ? p.org : p.org.toUpperCase()) : '—', C0, 440, 28, 610, 600, .5, 24, 22);
+  label('Learning Track', 'المسار التعليمي', C0, 492); value(j.primary.title.toUpperCase(), C0, 530, 28, 610, 600, .5);
+  label('Level', 'المستوى', C0, 582); value(j.levelName.toUpperCase(), C0, 620, 28, 300, 700, 2);
+  const dt = p.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+  label('Date of Issue', 'تاريخ الإصدار', C1, 582); value(dt, C1, 620, 28, 300, 600, 1.5);
+  label('Issuing Authority', 'جهة الإصدار', C0, 672); value('GDRFA', C0, 710, 28, 300, 700, 2);
+  // endorsements: the level, and the session attended when there is one
+  ppLevelStamp(x, 985, 728, j.levelName, R);
+  const att = state.attended ? getSession(state.attended) : null;
+  if (att) ppSessionStamp(x, 1345, 655, att, dt, R);
+  // machine-readable zone on a calmer strip of the same paper
+  x.fillStyle = 'rgba(229,243,255,.62)'; x.fillRect(41, 840, W - 82, H - 881);
+  ppMicro(x, 'GDRFA · AGENTIC AI · ', 60, 830, 760);
+  x.textAlign = 'right'; x.fillStyle = PP.accent; x.font = `600 12px ${FB}`; spacing(x, '1.6px'); x.fillText('KEEPSAKE · NOT AN OFFICIAL TRAVEL OR IDENTITY DOCUMENT', W - 60, 832); spacing(x, '0px'); x.textAlign = 'left';
+  const mrz = passportMRZ(p), pitch = (W - 128) / 44;
+  x.fillStyle = PP.ink; x.font = `600 45px ${FM}`; x.textAlign = 'center';
+  mrz.forEach((line, r) => [...line].forEach((ch, i) => x.fillText(ch, 64 + pitch * (i + .5), 897 + r * 52)));
+  x.textAlign = 'left';
+  x.restore();
+  // page edge
+  x.strokeStyle = 'rgba(67,143,203,.35)'; x.lineWidth = 1.5; rrect(x, .75, .75, W - 1.5, H - 1.5, 26); x.stroke();
+}
+function fontsReady() {
+  const logo = ORG_LOGO, l = logo && logo.decode ? logo.decode().catch(() => {}) : Promise.resolve();
+  // canvas text only uses fonts that are already loaded, so ask for the passport's fonts explicitly
+  const f = document.fonts ? Promise.all([document.fonts.ready, document.fonts.load(`600 32px ${FA}`, 'جواز'), document.fonts.load(`700 20px ${FB}`, 'A')]).catch(() => {}) : null;
+  return Promise.race([Promise.all([f, l]), wait(1500)]);
+}
+function paintPassport(cv) {
+  if (!cv || !state.passport) return;
+  const qr = cv.parentNode && cv.parentNode.querySelector('.pp-qr-code');
+  if (qr) { const x = qr.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, qr.width, qr.height); try { QR.draw(x, QR.encode(state.passport.qrText), 0, 0, qr.width); } catch (e) { qr.closest('.pp-qr').hidden = true; } }
+  drawPassport(cv, state.passport); fontsReady().then(() => { if (document.contains(cv) && state.passport) drawPassport(cv, state.passport); });
+}
+/* the passport page, with its QR code beside it rather than printed on the page */
+function passportPreviewHTML(id) {
+  return `<div class="pp-preview"><canvas class="passport-canvas" id="${id}" aria-label="Your Agentic AI Passport: ${esc(state.passport.name)}, ${esc(state.journey.primary.title)}, ${esc(state.journey.levelName)} level"></canvas>
+    <div class="pp-qr"><canvas class="pp-qr-code" width="320" height="320" role="img" aria-label="QR code that opens your course list"></canvas><div><b>Scan for your courses</b><span>Opens your personalised course list on your phone.</span><span class="pp-qr-no">Passport no. ${esc(state.passport.number)}</span></div></div></div>`;
+}
 function passportActionsHTML(inWizard) {
   return `<div class="glass pp-actions"><div class="eyebrow">${ic('check')} Passport ready</div><h3>Welcome, ${esc(state.passport.name.split(' ')[0])}!</h3><p>Your Agentic AI Passport for <b>${esc(state.journey.primary.title)}</b> at <b>${esc(state.journey.levelName)}</b> level. Download it, preview the QR destination or see yourself on the big screen.</p>
     <button class="btn btn-primary" data-action="pp-download">${ic('download')} Download Passport</button>
@@ -1433,7 +1637,7 @@ function renderJourney() {
   root.innerHTML = `<div class="view-head"><div><div class="eyebrow">${ic('journey')} My AI Journey</div><h2>Your Learning Roadmap</h2></div><div class="chips"><button class="btn btn-ghost btn-sm" data-action="start-journey">${ic('reset')} Edit my answers</button></div></div>
     <div class="glass profile-bar">${journeySummaryHTML(j)}</div>
     <div style="margin-top:1rem">${roadmapHTML(j)}</div>
-    ${state.passport ? `<div class="passport-wrap"><canvas class="passport-canvas" id="ppCanvasView" aria-label="Your Agentic AI Passport"></canvas>${passportActionsHTML(false)}</div>` :
+    ${state.passport ? `<div class="passport-wrap">${passportPreviewHTML('ppCanvasView')}${passportActionsHTML(false)}</div>` :
       `<div class="cta-banner"><div class="dialog-ic" style="margin:0">${ic('passport')}</div><div><h3>Create Your Agentic AI Passport</h3><p>Add your name and a photo or avatar to get a downloadable passport with a personalised QR code.</p></div><button class="btn btn-gold" data-action="wiz-passport-open">${ic('passport')} Create Passport</button></div>`}`;
   if (state.passport) paintPassport($('#ppCanvasView'));
 }
