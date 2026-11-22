@@ -27,7 +27,7 @@ module.exports = [
   { id: 'uae-portal', name: 'UAE Government Portal', nameAr: 'البوابة الرسمية لحكومة الإمارات', tier: 'uae', scope: 'general', lang: 'en', site: 'https://u.ae/en', hosts: ['u.ae'], feeds: [], discover: true, enabled: true },
   // Regional news
   { id: 'gulfnews', name: 'Gulf News', tier: 'regional', scope: 'general', lang: 'en', site: 'https://gulfnews.com', hosts: ['gulfnews.com'], feeds: ['https://gulfnews.com/feed'], discover: true, enabled: true },
-  { id: 'khaleejtimes', name: 'Khaleej Times', tier: 'regional', scope: 'general', lang: 'en', site: 'https://www.khaleejtimes.com', hosts: ['khaleejtimes.com'], feeds: ['https://www.khaleejtimes.com/arc/outboundfeeds/rss/?outputType=xml'], discover: true, enabled: true },
+  { id: 'khaleejtimes', name: 'Khaleej Times', tier: 'regional', scope: 'general', lang: 'en', site: 'https://www.khaleejtimes.com', hosts: ['khaleejtimes.com'], feeds: ['https://www.khaleejtimes.com/api/v1/collections/technology.rss', 'https://www.khaleejtimes.com/api/v1/collections/business.rss'], discover: true, enabled: true },
   { id: 'arabianbusiness', name: 'Arabian Business', tier: 'regional', scope: 'general', lang: 'en', site: 'https://www.arabianbusiness.com', hosts: ['arabianbusiness.com'], feeds: ['https://www.arabianbusiness.com/feed'], discover: true, enabled: true },
   // Global AI and emerging technology
   { id: 'mittr', name: 'MIT Technology Review', tier: 'global', scope: 'tech', lang: 'en', site: 'https://www.technologyreview.com', hosts: ['technologyreview.com'], feeds: ['https://www.technologyreview.com/feed/'], discover: true, enabled: true },
@@ -36,5 +36,5 @@ module.exports = [
   { id: 'techcrunch', name: 'TechCrunch', tier: 'global', scope: 'tech', lang: 'en', site: 'https://techcrunch.com', hosts: ['techcrunch.com'], feeds: ['https://techcrunch.com/category/artificial-intelligence/feed/', 'https://techcrunch.com/feed/'], discover: false, enabled: true },
   { id: 'biometricupdate', name: 'Biometric Update', tier: 'global', scope: 'tech', lang: 'en', site: 'https://www.biometricupdate.com', hosts: ['biometricupdate.com'], feeds: ['https://www.biometricupdate.com/feed'], discover: true, enabled: true },
   { id: 'fte', name: 'Future Travel Experience', tier: 'global', scope: 'tech', lang: 'en', site: 'https://www.futuretravelexperience.com', hosts: ['futuretravelexperience.com'], feeds: ['https://www.futuretravelexperience.com/feed/'], discover: true, enabled: true },
-  { id: 'wef', name: 'World Economic Forum', tier: 'global', scope: 'tech', lang: 'en', site: 'https://www.weforum.org/stories/', hosts: ['weforum.org'], feeds: ['https://www.weforum.org/stories/feed'], discover: true, enabled: true }
+  { id: 'wef', name: 'World Economic Forum', tier: 'global', scope: 'tech', lang: 'en', site: 'https://www.weforum.org/stories/', hosts: ['weforum.org'], feeds: [], discover: true, enabled: true }
 ];

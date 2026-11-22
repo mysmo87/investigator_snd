@@ -47,7 +47,7 @@ const EN = {
     'automation', 'automated', 'quantum', 'computer vision']),
   borders: words(['immigration', 'immigrants?', 'visas?', 'e-?visas?', 'borders?', 'passports?', 'e-?gates?', 'smart gates?', 'biometrics?', 'facial recognition', 'face recognition', 'face biometrics',
     'fingerprints?', 'digital identity', 'digital ids?', 'identity verification', 'id verification', 'emirates id', 'residency', 'residence permits?', 'travel documents?', 'seamless travel',
-    'seamless journeys?', 'passenger journeys?', 'passengers?', 'airports?', 'customs', 'deepfakes?', 'liveness', 'gdrfa', 'icp', 'etias', 'boarding pass(?:es)?']),
+    'seamless journeys?', 'passenger journeys?', 'passengers?', 'airports?', 'customs', 'deepfakes?', 'liveness', 'etias', 'boarding pass(?:es)?']),
   identity: words(['biometrics?', 'facial recognition', 'face recognition', 'face biometrics', 'fingerprints?', 'digital identity', 'digital ids?', 'identity verification', 'id verification', 'emirates id', 'deepfakes?', 'liveness', 'identity']),
   airport: words(['airports?', 'passengers?', 'passenger journeys?', 'seamless travel', 'seamless journeys?', 'boarding pass(?:es)?', 'airlines?', 'aviation']),
   tech: words(['innovation', 'innovative', 'innovat\\w*', 'digital', 'digiti[sz]ation', 'technology', 'technologies', 'tech', 'cyber\\w*', 'cloud', 'blockchain', 'metaverse', '5g', '6g', 'iot',
@@ -56,7 +56,11 @@ const EN = {
     'emerging tech\\w*', 'future of', 'hackathons?', 'gitex']),
   gov: words(['government', 'governments', 'ministry', 'authority', 'federal', 'municipality', 'police', 'rta', 'dewa', 'public sector', 'public services?', 'e-government', 'digital government',
     'smart government', 'gdrfa', 'icp', 'digital dubai', 'smart dubai', 'executive council', 'sheikh']),
-  uae: words(['uae', 'u\\.a\\.e\\.', 'emirates', 'emirati', 'dubai', 'abu dhabi', 'sharjah', 'ajman', 'ras al khaimah', 'fujairah', 'umm al quwain']),
+  uae: words(['uae', 'u\\.a\\.e\\.', 'emirates', 'emirati', 'dubai', 'abu dhabi', 'sharjah', 'ajman', 'ras al khaimah', 'fujairah', 'umm al quwain', 'gdrfa', 'icp']),
+  // global innovation and future trends: stronger signals than the broad technology words used for UAE stories
+  future: words(['innovation', 'innovations', 'innovative', 'breakthroughs?', 'emerging tech\\w*', 'future of', 'next[- ]generation', '6g', '5g', 'metaverse', 'smart cit(?:y|ies)', 'digital twins?',
+    'supercomput\\w*', 'space tech\\w*', 'satellites?', 'semiconductors?', 'chips?', 'data cent(?:er|re)s?', 'cyber ?security', 'cyberattacks?', 'blockchain', 'digital transformation',
+    'digital government', 'e-government', 'govtech', 'iot', 'internet of things', 'smart (?:government|services?|infrastructure|grid|mobility)']),
   agentic: words(['agentic', 'ai agents?']),
   generative: words(['generative', 'gen ?ai', 'llms?', 'large language models?', 'chatgpt', 'chatbots?']),
   exclude: words(['football', 'soccer', 'cricket', 'tennis', 'golf', 'f1', 'formula (?:1|one)', 'grand prix', 'nba', 'nfl', 'fifa', 'uefa', 'premier league', 'champions league', 'tournament', 'world cup',
@@ -75,6 +79,7 @@ const AR = {
     'الحكومة الذكية', 'الخدمات الذكية', 'ذكي', 'ذكية', 'الشركات الناشئة', 'التحول الرقمي', 'الفضاء', 'جيتكس', 'المستقبل']),
   gov: subs(['حكومة', 'الحكومة', 'وزارة', 'هيئة', 'الهيئة', 'دائرة', 'بلدية', 'شرطة', 'الحكومي', 'الحكومية', 'إقامة دبي', 'الإدارة العامة للإقامة']),
   uae: subs(['الإمارات', 'إماراتي', 'دبي', 'أبوظبي', 'أبو ظبي', 'الشارقة', 'عجمان', 'رأس الخيمة', 'الفجيرة', 'أم القيوين']),
+  future: subs(['الابتكار', 'ابتكار', 'التحول الرقمي', 'المدن الذكية', 'الحكومة الذكية', 'الحكومة الرقمية', 'الأمن السيبراني', 'الميتافيرس', 'البلوك تشين', 'الفضاء', 'المستقبل']),
   agentic: subs(['الوكيل الذكي', 'الوكلاء الأذكياء', 'الذكاء الاصطناعي الوكيل']),
   generative: subs(['التوليدي']),
   exclude: subs(['كرة القدم', 'مباراة', 'الدوري', 'بطولة', 'منتخب', 'فيلم', 'مسلسل', 'فنان', 'مطرب', 'حفل غنائي', 'الأبراج', 'يانصيب', 'انتخابات', 'الحرب', 'غزة', 'إسرائيل', 'أوكرانيا', 'روسيا', 'الطقس', 'أمطار', 'سباق'])
@@ -87,14 +92,14 @@ function classify(title, summary, source) {
   if (K.exclude.test(title)) return null;
   const has = (k, s) => !!s && (K[k].test(s) || (k === 'ai' && K === EN && EN.aiCase.test(s)));
   const sum = source.scope === 'tech' ? summary : '';
-  const tAi = has('ai', title), tBorders = has('borders', title), tTech = has('tech', title);
+  const tAi = has('ai', title), tBorders = has('borders', title), tTech = has('tech', title), tFuture = has('future', title);
   const uae = source.tier === 'uae' || has('uae', title);
   let bucket = null;
   if (tBorders) bucket = 'borders';
   else if (uae && (tAi || tTech || (sum && (has('ai', sum) || has('tech', sum))))) bucket = 'uae';
   else if (tAi) bucket = 'ai';
-  else if (tTech) bucket = 'future';
-  else if (sum) bucket = has('borders', sum) ? 'borders' : has('ai', sum) ? 'ai' : has('tech', sum) ? 'future' : null;
+  else if (tFuture) bucket = 'future';
+  else if (sum) bucket = has('borders', sum) ? 'borders' : has('ai', sum) ? 'ai' : has('future', sum) ? 'future' : null;
   if (!bucket) return null;
   const both = title + ' ' + sum;
   let category;
@@ -149,6 +154,18 @@ function parseFeed(xml) {
   return items;
 }
 /* <link rel="alternate" type="application/rss+xml" href="…"> tags a homepage declares */
+/* links a page shows to its RSS page or feeds (an "RSS" link in the footer, for example), on the same site */
+function rssLinks(html, base) {
+  const out = [], baseHost = (() => { try { return new URL(base).hostname.replace(/^www\./, ''); } catch { return ''; } })();
+  for (const a of String(html || '').match(/<a\b[^>]*>[\s\S]{0,200}?<\/a>/gi) || []) {
+    const href = attr(a, 'href'); if (!href) continue;
+    const label = text(a);
+    if (!/(^|[\/._?=-])(rss|feeds?|atom)([\/._?=-]|$)|\.rss($|\?)/i.test(href) && !/^\s*rss\s*$/i.test(label)) continue;
+    if (/comments?\/feed|facebook|twitter|x\.com|instagram|linkedin|youtube|whatsapp|mailto:/i.test(href)) continue;
+    try { const u = new URL(href, base); if (/^https?:$/.test(u.protocol) && u.hostname.replace(/^www\./, '').endsWith(baseHost) && !out.includes(u.href)) out.push(u.href); } catch { /* bad href */ }
+  }
+  return out.slice(0, 6);
+}
 function discoverFeeds(html, base) {
   const out = [];
   for (const l of String(html || '').match(/<link\b[^>]*>/gi) || []) {
@@ -201,6 +218,11 @@ function selectItems(pool, { maxItems, minItems, now }) {
   const chosen = new Set(), perSource = {};
   const pick = (i, capped = true) => { if (chosen.size >= N || chosen.has(i) || (capped && (perSource[i.sourceId] || 0) >= cap)) return false; chosen.add(i); perSource[i.sourceId] = (perSource[i.sourceId] || 0) + 1; return true; };
   for (const [b, w] of Object.entries(WEIGHTS)) { const target = Math.round(N * w); let n = 0; for (const i of list) { if (n >= target) break; if (i.bucket === b && pick(i)) n++; } }
+  const softCap = Math.max(cap, Math.ceil(N * .5));
+  for (const [b, w] of Object.entries(WEIGHTS)) { // a theme short of its target may go past the per-source cap (to half the list) before others take its slots
+    let n = [...chosen].filter(i => i.bucket === b).length; const target = Math.round(N * w);
+    for (const i of list) { if (n >= target) break; if (i.bucket === b && !chosen.has(i) && (perSource[i.sourceId] || 0) < softCap && pick(i, false)) n++; }
+  }
   for (const i of list) pick(i);           // unused slots go to the newest other relevant headlines
   for (const i of list) pick(i, false);    // and only then past the per-source cap
   const by = {}; [...chosen].sort((a, b) => b.t - a.t).forEach(i => (by[i.bucket] = by[i.bucket] || []).push(i));
@@ -244,8 +266,22 @@ function createNews({ config, logger, fetchImpl = globalThis.fetch, sources: sou
     const feeds = src.feeds.map(url => ({ url, from: 'configured' }));
     if (src.discover) {
       if (!st.discovered || now - st.discoveredAt > 12 * HOUR) {
-        try { const r = await get(src.site, { limit: MAX_PAGE_BYTES, accept: 'text/html,application/xhtml+xml' }); st.discovered = r.body ? discoverFeeds(r.body, src.site) : []; st.discoverStatus = r.status; }
-        catch (e) { st.discovered = []; st.discoverStatus = errName(e); }
+        try {
+          const r = await get(src.site, { limit: MAX_PAGE_BYTES, accept: 'text/html,application/xhtml+xml' });
+          st.discoverStatus = r.status; st.discovered = r.body ? discoverFeeds(r.body, src.site) : []; st.rssLinks = r.body ? rssLinks(r.body, src.site) : [];
+          // no declared feed: follow the site's own RSS links (a feed directly, or an RSS page that lists feeds)
+          if (!st.discovered.length) {
+            for (const link of st.rssLinks.slice(0, 4)) {
+              try {
+                const p = await get(link, { limit: MAX_PAGE_BYTES });
+                if (!p.body) continue;
+                if (parseFeed(p.body)) { st.discovered.push(link); continue; }
+                const more = [...discoverFeeds(p.body, link), ...rssLinks(p.body, link).filter(u => /\.(rss|xml)($|\?)|\/(rss|feed)\/?($|\?)/i.test(u))];
+                more.forEach(u => { if (!st.discovered.includes(u) && st.discovered.length < 4) st.discovered.push(u); });
+              } catch { /* try the next link */ }
+            }
+          }
+        } catch (e) { st.discovered = []; st.rssLinks = []; st.discoverStatus = errName(e); }
         st.discoveredAt = now;
       }
       st.discovered.forEach(url => { if (!feeds.some(f => f.url === url)) feeds.push({ url, from: 'discovered' }); });
@@ -379,7 +415,7 @@ function createNews({ config, logger, fetchImpl = globalThis.fetch, sources: sou
         const st = state.sources[s.id];
         const status = !s.enabled ? (s.status || 'disabled') : st.okRun === state.run && state.run > 0 ? 'live' : st.lastSuccessAt ? 'cached' : state.checkedAt ? 'not_working' : 'pending';
         return { id: s.id, name: s.name, tier: s.tier, lang: s.lang, status, note: s.note || null, lastSuccessAt: st.lastSuccessAt ? new Date(st.lastSuccessAt).toISOString() : null, lastError: st.lastError,
-          homepage: s.discover ? { url: s.site, httpStatus: st.discoverStatus ?? null, feedsDeclared: st.discovered || [] } : undefined,
+          homepage: s.discover ? { url: s.site, httpStatus: st.discoverStatus ?? null, feedsDeclared: st.discovered || [], rssLinks: st.rssLinks || [] } : undefined,
           feeds: st.feeds, headlinesWithDates: st.parsed, relevant: st.relevant, shown: (state.shownBy && state.shownBy[s.id]) || 0 };
       })
     };
@@ -389,4 +425,4 @@ function createNews({ config, logger, fetchImpl = globalThis.fetch, sources: sou
   return { start, stop, refresh, snapshot, sourceReport, stats, _internals: { parseFeed, discoverFeeds, classify, selectItems, toItems, similar, state } };
 }
 
-module.exports = { createNews, parseFeed, discoverFeeds, classify, selectItems, LABELS, WEIGHTS };
+module.exports = { createNews, parseFeed, discoverFeeds, rssLinks, classify, selectItems, LABELS, WEIGHTS };
