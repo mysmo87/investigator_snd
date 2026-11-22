@@ -23,7 +23,7 @@ function buildSystemPrompt(content, catalog) {
     levels: content.experience.map(e => ({ id: e.id, label: e.label, passportLevel: content.levels[e.level] })),
     interests: content.interests.map(i => ({ id: i.id, label: i.label })),
     roles: content.roles.map(r => ({ id: r.id, label: r.label })),
-    courses: catalog.courses.map(c => ({ id: c.id, title: c.title, provider: c.provider, level: c.level, format: c.format, approxHours: c.hours, tracks: c.tracks, interests: c.interests, stages: c.stages, summary: c.summary })),
+    courses: catalog.courses.map(c => ({ id: c.id, title: c.title, provider: c.provider, category: c.category, level: c.level, format: c.format, approxHours: c.hours, tracks: c.tracks, interests: c.interests, stages: c.stages, summary: c.summary })),
     boothDemos: content.demos.filter(d => d.id !== 'radar').map(d => ({ id: d.id, title: d.title, zone: d.zone, tracks: d.tracks, tags: d.tags, overview: d.overview })),
     boothSessions: content.sessions.map(s => ({ id: s.id, title: s.title, type: s.type, track: s.track, tags: s.tags, description: s.desc }))
   };
@@ -34,6 +34,7 @@ function buildSystemPrompt(content, catalog) {
     'How to choose:',
     '- primaryTrack is the learning track that best fits the visitor\'s interests and role. secondaryTrack is the next-best, different track; treat it as a stretch.',
     '- For each stage, pick one or two courses (courseIds). Match the visitor\'s level: beginners get beginner courses, with at most an intermediate course as a stretch in practice or innovate; intermediate visitors get intermediate courses, with beginner refreshers only in discover and advanced courses only in innovate; advanced visitors get advanced and intermediate courses. Never choose a course two levels away from the visitor. Prefer courses whose stages include the current stage, whose tracks include the primary track and whose interests overlap the visitor\'s. Do not repeat a course across stages, and vary providers when the fit is equally good.',
+    '- Choose courses for fit (the visitor\'s level, interests, role, track and stage), never for the provider. Keep the journey vendor-neutral: draw on several providers, use at most two courses from any one provider, and prefer two different providers within a stage when both fit well.',
     '- experienceId: for discover and practice suggest a booth demo; for learn and innovate suggest a booth session. Choose sessions that are live or upcoming according to the visitor message, never completed ones, and do not repeat a demo or session.',
     '- topic is a short headline for the stage (under ten words). why is one sentence telling the visitor why these courses suit them. nextStep is one concrete action they can take within 30 days that fits their role. summary is one or two sentences addressed to the visitor as "you".',
     '- Write plain, warm, professional English. Describe courses only with what the reference data says. Do not mention prices, and do not suggest that GDRFA runs or endorses the external courses.',

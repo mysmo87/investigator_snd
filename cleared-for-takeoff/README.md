@@ -23,7 +23,7 @@ cleared-for-takeoff/
 
 1. The kiosk sends only the three answers, as enum ids, to `POST /api/recommend`. A list of which sessions are live or finished is sent with them. **Name, email and photo never leave the kiosk.**
 2. The server calls Claude (default model `claude-opus-5-5`, effort `low`) with:
-   - **A cached system prompt.** It holds the rules, all 30 courses, the tracks, demos and sessions (about 6k tokens), cached with prompt caching.
+   - **A cached system prompt.** It holds the rules, all 37 courses, the tracks, demos and sessions (about 6k tokens), cached with prompt caching.
    - **Structured outputs.** A JSON schema whose course, track, demo and session fields are **enums of the catalogue ids**, so Claude can only choose real items.
    - **Server-side refusal fallback** (`fallbacks: "default"`).
 3. Every answer is validated again against the catalogue (`sanitizePlan`):
@@ -175,7 +175,9 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
   - Replace the sample news and sessions in `public/data/content.js` with approved content.
   - Then set `meta.newsIsSample`, `meta.sessionsAreSample` and `meta.demosAreIllustrative` to `false`; this removes the "sample" labels on screen.
   - Set `SCHEDULE_MODE=fixed`.
-- **Course catalogue** (`public/data/catalog.js`):
+- **Course catalogue** (`public/data/catalog.js`, 37 courses from 17 providers):
+  - It includes seven free SAS Learning courses (trustworthy AI, agentic AI, generative AI, data literacy, visual analytics and data science), checked on learn.sas.com on 22 November 2026. They are marked `verifiedOn`. Each is listed under SAS's "Price: Free" catalogue filter or as a "FREE COURSE" on SAS's free-training page, and opens without signing in. SAS's own level is kept in `providerLevel`; `level` is the kiosk's fit after reading SAS's prerequisites.
+  - Recommendations stay vendor-neutral: courses are chosen on fit, a journey uses at most two courses from any one provider, and a stage prefers two different providers.
   - Links, prices and durations change. Re-check every entry before the event and update `reviewedOn`.
   - Some links, including the Anthropic Academy and Cisco ones, were confirmed only through search results, not by opening the page.
   - To add a course, give it a new `id` and the next free `ref`. Never renumber a `ref`: passport QR codes that are already printed use them.

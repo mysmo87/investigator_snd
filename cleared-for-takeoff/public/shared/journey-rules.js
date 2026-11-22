@@ -23,6 +23,10 @@
   const TIME_LIMITS = { any: Infinity, medium: 10, short: 2 };   // max hours per course
   const HANDS_ON = /hands-on|lab|project|notebook|exercise/i;      // course formats that count as hands-on
   const byId = (list, id) => list.find(x => x.id === id);
+  /* Provider diversity: courses are chosen on fit, but a journey uses several providers. "DeepLearning.AI on Coursera"
+     and "DeepLearning.AI × crewAI" count as DeepLearning.AI. */
+  const MAX_PER_PROVIDER = 2;
+  const providerKey = c => String(c.provider || '').split(/ on | × | & /)[0].trim().toLowerCase();
   const clip = (s, max) => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
   const listText = arr => arr.length > 1 ? arr.slice(0, -1).join(', ') + ' and ' + arr[arr.length - 1] : (arr[0] || '');
 
@@ -123,7 +127,7 @@
     const { content, catalog } = ctx, R = content.rules;
     const lvl = levelIndex(content, profile.experience);
     const ranked = rankTracks(profile, content), primary = ranked[0], secondary = ranked[1];
-    const usedC = new Set(), usedE = new Set();
+    const usedC = new Set(), usedE = new Set(), usedP = {};
     const interestLabels = profile.interests.map(i => byId(content.interests, i).label);
     const k = options && options.constraints ? { ...options.constraints, time: TIME_LIMITS[options.constraints.time] ? options.constraints.time : 'any' } : null;
     const pinStage = {};
@@ -139,8 +143,10 @@
         pool = rankedCourses.filter(c => meetsConstraints(c, { ...k, time: 'any' })); relaxed = 'time';
         if (!pool.length) { pool = rankedCourses; relaxed = 'all'; }
       }
-      const courses = [...pinStage[stage], ...pool].slice(0, 2);
-      courses.forEach(c => usedC.add(c.id));
+      const courses = [...pinStage[stage]];
+      const fits = (c, strict) => !courses.includes(c) && (!strict || ((usedP[providerKey(c)] || 0) < MAX_PER_PROVIDER && !courses.some(x => providerKey(x) === providerKey(c))));
+      for (const strict of [true, false]) for (const c of pool) { if (courses.length >= 2) break; if (fits(c, strict)) courses.push(c); } // diversity first, then fit alone
+      courses.forEach(c => { usedC.add(c.id); usedP[providerKey(c)] = (usedP[providerKey(c)] || 0) + 1; });
       const expId = rankExperiences(R.stageExperience[stage], profile, primary, ctx, usedE)[0];
       usedE.add(expId);
       const tpl = (R.nextSteps[profile.role] || R.nextSteps.other)[stage];
@@ -213,5 +219,5 @@
     return { plan: { primaryTrack, secondaryTrack, summary, stages }, repairs };
   }
 
-  return { STAGES, LEVELS, LIMITS, TIME_LIMITS, HANDS_ON, validateProfile, rankTracks, buildRulesPlan, sanitizePlan, levelIndex, courseAllowed, meetsConstraints };
+  return { STAGES, LEVELS, MAX_PER_PROVIDER, providerKey, LIMITS, TIME_LIMITS, HANDS_ON, validateProfile, rankTracks, buildRulesPlan, sanitizePlan, levelIndex, courseAllowed, meetsConstraints };
 });

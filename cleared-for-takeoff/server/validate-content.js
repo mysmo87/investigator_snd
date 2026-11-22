@@ -47,6 +47,9 @@ function validateContent(content, catalog) {
     if (!LEVELS.includes(c.level)) err(`${where}: level must be one of ${LEVELS.join(', ')}`);
     if (!COSTS.includes(c.cost)) err(`${where}: cost must be one of ${COSTS.join(', ')}`);
     if (!(c.hours > 0)) err(`${where}: hours must be positive`);
+    if (c.category != null && (typeof c.category !== 'string' || !c.category.trim())) err(`${where}: category must be a non-empty string`);
+    if ('providerLevel' in c && c.providerLevel !== null && typeof c.providerLevel !== 'string') err(`${where}: providerLevel must be text or null`);
+    if (c.verifiedOn != null && !/^\d{4}-\d{2}-\d{2}$/.test(c.verifiedOn)) err(`${where}: verifiedOn must be a YYYY-MM-DD date`);
     if (!c.tracks || !c.tracks.length) err(`${where}: needs at least one track`);
     (c.tracks || []).forEach(t => trackIds.has(t) || err(`${where}: unknown track ${t}`));
     (c.interests || []).forEach(i => interestIds.has(i) || err(`${where}: unknown interest ${i}`));

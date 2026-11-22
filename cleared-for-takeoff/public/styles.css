@@ -178,6 +178,7 @@ a.tk-item{text-decoration:none}
 .btn-ghost{color:var(--text);border:1px solid var(--line-2);background:rgba(46,139,255,.06)}
 .btn-ghost:hover:not(:disabled){background:rgba(46,139,255,.16);border-color:rgba(120,200,255,.55)}
 .btn-sm{padding:.45rem .8rem;min-height:2.2rem;font-size:.8rem;border-radius:.6rem}
+a.btn{text-decoration:none}
 .icon-btn{width:2.4rem;height:2.4rem;border-radius:.65rem;display:inline-grid;place-items:center;color:var(--text-2);border:1px solid var(--line);background:rgba(46,139,255,.05);flex:none}
 .icon-btn:hover:not(:disabled){color:#fff;background:rgba(46,139,255,.16)}
 .chip{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem .9rem;border-radius:2rem;font-size:.82rem;color:var(--text-2);border:1px solid var(--line-2);background:rgba(46,139,255,.05);transition:all .2s;white-space:nowrap}
