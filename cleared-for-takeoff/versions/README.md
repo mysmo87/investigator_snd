@@ -14,6 +14,7 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | `FEKRA_OPTION_B`: NEWS_TICKER_V1 plus the Fekra \| Submit a Proposal button under the two main actions | `a754b9e` | | `a754b9e` | `versions/FEKRA_OPTION_B.png` |
 | `FEKRA_V1`: FEKRA_OPTION_B plus the Fekra innovation assistant page (conversation, innovation check, proposal) | `9417e19` | | `9417e19` | `versions/FEKRA_V1.png`, `versions/FEKRA_V1_check.png` (live check) |
 | `PASSPORT_V2`: FEKRA_V1 plus the Agentic AI Passport redesigned as a light-blue passport identity page (the previous dark card is in FEKRA_V1, `69d24b4`) | `e9e3231` | | `e9e3231` | `versions/PASSPORT_V2.png` |
+| `LIVE_NEWS_V1`: PASSPORT_V2 plus live, filtered headlines from publishers' RSS feeds in the news ticker | `616b146` | | `616b146` | `versions/LIVE_NEWS_V1.png` (ticker strip) |
 
 Never move or delete these commits or tags. New work goes on new commits.
 
