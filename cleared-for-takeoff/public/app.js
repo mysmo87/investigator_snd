@@ -1193,7 +1193,7 @@ function renderWizard() {
     runProcessing();
   } else if (w.step === 4) {
     const j = state.journey;
-    body.innerHTML = journeySummaryHTML(j) + roadmapHTML(j) + `<p class="disclaimer">${ic('info')}<span>${j.source === 'ai' ? 'Courses chosen by Claude (Anthropic) from a curated catalogue of publicly available courses, then checked against the catalogue.' : 'Courses matched on this kiosk with transparent rules from a curated catalogue of publicly available courses.'} Tap a course for a QR code to open it on your phone.</span></p>`;
+    body.innerHTML = journeySummaryHTML(j) + roadmapHTML(j);
     foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-edit">${ic('chevL')} Edit answers</button><span class="spacer"></span><button class="btn btn-ghost" data-action="wiz-save">Save & view journey</button><button class="btn btn-gold" data-action="wiz-passport">${ic('passport')} Create My Agentic AI Passport</button>`;
   } else if (w.step === 5) {
     renderPassportForm();
