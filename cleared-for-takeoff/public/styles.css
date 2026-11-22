@@ -146,6 +146,15 @@ body[data-view="home"] .app::before{content:"";position:absolute;left:var(--rail
 .tk-cat{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#7fd0ff}
 .tk-sep{flex:none;width:.4rem;height:.4rem;margin:0 1.7rem;transform:rotate(45deg);background:#d8b15b;opacity:.85}
 .tk-note{font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--warn);white-space:nowrap}
+/* live headlines: category, headline, then publisher and date in a quieter tone */
+a.tk-item{text-decoration:none}
+.tk-live .tk-cat{display:inline-flex;align-items:center;gap:.45rem}
+.tk-live .tk-cat::before{content:"";width:.38rem;height:.38rem;border-radius:1px;background:currentColor;opacity:.85}
+.tk-b-uae{color:#f0cd78}.tk-b-ai{color:#7fd0ff}.tk-b-borders{color:#86dcbd}.tk-b-future{color:#b6c9f0}
+.tk-meta{font-size:.8rem;font-weight:500;color:#8ea4c4;letter-spacing:.01em}
+.tk-item[lang="ar"]{font-family:var(--f-ar),var(--f-body)}
+.tk-item[lang="ar"] .tk-cat{letter-spacing:0;font-size:.78rem}
+.tk-note-live{color:#86dcbd}.tk-note-wait{color:var(--text-3)}
 @media (prefers-reduced-motion:reduce){.tk-track{animation:none}.tk-viewport{overflow-x:auto}}
 .view{display:none;height:100%;min-height:0}
 .view.active{display:block;animation:viewIn .5s var(--ease)}

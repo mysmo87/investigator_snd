@@ -82,6 +82,16 @@ function loadConfig(env = process.env) {
       submitToken: str(env, 'FEKRA_SUBMIT_TOKEN', null)
     },
 
+    news: {
+      enabled: bool(env, 'NEWS_ENABLED', true),
+      refreshMinutes: int(env, 'NEWS_REFRESH_MINUTES', 30, 5, 1440),
+      maxItems: int(env, 'NEWS_MAX_ITEMS', 30, 5, 100),
+      timeoutMs: int(env, 'NEWS_TIMEOUT_MS', 12000, 2000, 60000),
+      verifyLinks: bool(env, 'NEWS_VERIFY_LINKS', true),
+      cacheFile: str(env, 'NEWS_CACHE_FILE', require('path').join(require('os').tmpdir(), 'cft-news-cache.json')),
+      sourcesFile: str(env, 'NEWS_SOURCES_FILE', null)
+    },
+
     rateLimitPerMinute: int(env, 'RATE_LIMIT_PER_MINUTE', 30, 1, 10000),
 
     kiosk: {

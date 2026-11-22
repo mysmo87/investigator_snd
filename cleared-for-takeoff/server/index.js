@@ -7,6 +7,7 @@ const { loadConfig } = require('./config');
 const { createLogger } = require('./log');
 const { createRecommender } = require('./recommender');
 const { createFekra } = require('./fekra');
+const { createNews } = require('./news');
 const { createApp } = require('./app');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -32,23 +33,26 @@ if (contentErrors.length) {
 
 const recommender = createRecommender({ config, content, catalog, rules, logger });
 const fekra = createFekra({ config, logger });
-const handler = createApp({ config, recommender, fekra, rules, content, logger, publicDir: PUBLIC_DIR, version });
+const news = createNews({ config, logger });
+const handler = createApp({ config, recommender, fekra, news, rules, content, logger, publicDir: PUBLIC_DIR, version });
 const server = http.createServer(handler);
 server.requestTimeout = Math.max(config.ai.timeoutMs, config.fekra.timeoutMs * 2) + 15000; // an innovation check is two calls
 server.headersTimeout = 20000;
 server.keepAliveTimeout = 65000; // longer than typical proxy idle timeouts
 
 server.listen(config.port, config.host, () => {
+  news.start(); // first refresh now, then every NEWS_REFRESH_MINUTES
   logger.info('server_started', {
     port: config.port, version,
     ai: config.ai.enabled ? { model: config.ai.model, effort: config.ai.effort, fallbacks: config.ai.fallbacks } : (config.ai.apiKeySet ? 'disabled (AI_ENABLED=false)' : 'disabled (no ANTHROPIC_API_KEY — using offline rules)'),
-    fekra: fekra.status(),
+    fekra: fekra.status(), news: { enabled: config.news.enabled, refreshMinutes: config.news.refreshMinutes },
     scheduleMode: config.kiosk.scheduleMode, trustProxy: config.trustProxy, courses: catalog.courses.length
   });
 });
 
 function shutdown(signal) {
   logger.info('shutting_down', { signal });
+  news.stop();
   server.close(() => process.exit(0));
   server.closeIdleConnections && server.closeIdleConnections();
   setTimeout(() => process.exit(0), 10000).unref();

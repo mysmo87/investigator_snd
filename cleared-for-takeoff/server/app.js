@@ -4,6 +4,8 @@
      GET  /api/config     runtime settings for the kiosk (no secrets)
      POST /api/recommend  { role, experience, interests[], focusTrack?, sessions[] } -> journey plan
      POST /api/fekra/chat | check | proposal | revise | submit   Fekra innovation assistant (see server/fekra.js)
+     GET  /api/news       live headlines for the ticker (see server/news.js)
+     GET  /api/news/sources  which news sources are working, cached or need configuration
    No framework: Node's http module keeps the dependency surface small. */
 
 const fs = require('fs');
@@ -99,7 +101,7 @@ const DEPLOY = {
   deploymentId: process.env.RAILWAY_DEPLOYMENT_ID || null
 };
 
-function createApp({ config, recommender, fekra, rules, content, logger, publicDir, version }) {
+function createApp({ config, recommender, fekra, news, rules, content, logger, publicDir, version }) {
   const limiter = createRateLimiter(config.rateLimitPerMinute);
   const root = path.resolve(publicDir);
   const startedAt = Date.now();
@@ -187,7 +189,7 @@ function createApp({ config, recommender, fekra, rules, content, logger, publicD
     try {
       if (pathname === '/api/health') {
         if (req.method !== 'GET' && req.method !== 'HEAD') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
-        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() }, fekra: fekra ? { ...fekra.status(), ...fekra.stats() } : { enabled: false } });
+        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() }, fekra: fekra ? { ...fekra.status(), ...fekra.stats() } : { enabled: false }, news: news ? news.stats() : { enabled: false } });
       }
       if (pathname === '/api/config') {
         if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
@@ -202,6 +204,13 @@ function createApp({ config, recommender, fekra, rules, content, logger, publicD
           fekra: fekra ? { ...fekra.status(), idleResetSeconds: config.fekra.idleResetSeconds } : { enabled: false },
           version
         });
+      }
+      if (pathname === '/api/news' || pathname === '/api/news/sources') {
+        if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
+        if (!news) return sendJson(res, 200, { status: 'disabled', items: [] });
+        const rl = limiter.take(clientIp(req, config.trustProxy));
+        if (!rl.ok) return sendJson(res, 429, { error: 'Too many requests. Please wait a moment.' }, { 'Retry-After': String(rl.retryAfter) });
+        return sendJson(res, 200, pathname === '/api/news' ? news.snapshot() : news.sourceReport());
       }
       if (pathname === '/api/recommend') {
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });

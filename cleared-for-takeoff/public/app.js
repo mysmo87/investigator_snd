@@ -1797,15 +1797,51 @@ document.addEventListener('visibilitychange', updateGlobe);
    INIT
    ===================================================================== */
 /* news ticker: the latest headlines crawl across the top; each one opens its story */
-function renderTicker() {
+/* news ticker: live headlines from GET /api/news (publishers' feeds, read server-side by server/news.js).
+   The curated sample headlines in content.js appear only when the app runs without the server or
+   no live or cached headlines exist; they are labelled as samples. */
+const NEWS = { data: null, loading: CONFIG.served, timer: 0, html: '' };
+const fmtNewsDate = (iso, lang) => { const d = new Date(iso), o = { day: 'numeric', month: 'short', timeZone: CONFIG.eventTimezone || undefined }; if (d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric'; return d.toLocaleDateString(lang === 'ar' ? 'ar-AE' : 'en-GB', o); };
+const fmtNewsUpdated = iso => { const d = new Date(iso), tz = CONFIG.eventTimezone || undefined, same = d.toLocaleDateString('en-GB', { timeZone: tz }) === new Date().toLocaleDateString('en-GB', { timeZone: tz }); return d.toLocaleString('en-GB', { ...(same ? {} : { day: 'numeric', month: 'short' }), hour: '2-digit', minute: '2-digit', timeZone: tz }); };
+function tickerHTML() {
+  const live = NEWS.data && NEWS.data.items && NEWS.data.items.length ? NEWS.data : null;
+  if (live) {
+    const note = live.status === 'live' && live.updatedAt ? `<span class="tk-note tk-note-live">Live feed · updated ${esc(fmtNewsUpdated(live.updatedAt))}</span>`
+      : `<span class="tk-note">Cached headlines${live.updatedAt ? ` · last update ${esc(fmtNewsUpdated(live.updatedAt))}` : ''}</span>`;
+    return hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}>${live.items.map(n => `<a class="tk-item tk-live" href="${esc(n.url)}" target="_blank" rel="noopener noreferrer" lang="${n.lang === 'ar' ? 'ar' : 'en'}" dir="${n.lang === 'ar' ? 'rtl' : 'ltr'}"${hidden ? ' tabindex="-1"' : ''}><span class="tk-cat tk-b-${esc(n.bucket)}">${esc(n.label)}</span><span class="tk-h">${esc(n.title)}</span><span class="tk-meta">${esc(n.source)} · <time datetime="${esc(n.publishedAt)}">${esc(fmtNewsDate(n.publishedAt, n.lang))}</time></span></a><i class="tk-sep" aria-hidden="true"></i>`).join('')}${note}<i class="tk-sep" aria-hidden="true"></i></div>`;
+  }
+  if (NEWS.loading) return hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}><span class="tk-note tk-note-wait">Loading the latest headlines…</span><i class="tk-sep" aria-hidden="true"></i></div>`;
   const items = [...DATA.news].sort((a, b) => a.days - b.days);
-  const run = hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}>${items.map(n => `<button class="tk-item" data-action="open-news" data-id="${n.id}"${hidden ? ' tabindex="-1"' : ''}><span class="tk-cat">${esc(CAT_LABEL[n.cat])}</span>${esc(n.title)}</button><i class="tk-sep" aria-hidden="true"></i>`).join('')}${DATA.meta.newsIsSample ? '<span class="tk-note">Sample headlines</span><i class="tk-sep" aria-hidden="true"></i>' : ''}</div>`;
-  const track = $('#tickerTrack'); track.innerHTML = run(false) + run(true);
-  // a constant reading speed whatever the screen size or number of headlines
-  const pace = () => { const w = track.firstElementChild.getBoundingClientRect().width, rem = parseFloat(getComputedStyle(document.documentElement).fontSize); if (w) track.style.animationDuration = `${(w / (rem * 4.6)).toFixed(1)}s`; };
-  new ResizeObserver(pace).observe(track.firstElementChild);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(pace);
-  pace();
+  return hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}>${items.map(n => `<button class="tk-item" data-action="open-news" data-id="${n.id}"${hidden ? ' tabindex="-1"' : ''}><span class="tk-cat">${esc(CAT_LABEL[n.cat])}</span>${esc(n.title)}</button><i class="tk-sep" aria-hidden="true"></i>`).join('')}${DATA.meta.newsIsSample ? '<span class="tk-note">Sample headlines</span><i class="tk-sep" aria-hidden="true"></i>' : ''}</div>`;
+}
+// a constant reading speed whatever the screen size or number of headlines
+function tickerPace() { const track = $('#tickerTrack'), run = track.firstElementChild; if (!run) return; const w = run.getBoundingClientRect().width, rem = parseFloat(getComputedStyle(document.documentElement).fontSize); if (w) track.style.animationDuration = `${(w / (rem * 4.6)).toFixed(1)}s`; }
+function renderTicker() {
+  const run = tickerHTML(), html = run(false) + run(true);
+  if (html === NEWS.html) return; // unchanged: keep the crawl running smoothly
+  NEWS.html = html; $('#tickerTrack').innerHTML = html; tickerPace();
+}
+function initTicker() {
+  renderTicker();
+  new ResizeObserver(tickerPace).observe($('#tickerTrack'));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(tickerPace);
+  loadNews();
+}
+/* the server refreshes its feeds every NEWS_REFRESH_MINUTES; the kiosk asks for the current result well within that */
+async function loadNews() {
+  clearTimeout(NEWS.timer);
+  if (!CONFIG.served) { NEWS.loading = false; renderTicker(); return; }
+  let next = 10 * 60000;
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 10000);
+  try {
+    const res = await fetch('api/news', { cache: 'no-store', signal: ctrl.signal });
+    const d = res.ok ? await res.json() : null;
+    if (d && d.items && d.items.length) { NEWS.data = d; NEWS.loading = false; next = Math.min(10, d.refreshMinutes || 30) * 60000; }
+    else if (d && d.status === 'loading') next = 20000; // the server is fetching its first headlines
+    else { NEWS.loading = false; next = 5 * 60000; } // nothing live or cached yet: keep what is shown and try again
+  } catch { NEWS.loading = false; next = 5 * 60000; } finally { clearTimeout(t); }
+  renderTicker();
+  NEWS.timer = setTimeout(loadNews, next);
 }
 function tickClock() {
   const d = new Date();
@@ -1831,7 +1867,7 @@ async function init() {
   chatInit();
   globe.init();
   navigate('home');
-  renderTicker();
+  initTicker();
   tickClock(); setInterval(tickClock, 1000);
   setInterval(idleTick, 1000);
   setInterval(() => { if (state.view === 'experiences') renderBooth(); else if (state.view === 'sessions') renderSessionList(); }, 30000);
