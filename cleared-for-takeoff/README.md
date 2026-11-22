@@ -62,6 +62,36 @@ Fekra helps GDRFA employees turn an idea into a management-ready innovation prop
 - **No storage:** the conversation lives only in the page. Reset and inactivity (`FEKRA_IDLE_RESET_SECONDS`, longer than the kiosk default while an idea is in progress) clear it, and the server keeps nothing.
 - **Without an API key** the page shows that the AI service isn't connected and disables input. It never shows canned answers.
 
+## Live news ticker
+
+The ticker across the top shows real headlines from the publishers' own RSS feeds. The server reads the feeds itself (`server/news.js`), so browsers hit no cross-origin limits.
+
+- **Refresh:** every 30 minutes (`NEWS_REFRESH_MINUTES`). The kiosk asks the server for the current result every 10 minutes.
+- **Relevance:** only Future Radar themes are kept: AI, generative and agentic AI, digital government, smart borders and immigration, digital identity and biometrics, smart airports, autonomous systems and emerging technology. Sport, entertainment, celebrity, shopping and political news are dropped. General news outlets must match in the headline itself. The rules cover English and Arabic.
+- **Mix:** UAE government and local innovation 40%, AI 25%, borders and identity 20%, global trends 15%. These are targets, not quotas: a theme that falls short gives its slots to other relevant headlines, never to unrelated news. Each publisher is capped at about a third of the list.
+- **Recency:** headlines from the last 7 days come first. The window widens to 30 days only when there are fewer than 12.
+- **No invented content:**
+  - Every headline, link and date comes from a feed.
+  - Items without a valid date, or with a link outside the publisher's own domain, are dropped.
+  - Duplicates and near-identical headlines are removed.
+  - A headline whose link returns 404 is removed.
+- **Fallback:** when a source fails, its last verified headlines stay. When every source fails, the last good result is served from a disk cache (`NEWS_CACHE_FILE`), and the ticker shows "Cached headlines · last update …". With no live or cached headlines at all, the curated sample headlines in `content.js` appear, labelled as samples.
+- **Ticker display:** category, headline, publisher and date. Each headline opens the article in a new tab, and Arabic headlines render right-to-left.
+- **Sources:** configured in `server/news-sources.js`, or replace the list with `NEWS_SOURCES_FILE`. `GET /api/news/sources` shows each source's status, feeds, HTTP results and how many headlines it supplied.
+
+| Source | Status (November 2026) |
+|---|---|
+| Khaleej Times | Live: UAE, business, top and world feeds |
+| Arabian Business | Live |
+| Gulf News | Live (its public feed carries only a few top stories) |
+| MIT Technology Review, TechCrunch (AI and main feeds), Biometric Update, Future Travel Experience | Live |
+| GDRFA Dubai, Dubai Media Office, Digital Dubai, UAE Government Portal | Needs configuration: no RSS feed is published or linked on these sites. Add an official feed or API URL in `news-sources.js` and set `enabled: true`. |
+| WAM (English and Arabic) | Needs configuration: no public feed. WAM's news service is for subscribers, so add the licensed feed URL. |
+| World Economic Forum | Needs configuration: no feed published (`/stories/feed` returns 404). |
+| Reuters | Needs a licence: there is no public Reuters feed. Add a licensed feed (for example Reuters Connect) when available. |
+
+Only headlines, links, publisher names and dates are used. No article text is stored or shown, every headline links to the publisher, and feeds are requested at most every 30 minutes, with conditional requests.
+
 ## Learning Flight Map (prototype)
 
 `public/flight-map.html` is a 3D prototype of the learning agent at work. Open it at `/flight-map.html`.
@@ -128,6 +158,13 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `FEKRA_IDLE_RESET_SECONDS` | No | `600` | Inactivity reset while an idea is in progress. |
 | `FEKRA_SUBMIT_URL` | No | — | Management review endpoint that receives submitted proposals. Without it, submission reports "not connected". |
 | `FEKRA_SUBMIT_TOKEN` | No | — | Bearer token sent to `FEKRA_SUBMIT_URL` (mark it as a secret). |
+| `NEWS_ENABLED` | No | `true` | Live news in the ticker. When off, the curated sample headlines show. |
+| `NEWS_REFRESH_MINUTES` | No | `30` | How often the server reads the feeds. |
+| `NEWS_MAX_ITEMS` | No | `30` | Headlines in the ticker loop. |
+| `NEWS_TIMEOUT_MS` | No | `12000` | Timeout per feed request. |
+| `NEWS_VERIFY_LINKS` | No | `true` | Check each shown headline's link once a day and drop links that return 404. |
+| `NEWS_CACHE_FILE` | No | system temp dir | Where the last good headlines are kept for restarts and outages. |
+| `NEWS_SOURCES_FILE` | No | — | A JSON file that replaces the source list in `server/news-sources.js`. |
 | `PORT` | — | set by Railway | Do not set this on Railway. |
 
 `GET /api/health` reports the model, cache size and calls used this hour. Logs record each recommendation's source, latency and token usage, including cache reads. They never contain visitor data.

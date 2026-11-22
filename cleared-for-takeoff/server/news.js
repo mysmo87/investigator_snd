@@ -66,7 +66,7 @@ const EN = {
   exclude: words(['football', 'soccer', 'cricket', 'tennis', 'golf', 'f1', 'formula (?:1|one)', 'grand prix', 'nba', 'nfl', 'fifa', 'uefa', 'premier league', 'champions league', 'tournament', 'world cup',
     'olympic\\w*', 'marathon', 'racing', 'jockey', 'striker', 'goalkeeper', 'celebrit\\w*', 'actor', 'actress', 'films?', 'movies?', 'box office', 'music', 'concerts?', 'singer', 'albums?', 'bollywood',
     'hollywood', 'k-pop', 'oscars?', 'grammys?', 'fashion', 'red carpet', 'tv shows?', 'reality show', 'opinion', 'op-ed', 'editorial', 'elections?', 'electoral', 'campaign trail', 'democrats?',
-    'republicans?', 'trump', 'biden', 'senators?', 'congress', 'protests?', 'war', 'ceasefire', 'gaza', 'israel\\w*', 'ukrain\\w*', 'russia\\w*', 'hamas', 'missiles?', 'horoscopes?', 'astrology',
+    'republicans?', 'trump', 'biden', 'white house', 'kremlin', 'senators?', 'congress', 'protests?', 'war', 'ceasefire', 'gaza', 'israel\\w*', 'ukrain\\w*', 'russia\\w*', 'hamas', 'missiles?', 'horoscopes?', 'astrology',
     'zodiac', 'recipes?', 'lottery', 'raffle', 'big ticket', 'prize draw', 'gold (?:rate|price)s?', 'weather', 'black friday', 'cyber monday', 'prime day', 'gift guides?', '\\d+% off', 'coupons?',
     'promo codes?', 'best .{0,40} deals', 'obituar\\w*', 'murder\\w*', 'killed', 'arrested', 'jailed'])
 };
