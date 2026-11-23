@@ -1,6 +1,6 @@
 # Agentic AI: Cleared for Takeoff
 
-Interactive touchscreen kiosk for the GDRFA booth at GITEX 2026. Visitors answer three questions (role, AI experience, interests). Claude, Anthropic's model, then picks real courses for their level from a curated catalogue and lays them out as a Discover → Learn → Practice → Innovate journey. Visitors leave with an Agentic AI Passport whose QR code opens their course list on their phone.
+Interactive touchscreen kiosk for the GDRFA booth at GITEX 2026. Visitors answer three questions (role, AI experience, interests). Claude, Anthropic's model, then picks real courses for their level from a curated catalogue and lays them out as a Discover → Learn → Practice → Innovate journey. Visitors leave with an Agentic AI Passport whose QR code opens their course list on their phone. If they agree, the passport is also saved with GDRFA, so the same QR code opens the saved passport later.
 
 ```
 cleared-for-takeoff/
@@ -8,6 +8,7 @@ cleared-for-takeoff/
     index.html, styles.css, app.js
     fekra.js, fekra.css   Fekra, the innovation assistant page
     journey.html/.js/.css phone page opened from the passport QR code
+    staff.html/.js        GDRFA staff list of saved passports (CSV export)
     data/content.js       tracks, demos, sessions, news, journey rules  ← edit content here
     data/catalog.js       the course catalogue Claude may choose from   ← edit courses here
     shared/journey-rules.js  offline recommender + validator (browser and server)
@@ -83,6 +84,25 @@ Fekra turns an employee's idea into a management-ready innovation proposal. **Th
   - **How it is built:** pages are laid out in the browser (`public/fekra-pdf.js`) so Arabic shaping and right-to-left order are correct, then written into a real PDF file without libraries. The PDF holds the latest saved content: unsaved changes are saved first. Its text is part of the page images, so it is not selectable.
 - **Submission (`POST /api/fekra/submit`)** forwards the proposal to `FEKRA_SUBMIT_URL` when configured; otherwise the page says submission is not connected and that nothing was sent.
 - **Without an API key** the page says the AI service isn't connected and disables input; it never shows canned answers.
+
+## Saved passports: capturing visitor details
+
+When a visitor creates their passport, the form offers **"Save my passport so I can open it again later"**. The box is unticked by default; it tells the visitor exactly what is kept, for how long, that the booth team can see it, and that they can delete it.
+
+- **What happens when they tick it:**
+  - The kiosk saves the passport on the server: name, email, organization, the learning journey, the session they attended, the time and wording of their consent, and the passport image itself (JPEG, with their photo or avatar).
+  - The passport number (`CFT-XXXXX`) becomes the saved reference, and the server returns a private 12-character key.
+  - The QR code then carries both, so scanning it opens the saved passport on the visitor's phone: the passport image with **Save passport image** (and **Share** where the phone supports it), the whole journey with course links, and **Delete my saved passport**.
+  - Visitors keep it by bookmarking the page or adding it to their home screen. Editing the passport at the kiosk updates the saved copy. Unticking the box deletes it.
+- **If they don't tick it:** nothing changes from before. Details stay in the kiosk's memory and are cleared on reset, and the QR code opens the course list only.
+- **The link still works without the saved copy:** the course list is also in the link itself, so an expired or deleted passport falls back to it.
+- **Privacy and security:**
+  - The key travels only in the URL fragment, so it never reaches the server's or Railway's access logs. Only a SHA-256 hash of it is stored.
+  - The email is never printed on the passport or put in the QR code.
+- **Retention:** each saved passport is deleted automatically after `PASSPORT_RETENTION_DAYS` (default 180). The server checks every hour.
+- **Staff access:** open `/staff.html` and enter the staff key (`PASSPORT_ADMIN_TOKEN`). It lists every saved passport (passport number, time, name, email, organization, track, level, attended session, deletion date) with a filter and **Download CSV (Excel)**. The same data is available at `GET /api/passports/export?format=csv` with `Authorization: Bearer <PASSPORT_ADMIN_TOKEN>`. Without the variable, staff access is off.
+- **Making the box mandatory:** `PASSPORT_SAVE=required` makes saving a condition of creating a passport. `off` removes the option entirely.
+- **Persistence:** saved passports are files on the server. **On Railway, attach a volume and set `DATA_DIR`**, or they are lost on every deploy. The staff page shows a warning while storage is temporary.
 
 ## Live news ticker
 
@@ -178,7 +198,12 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `FEKRA_TIMEOUT_MS` | No | `150000` | Timeout per Claude call (research can take a minute or two). |
 | `FEKRA_MAX_CALLS_PER_HOUR` | No | `300` | Spend guard for Fekra (an innovation check counts as 2). |
 | `FEKRA_IDLE_RESET_SECONDS` | No | `600` | Inactivity reset while an idea is in progress. |
-| `FEKRA_STORE_DIR` | **Recommended** | system temp dir | Where saved proposals are kept. **On Railway, attach a volume and point this at it** (for example `/data/fekra`); otherwise saved proposals are lost on the next deploy, and the save dialog warns about it. |
+| `DATA_DIR` | **Recommended** | system temp dir | One persistent folder for everything the app saves: proposals go in `DATA_DIR/fekra`, passports in `DATA_DIR/passports`. **On Railway, attach a volume (for example at `/data`) and set `DATA_DIR=/data`**; otherwise saved proposals and passports are lost on the next deploy. |
+| `PASSPORT_SAVE` | No | `optional` | `optional`: visitors may tick "Save my passport". `required`: they must, to create a passport. `off`: passports are never saved. |
+| `PASSPORT_RETENTION_DAYS` | No | `180` | Saved passports are deleted automatically after this many days. |
+| `PASSPORT_ADMIN_TOKEN` | For staff access | — | Staff key for `/staff.html` and the CSV export. At least 20 random characters; mark it as a secret. Without it, nobody can list saved passports. |
+| `PASSPORT_STORE_DIR` | No | `DATA_DIR/passports` | Overrides the passports folder. |
+| `FEKRA_STORE_DIR` | No | `DATA_DIR/fekra` | Overrides the saved-proposals folder. |
 | `FEKRA_IDENTITY_HEADER` | No | — | Header set by GDRFA single sign-on (for example `x-ms-client-principal-name`). When set, proposals belong to the signed-in user. Only use it behind a proxy that controls this header. |
 | `FEKRA_SUBMIT_URL` | No | — | Management review endpoint that receives submitted proposals. Without it, submission reports "not connected". |
 | `FEKRA_SUBMIT_TOKEN` | No | — | Bearer token sent to `FEKRA_SUBMIT_URL` (mark it as a secret). |
@@ -209,10 +234,15 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
   - Serve over HTTPS (Railway does this); the camera needs HTTPS or localhost.
   - Run Chrome in kiosk mode, e.g. `chrome --kiosk --noerrdialogs --disable-pinch --overscroll-history-navigation=0 https://your-domain/`.
 - **Anthropic Console:** set a monthly spend limit on the workspace that holds the key.
+- **Saved passports:**
+  - Attach a Railway volume and set `DATA_DIR`.
+  - Set `PASSPORT_ADMIN_TOKEN` to a long random value and give it only to the booth team.
+  - Have GDRFA's data-protection team approve the consent wording on the passport form (`consentBody()` in `public/app.js`) and the retention period.
+  - Decide whether saving stays optional (recommended) or becomes `PASSPORT_SAVE=required`.
 - **Fekra:**
   - Confirm with your data-governance team that employees may send idea descriptions to Claude. The page asks them not to share personal or classified information.
   - Connect the management review system with `FEKRA_SUBMIT_URL` (and `FEKRA_SUBMIT_TOKEN`).
-  - Give saved proposals persistent storage: attach a Railway volume and set `FEKRA_STORE_DIR` to a folder on it. For named ownership, put the site behind GDRFA single sign-on and set `FEKRA_IDENTITY_HEADER`.
+  - Give saved proposals persistent storage: attach a Railway volume and set `DATA_DIR` to it. For named ownership, put the site behind GDRFA single sign-on and set `FEKRA_IDENTITY_HEADER`.
   - Fekra does not see internal GDRFA projects. The innovation check searches only the public web, and its limitations say so.
 
 ## Security notes
@@ -220,5 +250,9 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 - The recommender accepts only enum values and a 4 KB JSON body; visitor names and photos never reach the model.
 - Fekra sends the employee's conversation (up to 256 KB per request) to Claude. The page says so. AI requests are not stored; the server logs only operation, model, latency and token counts. A proposal is stored only when the employee saves it, and opening it needs its access code (stored as a hash), plus the owner's sign-in when `FEKRA_IDENTITY_HEADER` is set.
 - All API routes reject cross-origin POSTs and rate-limit per IP. The API key and `FEKRA_SUBMIT_TOKEN` stay on the server.
-- Strict Content-Security-Policy (`script-src 'self'`), no inline scripts, HSTS behind HTTPS, `Permissions-Policy` limiting the camera to this origin, and no storage of visitor data (no `localStorage`, no server-side records).
-- The passport QR code contains only a journey code, track, level and short course codes, in the URL fragment, which is never sent to the server.
+- Strict Content-Security-Policy (`script-src 'self'`), no inline scripts, HSTS behind HTTPS, and `Permissions-Policy` limiting the camera to this origin. Visitor data is never put in browser storage.
+- A visitor's details are stored on the server only when they tick "Save my passport". Only known fields are kept, track and course titles come from the booth's own content, and the image must be a JPEG under 1.5 MB.
+  - Opening, changing or deleting a saved passport needs its key, which is stored only as a hash.
+  - Listing them needs `PASSPORT_ADMIN_TOKEN`, compared in constant time. Failed attempts are logged and rate-limited.
+  - CSV cells that start with `=`, `+`, `-` or `@` are neutralised so a name cannot run as a spreadsheet formula.
+- The passport QR code contains, in the URL fragment (never sent to the server), a journey code, track, level and short course codes. A saved passport's code also contains its reference and key, and anyone holding the code can open that passport. The phone page says so and sends no referrer.

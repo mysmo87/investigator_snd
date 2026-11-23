@@ -46,6 +46,10 @@ function timezone(env, name, def) {
 function loadConfig(env = process.env) {
   const onRailway = !!(env.RAILWAY_ENVIRONMENT_NAME || env.RAILWAY_ENVIRONMENT || env.RAILWAY_PROJECT_ID);
   const apiKeySet = !!str(env, 'ANTHROPIC_API_KEY', null);
+  // DATA_DIR: one persistent folder (on Railway, a mounted volume such as /data) for everything the app saves.
+  const path = require('path'), dataDir = str(env, 'DATA_DIR', null);
+  const saveDir = (name, sub) => str(env, name, null) || (dataDir ? path.join(dataDir, sub) : path.join(require('os').tmpdir(), `cft-${sub}`));
+  const savePersistent = name => !!(str(env, name, null) || dataDir); // only an explicitly configured folder counts as persistent
   const cfg = {
     port: int(env, 'PORT', 3000, 1, 65535),
     host: str(env, 'HOST', '0.0.0.0'),
@@ -81,9 +85,18 @@ function loadConfig(env = process.env) {
       idleResetSeconds: int(env, 'FEKRA_IDLE_RESET_SECONDS', 600, 60, 7200),
       submitUrl: url(env, 'FEKRA_SUBMIT_URL'),
       submitToken: str(env, 'FEKRA_SUBMIT_TOKEN', null),
-      storeDir: str(env, 'FEKRA_STORE_DIR', require('path').join(require('os').tmpdir(), 'fekra-proposals')),
-      storePersistent: !!str(env, 'FEKRA_STORE_DIR', null), // only an explicitly configured directory (for example a Railway volume) counts as persistent
+      storeDir: saveDir('FEKRA_STORE_DIR', 'fekra'),
+      storePersistent: savePersistent('FEKRA_STORE_DIR'),
       identityHeader: str(env, 'FEKRA_IDENTITY_HEADER', null) ? str(env, 'FEKRA_IDENTITY_HEADER', null).toLowerCase() : null
+    },
+
+    // Saved Agentic AI Passports (only with the visitor's consent)
+    passport: {
+      save: oneOf(env, 'PASSPORT_SAVE', 'optional', ['off', 'optional', 'required']),
+      storeDir: saveDir('PASSPORT_STORE_DIR', 'passports'),
+      storePersistent: savePersistent('PASSPORT_STORE_DIR'),
+      retentionDays: int(env, 'PASSPORT_RETENTION_DAYS', 180, 1, 3650),
+      adminToken: str(env, 'PASSPORT_ADMIN_TOKEN', null)
     },
 
     news: {
@@ -105,6 +118,7 @@ function loadConfig(env = process.env) {
       idleResetSeconds: int(env, 'IDLE_RESET_SECONDS', 90, 15, 3600)
     }
   };
+  if (cfg.passport.adminToken && cfg.passport.adminToken.length < 20) throw new Error('PASSPORT_ADMIN_TOKEN must be at least 20 characters');
   if (cfg.kiosk.idleWarnSeconds >= cfg.kiosk.idleResetSeconds) throw new Error('IDLE_WARN_SECONDS must be lower than IDLE_RESET_SECONDS');
   return cfg;
 }

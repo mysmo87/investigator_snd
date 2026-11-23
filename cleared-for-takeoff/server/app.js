@@ -8,6 +8,10 @@
      GET|PUT /api/fekra/proposals/FK-…         open / update a saved proposal (X-Fekra-Key header)
      GET  /api/fekra/proposals/FK-…/versions   earlier versions of a saved proposal
      GET  /api/fekra/proposals                 the signed-in user's proposals (only with FEKRA_IDENTITY_HEADER)
+     POST /api/passports                       save a visitor's passport (with their consent) -> { ref, key }
+     GET|PUT|DELETE /api/passports/CFT-…       open / update / delete a saved passport (X-Passport-Key header)
+     GET  /api/passports/CFT-…/image           the saved passport image (X-Passport-Key header)
+     GET  /api/passports/export[?format=csv]   every saved passport, for GDRFA staff (Authorization: Bearer PASSPORT_ADMIN_TOKEN)
      GET  /api/news       live headlines for the ticker (see server/news.js)
      GET  /api/news/sources  which news sources are working, cached or need configuration
    No framework: Node's http module keeps the dependency surface small. */
@@ -15,7 +19,9 @@
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const crypto = require('crypto');
 const { cleanProposal, cleanCheck, SECTION_KEYS, SECTION_FIELDS } = require('./fekra');
+const { cleanPassport, decodeImage } = require('./passport-store');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -25,6 +31,7 @@ const MIME = {
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt']);
 const MAX_BODY = 4 * 1024;
 const FEKRA_MAX_BODY = 256 * 1024; // Fekra sends the conversation with each request
+const PASSPORT_MAX_BODY = 2200 * 1024; // the passport image (JPEG, base64) plus the visitor's details
 
 const CSP = [
   "default-src 'self'",
@@ -106,7 +113,14 @@ const DEPLOY = {
   deploymentId: process.env.RAILWAY_DEPLOYMENT_ID || null
 };
 
-function createApp({ config, recommender, fekra, store, news, rules, content, logger, publicDir, version }) {
+/* one CSV cell; a leading = + - @ is neutralised so spreadsheets never run it as a formula */
+function csvCell(v) {
+  let t = String(v == null ? '' : v);
+  if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  return /[",\r\n]/.test(t) || t !== t.trim() ? '"' + t.replace(/"/g, '""') + '"' : t;
+}
+
+function createApp({ config, recommender, fekra, store, passports, news, rules, content, catalog = { courses: [] }, logger, publicDir, version }) {
   const limiter = createRateLimiter(config.rateLimitPerMinute);
   const root = path.resolve(publicDir);
   const startedAt = Date.now();
@@ -221,6 +235,68 @@ function createApp({ config, recommender, fekra, store, news, rules, content, lo
     }
   }
 
+  /* ---------- saved passports ---------- */
+  const passportConfig = () => ({ save: passports ? config.passport.save : 'off', storage: passports ? passports.status() : { available: false, persistent: false }, retentionDays: config.passport.retentionDays });
+  const trackTitle = id => { const t = (content.tracks || []).find(x => x.id === id); return t ? t.title : ''; };
+  const courseTitle = ref => { const c = (catalog.courses || []).find(x => x.ref === ref); return c ? c.title : ref; };
+  const sessionTitle = id => { const x = (content.sessions || []).find(s => s.id === id); return x ? x.title : ''; };
+  function staffRow(r) {
+    return {
+      passport: r.ref, created: r.createdAt, name: r.visitor.name, email: r.visitor.email, organization: r.visitor.org,
+      track: trackTitle(r.journey.track), secondTrack: trackTitle(r.journey.secondary), level: (content.levels || [])[r.journey.level] || '',
+      attended: sessionTitle(r.attended), courses: r.journey.stages.flatMap(s => s.courses).map(courseTitle).join('; '),
+      recommendedBy: r.journey.source === 'ai' ? 'AI' : 'Booth rules', consentAt: r.consent && r.consent.at, deleteAfter: r.expiresAt
+    };
+  }
+  function staffAuthorized(req) {
+    const token = config.passport.adminToken, m = /^Bearer\s+(.+)$/i.exec(String(req.headers.authorization || ''));
+    if (!token || !m) return false;
+    const a = crypto.createHash('sha256').update(m[1].trim()).digest(), b = crypto.createHash('sha256').update(token).digest();
+    return crypto.timingSafeEqual(a, b);
+  }
+  async function handlePassports(req, res, ref, sub) {
+    if (!sameOrigin(req)) return sendJson(res, 403, { error: 'Cross-origin requests are not allowed.' });
+    const rl = limiter.take(clientIp(req, config.trustProxy));
+    if (!rl.ok) return sendJson(res, 429, { error: 'Too many requests. Please wait a moment.' }, { 'Retry-After': String(rl.retryAfter) });
+    if (!passports || config.passport.save === 'off') return sendJson(res, 503, { error: 'Saving passports is not available.', reason: 'no_store' });
+    const key = req.headers['x-passport-key'];
+    try {
+      if (ref === 'export') {
+        if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
+        if (!config.passport.adminToken) return sendJson(res, 503, { error: 'Staff access is not configured (PASSPORT_ADMIN_TOKEN).', reason: 'not_configured' });
+        if (!staffAuthorized(req)) { logger.warn('passport_export_denied', { ip: clientIp(req, config.trustProxy) }); return sendJson(res, 401, { error: 'The staff key is not correct.', reason: 'unauthorized' }); }
+        const rows = (await passports.list()).map(staffRow);
+        logger.info('passport_export', { rows: rows.length });
+        if (new URL(req.url, 'http://localhost').searchParams.get('format') === 'csv') {
+          const cols = ['passport', 'created', 'name', 'email', 'organization', 'track', 'secondTrack', 'level', 'attended', 'courses', 'recommendedBy', 'consentAt', 'deleteAfter'];
+          const csv = '\ufeff' + [cols.join(','), ...rows.map(r => cols.map(c => csvCell(r[c])).join(','))].join('\r\n') + '\r\n';
+          res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Disposition': `attachment; filename="agentic-ai-passports-${new Date().toISOString().slice(0, 10)}.csv"` });
+          return res.end(csv);
+        }
+        return sendJson(res, 200, { count: rows.length, storage: passports.status(), passports: rows });
+      }
+      if (!ref && req.method === 'POST') {
+        const body = await readJsonBody(req, PASSPORT_MAX_BODY);
+        if (body.consent !== true) return sendJson(res, 400, { error: 'The visitor has not agreed to save their passport.', reason: 'no_consent' });
+        const data = { ref: String(body.ref || ''), ...cleanPassport(body, content, catalog) };
+        return sendJson(res, 201, await passports.create(data, decodeImage(body.image), body.consentText));
+      }
+      if (ref && sub === 'image' && req.method === 'GET') {
+        const img = await passports.getImage(ref, key);
+        res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store', 'Content-Length': img.length });
+        return res.end(img);
+      }
+      if (ref && !sub && req.method === 'GET') return sendJson(res, 200, await passports.get(ref, key));
+      if (ref && !sub && req.method === 'PUT') { const body = await readJsonBody(req, PASSPORT_MAX_BODY); return sendJson(res, 200, await passports.update(ref, key, cleanPassport(body, content, catalog), decodeImage(body.image))); }
+      if (ref && !sub && req.method === 'DELETE') return sendJson(res, 200, await passports.delete(ref, key));
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    } catch (err) {
+      const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 500;
+      if (status >= 500) logger.error('passport_store_failed', { detail: String(err.message).slice(0, 300) });
+      return sendJson(res, status, { error: status < 500 ? err.message : 'The passport could not be saved.', reason: err.reason || 'error' });
+    }
+  }
+
   return async function handler(req, res) {
     const started = Date.now();
     securityHeaders(req, res, config.trustProxy);
@@ -232,7 +308,7 @@ function createApp({ config, recommender, fekra, store, news, rules, content, lo
     try {
       if (pathname === '/api/health') {
         if (req.method !== 'GET' && req.method !== 'HEAD') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
-        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() }, fekra: fekra ? { ...fekra.status(), ...fekra.stats() } : { enabled: false }, news: news ? news.stats() : { enabled: false } });
+        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() }, fekra: fekra ? { ...fekra.status(), ...fekra.stats() } : { enabled: false }, passports: passportConfig(), news: news ? news.stats() : { enabled: false } });
       }
       if (pathname === '/api/config') {
         if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
@@ -245,6 +321,7 @@ function createApp({ config, recommender, fekra, store, news, rules, content, lo
           idleWarnSeconds: config.kiosk.idleWarnSeconds,
           idleResetSeconds: config.kiosk.idleResetSeconds,
           fekra: { ...(fekra ? fekra.status() : { enabled: false }), idleResetSeconds: config.fekra.idleResetSeconds, storage: store ? store.status() : { available: false, persistent: false }, signIn: !!config.fekra.identityHeader },
+          passport: passportConfig(),
           version
         });
       }
@@ -259,6 +336,8 @@ function createApp({ config, recommender, fekra, store, news, rules, content, lo
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });
         return await handleRecommend(req, res);
       }
+      const ppm = /^\/api\/passports(?:\/(export|CFT-[0-9A-Z]{5}))?(?:\/(image))?$/.exec(pathname);
+      if (ppm && !(ppm[1] === 'export' && ppm[2])) return await handlePassports(req, res, ppm[1] || null, ppm[2] || null);
       const pm = /^\/api\/fekra\/proposals(?:\/(FK-[0-9A-Z-]{6,20}))?(?:\/(versions))?$/.exec(pathname);
       if (pm) return await handleProposals(req, res, pm[1] || null, pm[2] || null);
       const fm = /^\/api\/fekra\/([a-z]+)$/.exec(pathname);

@@ -17,7 +17,8 @@ const CONFIG = {
   aiEnabled: false, aiTimeoutMs: 20000, publicBaseUrl: null,
   scheduleMode: 'relative', eventTimezone: 'Asia/Dubai',
   idleWarnSeconds: 75, idleResetSeconds: 90,
-  fekra: null // Fekra innovation assistant availability (set from /api/config; see fekra.js)
+  fekra: null, // Fekra innovation assistant availability (set from /api/config; see fekra.js)
+  passport: null // saving passports: { save: off|optional|required, storage, retentionDays } (set from /api/config)
 };
 
 /* =====================================================================
@@ -128,7 +129,7 @@ const freshState = () => ({
   schedule: [], chat: { busy: false, epoch: 0 },
   wizard: { open: false, step: 1, role: null, experience: null, interests: [], focusTrack: null, token: 0 },
   journey: null,
-  draft: { name: '', email: '', org: '', tab: 'preset', avatar: { kind: 'preset', id: 'orbit' }, errors: {} },
+  draft: { name: '', email: '', org: '', save: false, tab: 'preset', avatar: { kind: 'preset', id: 'orbit' }, errors: {} },
   passport: null, attended: null
 });
 let state = freshState();
@@ -958,12 +959,12 @@ const R = {
       follow: ['What sessions are happening today?', 'What is the Agentic AI Passport?'] };
   },
   tracksList: () => ({ blocks: [P('Cleared for Takeoff offers six learning tracks:'), UL(DATA.tracks.map(t => `${t.title} — ${t.level}`))], actions: [{ label: 'View Learning Tracks', action: 'nav', view: 'tracks' }, { label: 'Find my track', action: 'start-journey', gold: true }], follow: ['Which learning track is right for me?', 'Tell me about the Cybersecurity in the AI Era track'] }),
-  passport: () => ({ blocks: [P('The Agentic AI Passport is a personalised digital pass created at the end of your AI Journey. It shows your name, your photo or avatar, your recommended learning track, your level — Explorer, Practitioner or Innovator — any session you attended, and a QR code that opens your course list on your phone.'), P('You can download it as an image and see yourself welcomed on the big screen.'), NOTE('Your name and photo stay on this kiosk and are cleared on reset. It is a keepsake, not an official document.')],
+  passport: () => ({ blocks: [P('The Agentic AI Passport is a personalised digital pass created at the end of your AI Journey. It shows your name, your photo or avatar, your recommended learning track, your level — Explorer, Practitioner or Innovator — any session you attended, and a QR code that opens your course list on your phone.'), P('You can download it as an image and see yourself welcomed on the big screen.'), NOTE(ppSaveMode() === 'off' ? 'Your name and photo stay on this kiosk and are cleared on reset. It is a keepsake, not an official document.' : `If you tick “Save my passport”, GDRFA keeps it for ${ppDays()} days so the QR code opens it again on your phone, and you can delete it there at any time. Otherwise your name and photo stay on this kiosk and are cleared on reset. It is a keepsake, not an official document.`)],
     actions: state.passport ? [{ label: 'View my passport', action: 'nav', view: 'journey' }] : [{ label: 'Create my passport', action: 'start-journey', gold: true }], follow: ['How does Cleared for Takeoff personalise my journey?', 'Is my data stored?'] }),
   bigscreen: () => ({ blocks: [P('After creating your passport, tap “Show on Big Screen” to see an 8-second welcome animation with your avatar, your name and your learning track. You will always be asked to confirm first, because it may be visible to people nearby.')], actions: [{ label: 'Start My AI Journey', action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Is my data stored?'] }),
   journey: () => ({ blocks: [P('Your AI Journey is built from three answers: your role, your experience with AI and your interests. An AI recommender (Claude, by Anthropic) matches them to a primary learning track and picks real courses for your level from a curated catalogue:'), UL(['Discover — a topic to explore, introductory courses and a demo to visit', 'Learn — core courses and a session to join', 'Practice — hands-on courses or labs', 'Innovate — a stretch course and a practical next step for your work']), NOTE('Only your three answers are used — never your name, email or photo. If the AI service is unavailable, transparent rules on this kiosk build the journey instead.')],
     actions: [{ label: 'Start My AI Journey', action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Which learning track is right for me?'] }),
-  privacy: () => ({ blocks: [P('Privacy first:'), UL(['Your name, email and photo stay in this kiosk’s memory and are never sent anywhere', 'To recommend courses, only your role, AI experience and interests are sent to the course recommender (powered by Claude)', 'Nothing is saved to browser storage', `Everything is cleared when you press Reset, or after ${CONFIG.idleResetSeconds} seconds of inactivity`])], follow: ['What is the Agentic AI Passport?', 'How does Cleared for Takeoff personalise my journey?'] }),
+  privacy: () => ({ blocks: [P('Privacy first:'), UL([...(ppSaveMode() === 'off' ? ['Your name, email and photo stay in this kiosk’s memory and are never sent anywhere'] : ['Your name, email and photo stay in this kiosk’s memory unless you tick “Save my passport” when you create it', `A saved passport (name, email, organization, passport image and learning journey) is kept by GDRFA for ${ppDays()} days so its QR code keeps working; the GDRFA booth team can see it, and you can delete it at any time from your phone`]), 'To recommend courses, only your role, AI experience and interests are sent to the course recommender (powered by Claude)', 'Nothing is saved to browser storage', `Everything on this kiosk is cleared when you press Reset, or after ${CONFIG.idleResetSeconds} seconds of inactivity`])], follow: ['What is the Agentic AI Passport?', 'How does Cleared for Takeoff personalise my journey?'] }),
   about: () => ({ blocks: [P('GDRFA — the General Directorate of Residency and Foreigners Affairs in Dubai — oversees residency, entry permits and related services. At GITEX, the booth explores how Agentic AI could make such services more proactive and seamless.'), NOTE('For official services and information, please use GDRFA’s official channels. This assistant is a demo.')], follow: ['What demos are available at the GDRFA booth?', 'What is Agentic AI?'] }),
   help: () => ({ blocks: [P('I’m the booth assistant for Agentic AI: Cleared for Takeoff. I answer from the booth’s content and course catalogue, and I can help you:'), UL(['Understand Agentic AI and Generative AI', 'Find today’s sessions and booth demos', 'Choose a learning track', 'Create your personalised AI Journey and Passport'])], follow: DATA.defaultSuggestions }),
   demo(d, t) {
@@ -1140,9 +1141,10 @@ function hydratePlan(plan, profile, source) {
     code: 'CFT-' + hashStr(JSON.stringify(plan) + Date.now()).toString(36).toUpperCase().slice(0, 5).padStart(5, '0')
   };
 }
-function journeyLink(j) {
+function journeyLink(j, saved) {
   const base = CONFIG.publicBaseUrl || (CONFIG.served ? location.origin + location.pathname.replace(/[^/]*$/, '') : 'https://example.com/cleared-for-takeoff/');
-  const q = new URLSearchParams({ v: '1', j: j.code, t: j.primary.id, l: String(j.level), c: j.stages.map(s => s.courses.map(c => c.ref).join('.')).join('-') });
+  // p = the saved passport (reference ~ private key); the rest still opens the course list if the saved copy is gone
+  const q = new URLSearchParams({ ...(saved ? { p: `${saved.ref}~${saved.key.replace(/-/g, '')}` } : { j: j.code }), v: '1', t: j.primary.id, l: String(j.level), c: j.stages.map(s => s.courses.map(c => c.ref).join('.')).join('-') });
   return base.replace(/\/?$/, '/') + 'journey.html#' + q.toString();
 }
 function courseRow(c) {
@@ -1219,7 +1221,7 @@ async function runProcessing() {
   const { plan, source } = await planPromise;
   if (token !== state.wizard.token || state.wizard.step !== 3) return;
   state.journey = hydratePlan(plan, profile, source);
-  if (state.passport) state.passport = buildPassport(state.passport);
+  if (state.passport) { state.passport = buildPassport(state.passport); if (state.passport.saved) syncSavedPassport(); }
   await wait(REDUCED ? 100 : 450);
   if (token !== state.wizard.token || state.wizard.step !== 3) return;
   wizGo(4);
@@ -1233,13 +1235,15 @@ function renderPassportForm() {
       <div class="field${e.name ? ' err' : ''}"><label for="ppName">Full name</label><input id="ppName" maxlength="50" autocomplete="off" value="${esc(d.name)}" placeholder="e.g. Aisha Al Mansoori"><div class="msg-err">${esc(e.name || '')}</div></div>
       <div class="field${e.email ? ' err' : ''}"><label for="ppEmail">Email address</label><input id="ppEmail" type="email" maxlength="80" autocomplete="off" inputmode="email" value="${esc(d.email)}" placeholder="name@example.com"><div class="msg-err">${esc(e.email || '')}</div></div>
       <div class="field"><label for="ppOrg">Organization <span>(optional)</span></label><input id="ppOrg" maxlength="50" autocomplete="off" value="${esc(d.org)}" placeholder="Your organization"><div class="msg-err"></div></div>
-      <div class="privacy">${ic('shield')}<span><b>Privacy notice:</b> your name, email and photo stay in this kiosk’s memory only — they are never uploaded or saved, and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity. Your email is not printed on the passport or included in the QR code.</span></div>
+      ${ppSaveMode() !== 'off' ? `<label class="pp-consent${e.save ? ' err' : ''}"><input type="checkbox" id="ppSave"${d.save ? ' checked' : ''}><span><b>Save my passport so I can open it again later${ppSaveMode() === 'required' ? '' : ' <em>(optional)</em>'}</b>${esc(consentBody())}</span></label>${e.save ? `<div class="msg-err pp-consent-err">${esc(e.save)}</div>` : ''}` : ''}
+      <div class="privacy">${ic('shield')}<span><b>Privacy notice:</b> ${ppSaveMode() === 'off' ? `your name, email and photo stay in this kiosk’s memory only — they are never uploaded or saved, and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.` : ppSaveMode() === 'required' ? 'your passport is saved with GDRFA as described above, and this kiosk forgets you on reset.' : `unless you tick “Save my passport”, your name, email and photo stay in this kiosk’s memory only and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.`} Your email is never printed on the passport or included in the QR code.</span></div>
     </div><div>
       <div class="stage-sec">Choose your avatar</div>
       <div class="tabs" role="tablist">${[['preset', 'spark', 'Select avatar'], ['upload', 'upload', 'Upload photo'], ['camera', 'camera', 'Use camera']].map(([id, icn, l]) => `<button class="tab${d.tab === id ? ' active' : ''}" role="tab" aria-selected="${d.tab === id}" data-action="ava-tab" data-id="${id}">${ic(icn)}${l}</button>`).join('')}</div>
       <div id="avaPanel"></div>
       <div class="ava-preview"><canvas id="avaPreview" width="240" height="240" aria-label="Selected avatar preview"></canvas><p id="avaPreviewText"></p></div>
     </div></div>`;
+  const cb = $('#ppSave'); if (cb) cb.addEventListener('change', () => { state.draft.save = cb.checked; if (state.draft.errors.save) { state.draft.errors.save = ''; cb.closest('.pp-consent').classList.remove('err'); const m = $('.pp-consent-err'); if (m) m.remove(); } });
   ['ppName', 'ppEmail', 'ppOrg'].forEach(id => $('#' + id).addEventListener('input', ev => { const k = { ppName: 'name', ppEmail: 'email', ppOrg: 'org' }[id]; state.draft[k] = ev.target.value; if (state.draft.errors[k]) { state.draft.errors[k] = ''; ev.target.closest('.field').classList.remove('err'); ev.target.closest('.field').querySelector('.msg-err').textContent = ''; } }));
   renderAvaPanel();
   $('#wizFoot').innerHTML = `<button class="btn btn-ghost" data-action="wiz-step" data-id="4">${ic('chevL')} Back to journey</button><span class="spacer"></span><span class="hint">Takes about 30 seconds</span><button class="btn btn-gold" data-action="pp-generate">${ic('passport')} Generate Passport</button>`;
@@ -1251,10 +1255,10 @@ function renderAvaPanel() {
     panel.innerHTML = `<div class="ava-grid">${DATA.avatars.map(a => `<div><button class="ava-opt${d.avatar.kind === 'preset' && d.avatar.id === a.id ? ' sel' : ''}" data-action="ava-pick" data-id="${a.id}" aria-label="Avatar ${esc(a.name)}"><canvas width="160" height="160" data-ava="${a.id}"></canvas></button><div class="ava-name">${esc(a.name)}</div></div>`).join('')}</div>`;
     $$('canvas[data-ava]', panel).forEach(c => paintAvatarInto(c, { kind: 'preset', id: c.dataset.ava }));
   } else if (d.tab === 'upload') {
-    panel.innerHTML = `<button class="upload-zone" data-action="ava-upload">${ic('upload')}<b>Choose a photo from this device</b><span class="small">JPG, PNG or WebP · up to 10 MB · processed locally, never uploaded</span></button>`;
+    panel.innerHTML = `<button class="upload-zone" data-action="ava-upload">${ic('upload')}<b>Choose a photo from this device</b><span class="small">JPG, PNG or WebP · up to 10 MB · ${ppSaveMode() === 'off' ? 'processed locally, never uploaded' : 'processed on this device; saved only as part of your passport, if you choose to save it'}</span></button>`;
   } else {
     const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    panel.innerHTML = `<div class="cam-box" id="camBox"><video id="camVideo" playsinline muted hidden></video><div class="cam-msg" id="camMsg">${supported ? 'Tap “Start camera” to take a photo. Your browser will ask for permission; the image stays on this device.' : 'Camera capture is not supported in this browser. Please upload a photo or choose an avatar instead.'}</div></div>
+    panel.innerHTML = `<div class="cam-box" id="camBox"><video id="camVideo" playsinline muted hidden></video><div class="cam-msg" id="camMsg">${supported ? 'Tap “Start camera” to take a photo. Your browser will ask for permission; ' + (ppSaveMode() === 'off' ? 'the image stays on this device.' : 'the image stays on this device unless you save your passport.') : 'Camera capture is not supported in this browser. Please upload a photo or choose an avatar instead.'}</div></div>
       <div class="cam-actions" id="camActions">${supported ? `<button class="btn btn-primary" data-action="cam-start">${ic('camera')} Start camera</button>` : `<button class="btn btn-ghost" data-action="ava-tab" data-id="preset">Choose an avatar</button>`}</div>`;
   }
   hydrateIcons(panel);
@@ -1292,7 +1296,7 @@ function capturePhoto() {
 }
 function setPhotoFromCanvas(c, done) {
   const img = new Image();
-  img.onload = () => { state.draft.avatar = { kind: 'photo', img }; updateAvaPreview(); if (done) done(); toast('Photo added — it stays on this device only.'); };
+  img.onload = () => { state.draft.avatar = { kind: 'photo', img }; updateAvaPreview(); if (done) done(); toast(ppSaveMode() === 'off' ? 'Photo added — it stays on this device only.' : 'Photo added.'); };
   img.onerror = () => toast('That image could not be processed. Please try another photo.');
   img.src = c.toDataURL('image/jpeg', .9);
 }
@@ -1313,15 +1317,79 @@ function validateDraft() {
   d.name = cleanText(d.name, 50); d.email = cleanText(d.email, 80); d.org = cleanText(d.org, 50);
   if (d.name.length < 2) errors.name = 'Please enter your name (at least 2 characters).';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) errors.email = 'Please enter a valid email address.';
+  if (ppSaveMode() === 'required' && !d.save) errors.save = 'Please agree to save your passport to create it.';
   d.errors = errors; return !Object.keys(errors).length;
 }
 function buildPassport(prev) {
-  const d = state.draft, j = state.journey;
+  const d = state.draft, j = state.journey, saved = (prev && prev.saved) || null;
   return {
     name: d.name, email: d.email, org: d.org, avatar: { ...d.avatar }, journey: j,
     number: (prev && prev.number) || j.code, date: (prev && prev.date) || new Date(),
-    qrText: journeyLink(j)
+    saved, saveError: null, qrText: journeyLink(j, saved)
   };
+}
+
+/* ---------- saving the passport with GDRFA (only when the visitor ticks the box) ----------
+   POST /api/passports creates it under the passport number and returns a private key; the QR code then carries
+   both, so scanning it later opens the saved passport on the visitor's phone. Editing updates it; unticking deletes it. */
+function ppSaveMode() { const c = CONFIG.passport; return CONFIG.served && c && c.storage && c.storage.available ? c.save : 'off'; }
+const ppDays = () => (CONFIG.passport && CONFIG.passport.retentionDays) || 180;
+function consentBody() { return ` GDRFA keeps your name, email, organization, passport image (with your photo or avatar) and learning journey for ${ppDays()} days, and the GDRFA booth team can see them. You can delete them at any time from your passport page on your phone.`; }
+function passportPayload(p) {
+  const j = p.journey;
+  return {
+    ref: p.number, consent: true, consentText: 'Save my passport so I can open it again later.' + consentBody(),
+    visitor: { name: p.name, email: p.email, org: p.org },
+    journey: { track: j.primary.id, secondary: j.secondary ? j.secondary.id : null, level: j.level, summary: j.summary, source: j.source,
+      stages: j.stages.map(s => ({ key: s.key, topic: s.topic, next: s.next, courses: s.courses.map(c => c.ref) })) },
+    attended: state.attended, avatar: p.avatar.kind === 'photo' ? 'photo' : 'preset:' + p.avatar.id
+  };
+}
+async function passportImage(p) {
+  await fontsReady(); const cv = document.createElement('canvas'); drawPassport(cv, p);
+  let url = ''; for (const q of [.88, .78, .66]) { url = cv.toDataURL('image/jpeg', q); if (url.length * .75 < 1400 * 1024) break; } // the server accepts up to 1.5 MB
+  return url;
+}
+async function ppFetch(method, url, body, key) {
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Passport-Key': key } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw Object.assign(new Error(out.error || 'Saving failed'), { status: res.status });
+    return out;
+  } finally { clearTimeout(timer); }
+}
+let ppSync = Promise.resolve();
+/* bring the saved copy in line with the passport on screen: create, update or delete it (one change at a time) */
+function syncSavedPassport() {
+  ppSync = ppSync.then(async () => {
+    const p = state.passport; if (!p) return;
+    const want = ppSaveMode() !== 'off' && state.draft.save;
+    try {
+      if (want && !p.saved) {
+        const image = await passportImage(p);
+        for (let i = 0; ; i++) {
+          try { const r = await ppFetch('POST', 'api/passports', { ...passportPayload(p), image }); p.saved = { ref: r.ref, key: r.key, expiresAt: r.expiresAt }; break; }
+          catch (e) { if (e.status !== 409 || i >= 2) throw e; p.number = p.journey.code = newPassportNumber(); } // number already taken: draw another
+        }
+      } else if (want && p.saved) {
+        await ppFetch('PUT', 'api/passports/' + p.saved.ref, { ...passportPayload(p), image: await passportImage(p) }, p.saved.key);
+      } else if (!want && p.saved) {
+        await ppFetch('DELETE', 'api/passports/' + p.saved.ref, null, p.saved.key).catch(e => { if (e.status !== 404) throw e; });
+        p.saved = null; toast('Your saved passport was deleted.');
+      }
+      p.saveError = null;
+    } catch (e) {
+      p.saveError = e.name === 'AbortError' ? 'The server took too long to answer.' : (e.message || 'Saving failed');
+      toast('Your passport couldn’t be saved. The QR code still opens your courses.');
+    }
+    if (state.passport === p) { p.qrText = journeyLink(p.journey, p.saved); refreshPassportViews(); }
+  });
+  return ppSync;
+}
+function newPassportNumber() { const a = new Uint32Array(1); crypto.getRandomValues(a); return 'CFT-' + a[0].toString(36).toUpperCase().slice(-5).padStart(5, '0'); }
+function refreshPassportViews() {
+  ['ppCanvasWiz', 'ppCanvasView'].forEach(id => { const cv = $('#' + id); if (!cv) return; const wrap = cv.closest('.passport-wrap'); wrap.innerHTML = passportPreviewHTML(id) + passportActionsHTML(id === 'ppCanvasWiz'); hydrateIcons(wrap); paintPassport($('#' + id)); });
 }
 
 /* ---------- passport rendering ---------- */
@@ -1595,7 +1663,14 @@ function paintPassport(cv) {
 /* the passport page, with its QR code beside it rather than printed on the page */
 function passportPreviewHTML(id) {
   return `<div class="pp-preview"><canvas class="passport-canvas" id="${id}" aria-label="Your Agentic AI Passport: ${esc(state.passport.name)}, ${esc(state.journey.primary.title)}, ${esc(state.journey.levelName)} level"></canvas>
-    <div class="pp-qr"><canvas class="pp-qr-code" width="320" height="320" role="img" aria-label="QR code that opens your course list"></canvas><div><b>Scan for your courses</b><span>Opens your personalised course list on your phone.</span><span class="pp-qr-no">Passport no. ${esc(state.passport.number)}</span></div></div></div>`;
+    ${ppQrHTML(state.passport)}</div>`;
+}
+function ppQrHTML(p) {
+  const until = p.saved && p.saved.expiresAt ? new Date(p.saved.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const [title, line, label] = p.saved ? ['Scan to keep your passport', 'Opens your saved passport and courses on your phone. Bookmark the page or save the image to come back any time.', 'QR code that opens your saved passport']
+    : p.saveError ? ['Scan for your courses', 'Your passport couldn’t be saved, but this code still opens your course list on your phone.', 'QR code that opens your course list']
+    : ['Scan for your courses', 'Opens your personalised course list on your phone.', 'QR code that opens your course list'];
+  return `<div class="pp-qr"><canvas class="pp-qr-code" width="320" height="320" role="img" aria-label="${label}"></canvas><div><b>${title}</b><span>${line}</span><span class="pp-qr-no">Passport no. ${esc(p.number)}${p.saved ? ` · saved until ${esc(until)}` : ''}</span></div></div>`;
 }
 function passportActionsHTML(inWizard) {
   return `<div class="glass pp-actions"><div class="eyebrow">${ic('check')} Passport ready</div><h3>Welcome, ${esc(state.passport.name.split(' ')[0])}!</h3><p>Your Agentic AI Passport for <b>${esc(state.journey.primary.title)}</b> at <b>${esc(state.journey.levelName)}</b> level. Download it, preview the QR destination or see yourself on the big screen.</p>
@@ -1603,7 +1678,7 @@ function passportActionsHTML(inWizard) {
     <button class="btn btn-ghost" data-action="pp-view-journey">${ic('journey')} View My Learning Journey</button>
     <button class="btn btn-gold" data-action="bs-confirm">${ic('screen')} Show on Big Screen</button>
     <button class="btn btn-ghost" data-action="qr-open">${ic('qr')} Preview QR Destination</button>
-    <p class="small" style="margin:.3rem 0 0">Keepsake · kept in this kiosk’s memory only · cleared on reset</p></div>`;
+    <p class="small" style="margin:.3rem 0 0">${state.passport.saved ? 'Saved with GDRFA · scan the QR code to keep it on your phone · you can delete it there' : 'Keepsake · kept in this kiosk’s memory only · cleared on reset'}</p></div>`;
 }
 function downloadPassport() {
   if (!state.passport) return;
@@ -1744,7 +1819,7 @@ const ACTIONS = {
   'track-filter': d => { state.trackFilter = d.filter; renderTracks(); },
   'session-filter': d => { state.sessionFilter = d.filter; renderSessionList(); },
   'zone-filter': d => { state.zoneFilter = state.zoneFilter === d.zone ? null : d.zone; renderSessionList(); },
-  'mark-attended': d => { state.attended = state.attended === d.id ? null : d.id; toast(state.attended ? 'Session added to your Agentic AI Passport.' : 'Session removed from your passport.'); openSession(d.id); if (state.view === 'sessions') renderSessionList(); if (state.view === 'journey') renderJourney(); },
+  'mark-attended': d => { state.attended = state.attended === d.id ? null : d.id; if (state.passport && state.passport.saved) syncSavedPassport(); toast(state.attended ? 'Session added to your Agentic AI Passport.' : 'Session removed from your passport.'); openSession(d.id); if (state.view === 'sessions') renderSessionList(); if (state.view === 'journey') renderJourney(); },
   'wiz-close': () => closeWizard(),
   'wiz-role': d => { state.wizard.role = d.id; renderWizard(); },
   'wiz-exp': d => { state.wizard.experience = d.id; renderWizard(); },
@@ -1764,9 +1839,15 @@ const ACTIONS = {
   'cam-start': () => startCamera(),
   'cam-stop': () => renderAvaPanel(),
   'cam-capture': () => capturePhoto(),
-  'pp-generate': () => {
-    if (!validateDraft()) { renderPassportForm(); const f = $('.field.err input'); if (f) f.focus(); return; }
-    state.passport = buildPassport(state.passport); wizGo(6);
+  'pp-generate': async (d, btn) => {
+    if (!validateDraft()) { renderPassportForm(); const f = $('.field.err input, .pp-consent.err input'); if (f) f.focus(); return; }
+    state.passport = buildPassport(state.passport);
+    if ((ppSaveMode() !== 'off' && state.draft.save) || state.passport.saved) {
+      if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner" aria-hidden="true"></span> Saving your passport…`; }
+      await syncSavedPassport();
+      if (state.wizard.step !== 5) return; // the visitor left meanwhile
+    }
+    wizGo(6);
   },
   'pp-download': () => downloadPassport(),
   'pp-view-journey': () => { if (state.wizard.open) closeWizard(); navigate('journey'); setTimeout(() => { const r = $('#journeyRoot .roadmap'); if (r) r.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); }, 80); },
@@ -1856,7 +1937,7 @@ async function loadRuntimeConfig() {
     const res = await fetch('api/config', { cache: 'no-store', signal: ctrl.signal });
     if (!res.ok) return;
     const c = await res.json();
-    ['aiEnabled', 'aiTimeoutMs', 'publicBaseUrl', 'scheduleMode', 'eventTimezone', 'idleWarnSeconds', 'idleResetSeconds', 'fekra'].forEach(k => { if (c[k] !== undefined) CONFIG[k] = c[k]; });
+    ['aiEnabled', 'aiTimeoutMs', 'publicBaseUrl', 'scheduleMode', 'eventTimezone', 'idleWarnSeconds', 'idleResetSeconds', 'fekra', 'passport'].forEach(k => { if (c[k] !== undefined) CONFIG[k] = c[k]; });
   } catch (e) { /* offline: keep defaults */ } finally { clearTimeout(timer); }
 }
 async function init() {
