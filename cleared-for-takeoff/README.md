@@ -38,29 +38,51 @@ cleared-for-takeoff/
 
 The booth chat assistant is rule-based. It answers from `content.js` and the catalogue, so it also works without a connection. The course recommender and Fekra (below) are the only parts that call Claude.
 
-## Fekra (فكرة): the innovation assistant
+## Fekra (فكرة): the autonomous proposal builder
 
-Fekra helps GDRFA employees turn an idea into a management-ready innovation proposal. Open it from the **Fekra | Submit a Proposal** button on Home. It works in English and Arabic (right-to-left).
+Fekra turns an employee's idea into a management-ready innovation proposal. **The employee explains the idea; Fekra does the heavy lifting; the employee reviews and approves.** Open it from **Fekra | Submit a Proposal** on Home. It works in English and Arabic (right-to-left).
 
-- **Conversation (`POST /api/fekra/chat`):**
-  - Claude guides the employee through five flexible stages: Discover → Validate → Design → Evaluate → Propose.
-  - Each turn uses structured outputs and returns the reply, the stage, tap-to-send suggestions, and the updated working draft shown in the live proposal panel.
-  - The employee can edit any earlier message to take the conversation back to that point.
-- **Innovation check (`POST /api/fekra/check`):**
-  - Claude searches the web with Anthropic's server-side web search and web fetch tools. A second call turns the research notes into a structured assessment: *already implemented*, *partially implemented*, *no equivalent found* or *inconclusive*.
-  - **Only URLs that the search actually returned can be shown as sources.** Citations to anything else are dropped.
-  - If web search is not available, the result is *inconclusive* and says so. The page always adds that not finding a match does not prove the idea is new.
-- **Proposal (`POST /api/fekra/proposal`, `/revise`):**
-  - Writes the 13-part proposal from the conversation, the draft and the check results.
-  - The employee can edit any section by hand, or ask Claude to improve it (with undo).
-  - **Export PDF** uses the browser's print dialog with a print layout.
-  - **Save draft / Open draft** downloads and reopens a JSON file.
-- **Honesty rules in the prompts:** never invent GDRFA facts, ROI or impact figures, or research findings; keep verified findings, proposals and assumptions separate.
-- **Submission (`POST /api/fekra/submit`) is an integration point.**
-  - With `FEKRA_SUBMIT_URL` set, the proposal is POSTed there as JSON (`{ source, version, submittedAt, lang, proposal, check }`, with `Authorization: Bearer FEKRA_SUBMIT_TOKEN` if set). A `reference`, `id` or `ticket` in the response is shown to the employee.
-  - Without it, the page says submission is not connected yet and that **nothing was sent**.
-- **No storage:** the conversation lives only in the page. Reset and inactivity (`FEKRA_IDLE_RESET_SECONDS`, longer than the kiosk default while an idea is in progress) clear it, and the server keeps nothing.
-- **Without an API key** the page shows that the AI service isn't connected and disables input. It never shows canned answers.
+- **Natural conversation (`POST /api/fekra/chat`):** Fekra discusses the idea like a consultant and asks at most one or two high-value questions, only when the answer would materially change the proposal. Everything else it infers, researches, or records as an assumption to confirm.
+- **Autonomous proposal (`POST /api/fekra/update`):** after every exchange Fekra rebuilds a structured proposal in the background:
+  - idea overview (title, executive summary, solution, scope);
+  - problem statement (current situation, problem, why it matters, who is affected, if unresolved);
+  - customer benefits and GDRFA benefits as separate lists, each with reasoning, a suggested KPI and how to measure it;
+  - technology stack (role, why needed, dependencies, considerations) and an illustrative architecture;
+  - implementation roadmap (discovery, proof of concept, pilot, evaluation, rollout) with dependencies and risks;
+  - assumptions and open questions.
+  Each item is labelled by where it came from: **from you**, **assumption**, **verified research** or **Fekra's recommendation**, plus **needs validation** for expected benefits. The prompt forbids invented GDRFA facts and invented figures.
+  The **Live proposal** panel shows each section as it fills in.
+- **Existing-implementation assessment (`POST /api/fekra/check`):**
+  - **Automatic:** research starts on its own once the idea is clear, and runs again if the idea changes substantially. An employee can also ask for more research with a specific focus.
+  - **Sources:** it uses Anthropic's web search. Only URLs that the search actually returned can be cited, and GDRFA's own initiatives are listed separately from other organisations'.
+  - **Result:** Already Implemented, Partially Implemented, Not Identified as Implemented, or Unable to Verify. It stays "provisional" until research has run.
+  - **Scope:** internal GDRFA systems are not searched, and the assessment says so.
+- **Review and approval:** when the draft is complete enough, Fekra offers a review. On the full proposal the employee can:
+  - approve sections;
+  - edit any section;
+  - ask Fekra to improve a section;
+  - confirm or correct assumptions;
+  - request more research;
+  - regenerate the proposal;
+  - approve the whole proposal.
+
+  **Approved sections never change silently.** If a later update would change one, the server keeps the approved text and shows the change as a suggestion to accept or dismiss.
+- **Status:** Draft, Under review (the employee is reviewing it), Finalized (approved by the employee).
+- **Saving (`/api/fekra/proposals`):**
+  - **Storage:** proposals are saved on the server as JSON files in `FEKRA_STORE_DIR`, one per proposal, with every earlier version kept. Saving from two places at once is refused rather than overwriting.
+  - **Reopening:** each proposal gets a reference (`FK-yymmdd-XXXX`) and a private 12-character access code, which is stored only as a hash. It can be reopened with the reference and code, or by scanning the QR link shown when saving.
+  - **Autosave:** once a proposal has been saved, later changes are saved automatically.
+  - **Ownership:** the app has no employee login of its own. Behind GDRFA single sign-on, set `FEKRA_IDENTITY_HEADER` to the header the identity proxy sets. The signed-in user then becomes the owner, nobody else can open the proposal even with its code, and `GET /api/fekra/proposals` lists the user's own proposals. Only set it when the proxy controls that header.
+- **PDF ("Generate Proposal PDF"):**
+  - **Format:** a downloadable A4 PDF with GDRFA branding, the reference, date, status and page numbers.
+  - **Content:**
+    - the executive summary, problem statement and assessment with its sources;
+    - customer and GDRFA benefits and the technology table;
+    - the roadmap, risks and assumptions with validation items;
+    - the research references as clickable links.
+  - **How it is built:** pages are laid out in the browser (`public/fekra-pdf.js`) so Arabic shaping and right-to-left order are correct, then written into a real PDF file without libraries. The PDF holds the latest saved content: unsaved changes are saved first. Its text is part of the page images, so it is not selectable.
+- **Submission (`POST /api/fekra/submit`)** forwards the proposal to `FEKRA_SUBMIT_URL` when configured; otherwise the page says submission is not connected and that nothing was sent.
+- **Without an API key** the page says the AI service isn't connected and disables input; it never shows canned answers.
 
 ## Live news ticker
 
@@ -150,12 +172,14 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `TRUST_PROXY` | No | `true` on Railway | Use `X-Forwarded-*` headers for client IP and HTTPS. |
 | `FEKRA_ENABLED` | No | `true` | Turns the Fekra assistant on or off (it also needs `ANTHROPIC_API_KEY`). |
 | `FEKRA_MODEL` | No | `ANTHROPIC_MODEL` | Model used by Fekra. |
-| `FEKRA_CHAT_EFFORT` / `FEKRA_EFFORT` | No | `low` / `medium` | Effort for conversation turns / for research and proposals. |
+| `FEKRA_CHAT_EFFORT` / `FEKRA_UPDATE_EFFORT` / `FEKRA_EFFORT` | No | `low` / `low` / `medium` | Effort for conversation turns / background proposal updates / research and full regeneration. |
 | `FEKRA_WEB_SEARCH` | No | `true` | Live web research for the innovation check. Web search must also be allowed for your organisation in the Claude Console. |
 | `FEKRA_MAX_SEARCHES` | No | `6` | Web searches per innovation check. |
 | `FEKRA_TIMEOUT_MS` | No | `150000` | Timeout per Claude call (research can take a minute or two). |
 | `FEKRA_MAX_CALLS_PER_HOUR` | No | `300` | Spend guard for Fekra (an innovation check counts as 2). |
 | `FEKRA_IDLE_RESET_SECONDS` | No | `600` | Inactivity reset while an idea is in progress. |
+| `FEKRA_STORE_DIR` | **Recommended** | system temp dir | Where saved proposals are kept. **On Railway, attach a volume and point this at it** (for example `/data/fekra`); otherwise saved proposals are lost on the next deploy, and the save dialog warns about it. |
+| `FEKRA_IDENTITY_HEADER` | No | — | Header set by GDRFA single sign-on (for example `x-ms-client-principal-name`). When set, proposals belong to the signed-in user. Only use it behind a proxy that controls this header. |
 | `FEKRA_SUBMIT_URL` | No | — | Management review endpoint that receives submitted proposals. Without it, submission reports "not connected". |
 | `FEKRA_SUBMIT_TOKEN` | No | — | Bearer token sent to `FEKRA_SUBMIT_URL` (mark it as a secret). |
 | `NEWS_ENABLED` | No | `true` | Live news in the ticker. When off, the curated sample headlines show. |
@@ -188,12 +212,13 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 - **Fekra:**
   - Confirm with your data-governance team that employees may send idea descriptions to Claude. The page asks them not to share personal or classified information.
   - Connect the management review system with `FEKRA_SUBMIT_URL` (and `FEKRA_SUBMIT_TOKEN`).
+  - Give saved proposals persistent storage: attach a Railway volume and set `FEKRA_STORE_DIR` to a folder on it. For named ownership, put the site behind GDRFA single sign-on and set `FEKRA_IDENTITY_HEADER`.
   - Fekra does not see internal GDRFA projects. The innovation check searches only the public web, and its limitations say so.
 
 ## Security notes
 
 - The recommender accepts only enum values and a 4 KB JSON body; visitor names and photos never reach the model.
-- Fekra sends the employee's conversation (up to 256 KB per request) to Claude. The page says so. The server stores none of it and logs only operation, model, latency and token counts.
+- Fekra sends the employee's conversation (up to 256 KB per request) to Claude. The page says so. AI requests are not stored; the server logs only operation, model, latency and token counts. A proposal is stored only when the employee saves it, and opening it needs its access code (stored as a hash), plus the owner's sign-in when `FEKRA_IDENTITY_HEADER` is set.
 - All API routes reject cross-origin POSTs and rate-limit per IP. The API key and `FEKRA_SUBMIT_TOKEN` stay on the server.
 - Strict Content-Security-Policy (`script-src 'self'`), no inline scripts, HSTS behind HTTPS, `Permissions-Policy` limiting the camera to this origin, and no storage of visitor data (no `localStorage`, no server-side records).
 - The passport QR code contains only a journey code, track, level and short course codes, in the URL fragment, which is never sent to the server.

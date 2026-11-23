@@ -3,7 +3,11 @@
      GET  /api/health     liveness/readiness for Railway health checks
      GET  /api/config     runtime settings for the kiosk (no secrets)
      POST /api/recommend  { role, experience, interests[], focusTrack?, sessions[] } -> journey plan
-     POST /api/fekra/chat | check | proposal | revise | submit   Fekra innovation assistant (see server/fekra.js)
+     POST /api/fekra/chat | update | check | submit   Fekra innovation consultant (see server/fekra.js)
+     POST /api/fekra/proposals                 save a new proposal -> { ref, key }
+     GET|PUT /api/fekra/proposals/FK-…         open / update a saved proposal (X-Fekra-Key header)
+     GET  /api/fekra/proposals/FK-…/versions   earlier versions of a saved proposal
+     GET  /api/fekra/proposals                 the signed-in user's proposals (only with FEKRA_IDENTITY_HEADER)
      GET  /api/news       live headlines for the ticker (see server/news.js)
      GET  /api/news/sources  which news sources are working, cached or need configuration
    No framework: Node's http module keeps the dependency surface small. */
@@ -11,6 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const { cleanProposal, cleanCheck, SECTION_KEYS, SECTION_FIELDS } = require('./fekra');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -101,7 +106,7 @@ const DEPLOY = {
   deploymentId: process.env.RAILWAY_DEPLOYMENT_ID || null
 };
 
-function createApp({ config, recommender, fekra, news, rules, content, logger, publicDir, version }) {
+function createApp({ config, recommender, fekra, store, news, rules, content, logger, publicDir, version }) {
   const limiter = createRateLimiter(config.rateLimitPerMinute);
   const root = path.resolve(publicDir);
   const startedAt = Date.now();
@@ -162,7 +167,7 @@ function createApp({ config, recommender, fekra, news, rules, content, logger, p
     sendJson(res, 200, { source: result.source, model: result.source === 'ai' ? result.model : undefined, cached: !!result.cached, plan: result.plan });
   }
 
-  const FEKRA_OPS = { chat: 'chat', check: 'check', proposal: 'proposal', revise: 'revise', submit: 'submit' };
+  const FEKRA_OPS = { chat: 'chat', update: 'update', check: 'check', submit: 'submit' };
   async function handleFekra(req, res, op) {
     if (!sameOrigin(req)) return sendJson(res, 403, { error: 'Cross-origin requests are not allowed.' });
     const rl = limiter.take(clientIp(req, config.trustProxy));
@@ -175,6 +180,44 @@ function createApp({ config, recommender, fekra, news, rules, content, logger, p
     } catch (err) {
       const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 502;
       return sendJson(res, status, { error: err.message && status < 500 ? err.message : 'Fekra could not complete the request.', reason: err.reason || 'error' });
+    }
+  }
+
+  /* ---------- saved proposals ---------- */
+  const STORE_STATUSES = ['draft', 'under_review', 'finalized'];
+  const identityOf = req => { const h = config.fekra.identityHeader; const v = h ? req.headers[h] : null; return v ? String(v).slice(0, 200) : null; };
+  const cleanText = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').slice(0, max);
+  /* only known fields are stored, each cleaned the same way the AI endpoints clean them */
+  function storeData(body) {
+    const b = body && typeof body === 'object' ? body : {}, p = b.payload && typeof b.payload === 'object' ? b.payload : {};
+    const proposal = cleanProposal(p.proposal);
+    const messages = (Array.isArray(p.messages) ? p.messages : []).slice(-120).filter(m => m && ['user', 'assistant', 'check', 'notice'].includes(m.role))
+      .map(m => m.role === 'check' ? { role: 'check', check: cleanCheck(m.check) } : { role: m.role, text: cleanText(m.text, 8000), ...(m.kind ? { kind: cleanText(m.kind, 30) } : {}) });
+    const pending = {}; // suggested changes to approved sections, kept until the employee accepts or dismisses them
+    if (p.pending && typeof p.pending === 'object') SECTION_KEYS.forEach(k => { if (p.pending[k] && typeof p.pending[k] === 'object') { const full = cleanProposal({ ...proposal, ...p.pending[k] }); pending[k] = Object.fromEntries(SECTION_FIELDS[k].map(f => [f, full[f]])); } });
+    return {
+      status: STORE_STATUSES.includes(b.status) ? b.status : 'draft', lang: b.lang === 'ar' ? 'ar' : 'en', title: proposal.title.slice(0, 300),
+      payload: { proposal, check: cleanCheck(p.check), messages, locked: (Array.isArray(p.locked) ? p.locked : []).filter(k => SECTION_KEYS.includes(k)),
+        confirmed: (Array.isArray(p.confirmed) ? p.confirmed : []).slice(0, 20).map(x => cleanText(x, 400)), pending, reviewOffered: !!p.reviewOffered }
+    };
+  }
+  async function handleProposals(req, res, ref, sub) {
+    if (!sameOrigin(req)) return sendJson(res, 403, { error: 'Cross-origin requests are not allowed.' });
+    const rl = limiter.take(clientIp(req, config.trustProxy));
+    if (!rl.ok) return sendJson(res, 429, { error: 'Too many requests. Please wait a moment.' }, { 'Retry-After': String(rl.retryAfter) });
+    if (!store) return sendJson(res, 503, { error: 'Saving is not available.', reason: 'no_store' });
+    const identity = identityOf(req), key = req.headers['x-fekra-key'];
+    try {
+      if (!ref && req.method === 'POST') { const body = await readJsonBody(req, FEKRA_MAX_BODY); return sendJson(res, 201, await store.create(storeData(body), identity)); }
+      if (!ref && req.method === 'GET') return sendJson(res, 200, { proposals: await store.list(identity) });
+      if (ref && sub === 'versions' && req.method === 'GET') return sendJson(res, 200, { versions: await store.versions(ref, key, identity) });
+      if (ref && !sub && req.method === 'GET') return sendJson(res, 200, await store.get(ref, key, identity));
+      if (ref && !sub && req.method === 'PUT') { const body = await readJsonBody(req, FEKRA_MAX_BODY); return sendJson(res, 200, await store.update(ref, key, identity, { baseVersion: body.baseVersion, data: storeData(body) })); }
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    } catch (err) {
+      const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 500;
+      if (status >= 500) logger.error('fekra_store_failed', { detail: String(err.message).slice(0, 300) });
+      return sendJson(res, status, { error: status < 500 ? err.message : 'The proposal could not be saved.', reason: err.reason || 'error' });
     }
   }
 
@@ -201,7 +244,7 @@ function createApp({ config, recommender, fekra, news, rules, content, logger, p
           eventTimezone: config.kiosk.eventTimezone,
           idleWarnSeconds: config.kiosk.idleWarnSeconds,
           idleResetSeconds: config.kiosk.idleResetSeconds,
-          fekra: fekra ? { ...fekra.status(), idleResetSeconds: config.fekra.idleResetSeconds } : { enabled: false },
+          fekra: { ...(fekra ? fekra.status() : { enabled: false }), idleResetSeconds: config.fekra.idleResetSeconds, storage: store ? store.status() : { available: false, persistent: false }, signIn: !!config.fekra.identityHeader },
           version
         });
       }
@@ -216,6 +259,8 @@ function createApp({ config, recommender, fekra, news, rules, content, logger, p
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });
         return await handleRecommend(req, res);
       }
+      const pm = /^\/api\/fekra\/proposals(?:\/(FK-[0-9A-Z-]{6,20}))?(?:\/(versions))?$/.exec(pathname);
+      if (pm) return await handleProposals(req, res, pm[1] || null, pm[2] || null);
       const fm = /^\/api\/fekra\/([a-z]+)$/.exec(pathname);
       if (fm && FEKRA_OPS[fm[1]]) {
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });

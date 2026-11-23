@@ -72,6 +72,7 @@ function loadConfig(env = process.env) {
       enabled: bool(env, 'FEKRA_ENABLED', true),
       model: str(env, 'FEKRA_MODEL', str(env, 'ANTHROPIC_MODEL', 'claude-opus-5-5')),
       chatEffort: oneOf(env, 'FEKRA_CHAT_EFFORT', 'low', EFFORTS),
+      updateEffort: oneOf(env, 'FEKRA_UPDATE_EFFORT', 'low', EFFORTS),
       effort: oneOf(env, 'FEKRA_EFFORT', 'medium', EFFORTS),
       webSearch: bool(env, 'FEKRA_WEB_SEARCH', true),
       maxSearches: int(env, 'FEKRA_MAX_SEARCHES', 6, 1, 20),
@@ -79,7 +80,10 @@ function loadConfig(env = process.env) {
       maxCallsPerHour: int(env, 'FEKRA_MAX_CALLS_PER_HOUR', 300, 0, 100000),
       idleResetSeconds: int(env, 'FEKRA_IDLE_RESET_SECONDS', 600, 60, 7200),
       submitUrl: url(env, 'FEKRA_SUBMIT_URL'),
-      submitToken: str(env, 'FEKRA_SUBMIT_TOKEN', null)
+      submitToken: str(env, 'FEKRA_SUBMIT_TOKEN', null),
+      storeDir: str(env, 'FEKRA_STORE_DIR', require('path').join(require('os').tmpdir(), 'fekra-proposals')),
+      storePersistent: !!str(env, 'FEKRA_STORE_DIR', null), // only an explicitly configured directory (for example a Railway volume) counts as persistent
+      identityHeader: str(env, 'FEKRA_IDENTITY_HEADER', null) ? str(env, 'FEKRA_IDENTITY_HEADER', null).toLowerCase() : null
     },
 
     news: {

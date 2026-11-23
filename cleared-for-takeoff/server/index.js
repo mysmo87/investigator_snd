@@ -8,6 +8,7 @@ const { createLogger } = require('./log');
 const { createRecommender } = require('./recommender');
 const { createFekra } = require('./fekra');
 const { createNews } = require('./news');
+const { createStore } = require('./fekra-store');
 const { createApp } = require('./app');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -34,7 +35,10 @@ if (contentErrors.length) {
 const recommender = createRecommender({ config, content, catalog, rules, logger });
 const fekra = createFekra({ config, logger });
 const news = createNews({ config, logger });
-const handler = createApp({ config, recommender, fekra, news, rules, content, logger, publicDir: PUBLIC_DIR, version });
+let store = null;
+try { store = createStore({ dir: config.fekra.storeDir, persistent: config.fekra.storePersistent, logger }); }
+catch (err) { logger.error('fekra_store_unavailable', { detail: String(err.message).slice(0, 200) }); }
+const handler = createApp({ config, recommender, fekra, store, news, rules, content, logger, publicDir: PUBLIC_DIR, version });
 const server = http.createServer(handler);
 server.requestTimeout = Math.max(config.ai.timeoutMs, config.fekra.timeoutMs * 2) + 15000; // an innovation check is two calls
 server.headersTimeout = 20000;
@@ -45,7 +49,7 @@ server.listen(config.port, config.host, () => {
   logger.info('server_started', {
     port: config.port, version,
     ai: config.ai.enabled ? { model: config.ai.model, effort: config.ai.effort, fallbacks: config.ai.fallbacks } : (config.ai.apiKeySet ? 'disabled (AI_ENABLED=false)' : 'disabled (no ANTHROPIC_API_KEY — using offline rules)'),
-    fekra: fekra.status(), news: { enabled: config.news.enabled, refreshMinutes: config.news.refreshMinutes },
+    fekra: { ...fekra.status(), storage: store ? store.status() : 'unavailable' }, news: { enabled: config.news.enabled, refreshMinutes: config.news.refreshMinutes },
     scheduleMode: config.kiosk.scheduleMode, trustProxy: config.trustProxy, courses: catalog.courses.length
   });
 });

@@ -1867,6 +1867,7 @@ async function init() {
   chatInit();
   globe.init();
   navigate('home');
+  if (window.fekraBoot) window.fekraBoot(); // a saved-proposal link (#fekra=…) opens Fekra
   initTicker();
   tickClock(); setInterval(tickClock, 1000);
   setInterval(idleTick, 1000);
