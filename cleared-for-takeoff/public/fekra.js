@@ -460,11 +460,14 @@
     const epoch = fk.epoch;
     fk.busy = 'chat'; fk.error = null; fk.suggestions = []; render();
     try {
-      const r = await api('chat', { lang: fk.lang, messages: convo(), proposal: fk.proposal, check: fk.check, locked: fk.locked, confirmed: fk.confirmed, researching: fk.researching, readyForReview: fk.readyForReview, reviewOffered: fk.reviewOffered }, 120000);
+      const offerable = canOffer(); // only offer the review once the research is in
+      const r = await api('chat', { lang: fk.lang, messages: convo(), proposal: fk.proposal, check: fk.check, locked: fk.locked, confirmed: fk.confirmed, researching: fk.researching, readyForReview: offerable, reviewOffered: fk.reviewOffered }, 120000);
       if (epoch !== fk.epoch) return;
       fk.messages.push({ role: 'assistant', text: r.reply }); fk.suggestions = r.suggestions || [];
-      if (fk.readyForReview && !fk.reviewOffered) fk.reviewOffered = true; // the reply itself offered the review
-      fk.busy = null; render(); focusInput();
+      fk.busy = null;
+      if (offerable && !fk.reviewOffered) fk.reviewOffered = true; // the reply itself offered the review
+      else maybeOffer();
+      render(); focusInput();
       requestUpdate({ mode: 'update' });
     } catch (e) {
       if (epoch !== fk.epoch) return;
@@ -498,10 +501,10 @@
       const now = Date.now(); if ((r.changes || []).length) { fk.lastChanged = now; r.changes.forEach(c => { fk.changes[c.section] = now; }); }
       fk.readyForResearch = fk.readyForResearch || r.readyForResearch;
       if (opts.mode === 'section') fk.improve = null;
-      const wasReady = fk.readyForReview; fk.readyForReview = !!r.readyForReview || fk.readyForReview;
-      if (fk.readyForReview && !wasReady && !fk.reviewOffered && fk.mode === 'chat' && fk.status === 'draft') { fk.reviewOffered = true; fk.messages.push({ role: 'notice', kind: 'offer-review' }); }
-      if (r.readyForResearch && !fk.check && !fk.researching && !fk.researchError) runResearch({});
+      fk.readyForReview = !!r.readyForReview || fk.readyForReview;
+      if ((r.readyForResearch || fk.readyForReview) && !fk.check && !fk.researching && !fk.researchError) runResearch({});
       else if (r.researchStale && fk.check && !fk.researching) runResearch({});
+      maybeOffer();
       markDirty();
     } catch (e) {
       if (epoch !== fk.epoch) return;
@@ -529,7 +532,13 @@
       markDirty();
       requestUpdate({ mode: 'update' }); // fold the findings into the summary, benefits and plan
     } catch (e) { if (epoch === fk.epoch) fk.researchError = errText(e); }
-    finally { if (epoch === fk.epoch) { fk.researching = false; clearInterval(researchTimer); render(); } }
+    finally { if (epoch === fk.epoch) { fk.researching = false; clearInterval(researchTimer); if (fk.researchError) maybeOffer(); render(); } }
+  }
+  /* the review is offered once the draft is complete AND the existing-implementation research has finished (or failed) */
+  function canOffer() { return !!(fk.readyForReview && !fk.researching && (fk.check || fk.researchError)); }
+  function maybeOffer() {
+    if (!canOffer() || fk.reviewOffered || fk.busy || fk.mode !== 'chat' || fk.status !== 'draft') return;
+    fk.reviewOffered = true; fk.messages.push({ role: 'notice', kind: 'offer-review' });
   }
 
   /* ---------- saving (server), reopening, resuming ---------- */

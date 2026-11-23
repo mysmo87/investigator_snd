@@ -269,7 +269,7 @@ function createFekra({ config, logger, client }) {
     try {
       const p = cleanProposal(body.proposal), locked = cleanLocked(body.locked);
       const state = body.researching ? 'Research into similar implementations is running now.' : '';
-      const review = body.readyForReview ? (body.reviewOffered ? 'The proposal is ready for review and has already been offered.' : 'The proposal is ready for review and has NOT been offered yet: offer it now.') : 'The proposal is not yet complete enough for review.';
+      const review = body.readyForReview ? (body.reviewOffered ? 'The proposal is ready for review and has already been offered.' : 'The proposal is ready for review and has NOT been offered yet: offer it now.') : body.researching ? 'Do not offer the review yet: wait until the research has finished.' : 'The proposal is not yet complete enough for review.';
       const context = `Write in ${LANG_NAME[l]}.\nCurrent proposal (built in the background; JSON): ${JSON.stringify(p)}\nLocked (approved by the employee): ${locked.join(', ') || 'none'}\nConfirmed by the employee: ${JSON.stringify(cleanConfirmed(body.confirmed))}\n${checkContext(cleanCheck(body.check))}\n${state}\n${review}`;
       const res = await call({
         model: fk.model, max_tokens: 8000, system: sys(CHAT_SYSTEM),
