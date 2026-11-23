@@ -16,6 +16,7 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | `PASSPORT_V2`: FEKRA_V1 plus the Agentic AI Passport redesigned as a light-blue passport identity page (the previous dark card is in FEKRA_V1, `69d24b4`) | `e9e3231` | | `e9e3231` | `versions/PASSPORT_V2.png` |
 | `LIVE_NEWS_V1`: PASSPORT_V2 plus live, filtered headlines from publishers' RSS feeds in the news ticker | `616b146` | | `616b146` | `versions/LIVE_NEWS_V1.png` (ticker strip) |
 | `FEKRA_V2_AUTONOMOUS`: LIVE_NEWS_V1 plus SAS courses in the learning tracks and Fekra rebuilt as the autonomous proposal builder (live proposal, auto research, review and approval, saved proposals, PDF) | `6c04931` | | `6c04931` | `versions/FEKRA_V2_AUTONOMOUS.png` (review, live AI) |
+| `PASSPORT_SAVE_V1`: FEKRA_V2_AUTONOMOUS plus saved passports (visitor consent, QR code reopens the saved passport on the phone, staff list and CSV) | `b15f671` | | `b15f671` | `versions/PASSPORT_SAVE_V1.png` |
 
 Never move or delete these commits or tags. New work goes on new commits.
 
