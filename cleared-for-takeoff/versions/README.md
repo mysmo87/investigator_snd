@@ -17,6 +17,7 @@ Every version below is a complete, working copy of the app: code, styles, assets
 | `LIVE_NEWS_V1`: PASSPORT_V2 plus live, filtered headlines from publishers' RSS feeds in the news ticker | `616b146` | | `616b146` | `versions/LIVE_NEWS_V1.png` (ticker strip) |
 | `FEKRA_V2_AUTONOMOUS`: LIVE_NEWS_V1 plus SAS courses in the learning tracks and Fekra rebuilt as the autonomous proposal builder (live proposal, auto research, review and approval, saved proposals, PDF) | `6c04931` | | `6c04931` | `versions/FEKRA_V2_AUTONOMOUS.png` (review, live AI) |
 | `PASSPORT_SAVE_V1`: FEKRA_V2_AUTONOMOUS plus saved passports (visitor consent, QR code reopens the saved passport on the phone, staff list and CSV) | `b15f671` | | `b15f671` | `versions/PASSPORT_SAVE_V1.png` |
+| `AI_AVATAR_V1`: PASSPORT_SAVE_V1 plus the AI 3D Traveler avatar tab (fal.ai, visitor consent) and the "Proudly Signed for My Agentic Trip with GDRFA" line on the big screen | `ae25932` | | `ae25932` | `versions/AI_AVATAR_V1.png` (AI tab; screenshot taken with fal mocked, so the "avatar" is the test photo) |
 
 Never move or delete these commits or tags. New work goes on new commits.
 
