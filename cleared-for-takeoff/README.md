@@ -104,6 +104,15 @@ When a visitor creates their passport, the form offers **"Save my passport so I 
 - **Making the box mandatory:** `PASSPORT_SAVE=required` makes saving a condition of creating a passport. `off` removes the option entirely.
 - **Persistence:** saved passports are files on the server. **On Railway, attach a volume and set `DATA_DIR`**, or they are lost on every deploy. The staff page shows a warning while storage is temporary.
 
+## AI 3D Traveler avatar (fal.ai)
+
+With `FAL_KEY` set, the passport's "Choose your avatar" step gets a fourth tab, **AI 3D Traveler**, next to Select avatar, Upload photo and Use camera.
+
+- **Flow:** the visitor ticks the consent box, takes a selfie or uploads a photo, then taps **Create my 3D traveler**. About 15 seconds later, the stylised 3D "digital traveler" becomes their avatar. It is used on the passport image, the download and the big-screen welcome.
+- **What is sent:** only the 512 px photo, and only after the visitor agrees and taps **Create**. The server forwards it to fal (`AVATAR_AI_MODEL`, default FLUX Kontext Pro) with `sync_mode`, so fal returns the image inline and does not keep it in its request history. The server stores neither the photo nor the result. The result is kept only in the kiosk's memory, unless the visitor saves their passport (the passport image then includes it, as with any photo).
+- **Cost and limits:** each generation is billed by fal (about $0.04 with FLUX Kontext Pro). It is never resubmitted automatically. `AVATAR_AI_MAX_CALLS_PER_HOUR` and `AVATAR_AI_MAX_CONCURRENT` cap spend and load, on top of the per-IP rate limit. A 403 "Exhausted balance" from fal shows the visitor "out of credits", and they can pick another option.
+- **Turning it off:** remove `FAL_KEY` or set `AVATAR_AI_ENABLED=false`. The tab disappears and the other three options work as before.
+
 ## Live news ticker
 
 The ticker across the top shows real headlines from the publishers' own RSS feeds. The server reads the feeds itself (`server/news.js`), so browsers hit no cross-origin limits.
@@ -207,6 +216,12 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `FEKRA_IDENTITY_HEADER` | No | — | Header set by GDRFA single sign-on (for example `x-ms-client-principal-name`). When set, proposals belong to the signed-in user. Only use it behind a proxy that controls this header. |
 | `FEKRA_SUBMIT_URL` | No | — | Management review endpoint that receives submitted proposals. Without it, submission reports "not connected". |
 | `FEKRA_SUBMIT_TOKEN` | No | — | Bearer token sent to `FEKRA_SUBMIT_URL` (mark it as a secret). |
+| `FAL_KEY` | For the AI avatar | — | fal.ai API key. Turns on the **AI 3D Traveler** avatar tab. Mark it as a secret. Without it, the tab is hidden. |
+| `AVATAR_AI_ENABLED` | No | `true` | Kill switch for the AI avatar without removing the key. |
+| `AVATAR_AI_MODEL` | No | `fal-ai/flux-pro/kontext` | fal endpoint id for the avatar. |
+| `AVATAR_AI_TIMEOUT_MS` | No | `60000` | Timeout per avatar generation. |
+| `AVATAR_AI_MAX_CALLS_PER_HOUR` | No | `200` | Spend guard for the AI avatar. |
+| `AVATAR_AI_MAX_CONCURRENT` | No | `4` | Avatar generations running at the same time. |
 | `NEWS_ENABLED` | No | `true` | Live news in the ticker. When off, the curated sample headlines show. |
 | `NEWS_REFRESH_MINUTES` | No | `30` | How often the server reads the feeds. |
 | `NEWS_MAX_ITEMS` | No | `30` | Headlines in the ticker loop. |
@@ -239,6 +254,9 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
   - Set `PASSPORT_ADMIN_TOKEN` to a long random value and give it only to the booth team.
   - Have GDRFA's data-protection team approve the consent wording on the passport form (`consentBody()` in `public/app.js`) and the retention period.
   - Decide whether saving stays optional (recommended) or becomes `PASSPORT_SAVE=required`.
+- **AI 3D Traveler avatar:**
+  - Have GDRFA's data-protection team approve sending visitor photos to fal.ai, and the consent wording in the AI tab (`renderAiPanel()` in `public/app.js`).
+  - Add credits to the fal account and set a spend limit there.
 - **Fekra:**
   - Confirm with your data-governance team that employees may send idea descriptions to Claude. The page asks them not to share personal or classified information.
   - Connect the management review system with `FEKRA_SUBMIT_URL` (and `FEKRA_SUBMIT_TOKEN`).
@@ -255,4 +273,5 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
   - Opening, changing or deleting a saved passport needs its key, which is stored only as a hash.
   - Listing them needs `PASSPORT_ADMIN_TOKEN`, compared in constant time. Failed attempts are logged and rate-limited.
   - CSV cells that start with `=`, `+`, `-` or `@` are neutralised so a name cannot run as a spreadsheet formula.
+- The AI avatar sends the visitor's photo to fal.ai only after they tick its consent box and tap **Create**. `POST /api/avatar` requires `consent: true`, accepts only a JPEG, PNG or WebP data URI under 1 MB, and stores nothing. `FAL_KEY` never leaves the server. The result is returned as a data URI (a fal-hosted URL is fetched by the server first), so the page's CSP stays unchanged.
 - The passport QR code contains, in the URL fragment (never sent to the server), a journey code, track, level and short course codes. A saved passport's code also contains its reference and key, and anyone holding the code can open that passport. The phone page says so and sends no referrer.

@@ -18,7 +18,8 @@ const CONFIG = {
   scheduleMode: 'relative', eventTimezone: 'Asia/Dubai',
   idleWarnSeconds: 75, idleResetSeconds: 90,
   fekra: null, // Fekra innovation assistant availability (set from /api/config; see fekra.js)
-  passport: null // saving passports: { save: off|optional|required, storage, retentionDays } (set from /api/config)
+  passport: null, // saving passports: { save: off|optional|required, storage, retentionDays } (set from /api/config)
+  avatarAi: null // AI 3D Traveler avatar: { enabled } (set from /api/config)
 };
 
 /* =====================================================================
@@ -129,7 +130,8 @@ const freshState = () => ({
   schedule: [], chat: { busy: false, epoch: 0 },
   wizard: { open: false, step: 1, role: null, experience: null, interests: [], focusTrack: null, token: 0 },
   journey: null,
-  draft: { name: '', email: '', org: '', save: false, tab: 'preset', avatar: { kind: 'preset', id: 'orbit' }, errors: {} },
+  draft: { name: '', email: '', org: '', save: false, tab: 'preset', avatar: { kind: 'preset', id: 'orbit' }, errors: {},
+    ai: { consent: false, source: null, result: null, busy: false, error: '' } }, // AI 3D Traveler tab
   passport: null, attended: null
 });
 let state = freshState();
@@ -964,7 +966,7 @@ const R = {
   bigscreen: () => ({ blocks: [P('After creating your passport, tap “Show on Big Screen” to see an 8-second welcome animation with your avatar, your name and your learning track. You will always be asked to confirm first, because it may be visible to people nearby.')], actions: [{ label: 'Start My AI Journey', action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Is my data stored?'] }),
   journey: () => ({ blocks: [P('Your AI Journey is built from three answers: your role, your experience with AI and your interests. An AI recommender (Claude, by Anthropic) matches them to a primary learning track and picks real courses for your level from a curated catalogue:'), UL(['Discover — a topic to explore, introductory courses and a demo to visit', 'Learn — core courses and a session to join', 'Practice — hands-on courses or labs', 'Innovate — a stretch course and a practical next step for your work']), NOTE('Only your three answers are used — never your name, email or photo. If the AI service is unavailable, transparent rules on this kiosk build the journey instead.')],
     actions: [{ label: 'Start My AI Journey', action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Which learning track is right for me?'] }),
-  privacy: () => ({ blocks: [P('Privacy first:'), UL([...(ppSaveMode() === 'off' ? ['Your name, email and photo stay in this kiosk’s memory and are never sent anywhere'] : ['Your name, email and photo stay in this kiosk’s memory unless you tick “Save my passport” when you create it', `A saved passport (name, email, organization, passport image and learning journey) is kept by GDRFA for ${ppDays()} days so its QR code keeps working; the GDRFA booth team can see it, and you can delete it at any time from your phone`]), 'To recommend courses, only your role, AI experience and interests are sent to the course recommender (powered by Claude)', 'Nothing is saved to browser storage', `Everything on this kiosk is cleared when you press Reset, or after ${CONFIG.idleResetSeconds} seconds of inactivity`])], follow: ['What is the Agentic AI Passport?', 'How does Cleared for Takeoff personalise my journey?'] }),
+  privacy: () => ({ blocks: [P('Privacy first:'), UL([...(ppSaveMode() === 'off' ? ['Your name, email and photo stay in this kiosk’s memory and are never sent anywhere'] : ['Your name, email and photo stay in this kiosk’s memory unless you tick “Save my passport” when you create it', `A saved passport (name, email, organization, passport image and learning journey) is kept by GDRFA for ${ppDays()} days so its QR code keeps working; the GDRFA booth team can see it, and you can delete it at any time from your phone`]), 'To recommend courses, only your role, AI experience and interests are sent to the course recommender (powered by Claude)', ...(aiAvatarOn() ? ['If you choose the AI 3D Traveler avatar and agree, your photo is sent to an external AI service (fal.ai) to create it. Neither the service nor this kiosk keeps the photo'] : []), 'Nothing is saved to browser storage', `Everything on this kiosk is cleared when you press Reset, or after ${CONFIG.idleResetSeconds} seconds of inactivity`])], follow: ['What is the Agentic AI Passport?', 'How does Cleared for Takeoff personalise my journey?'] }),
   about: () => ({ blocks: [P('GDRFA — the General Directorate of Residency and Foreigners Affairs in Dubai — oversees residency, entry permits and related services. At GITEX, the booth explores how Agentic AI could make such services more proactive and seamless.'), NOTE('For official services and information, please use GDRFA’s official channels. This assistant is a demo.')], follow: ['What demos are available at the GDRFA booth?', 'What is Agentic AI?'] }),
   help: () => ({ blocks: [P('I’m the booth assistant for Agentic AI: Cleared for Takeoff. I answer from the booth’s content and course catalogue, and I can help you:'), UL(['Understand Agentic AI and Generative AI', 'Find today’s sessions and booth demos', 'Choose a learning track', 'Create your personalised AI Journey and Passport'])], follow: DATA.defaultSuggestions }),
   demo(d, t) {
@@ -1236,10 +1238,10 @@ function renderPassportForm() {
       <div class="field${e.email ? ' err' : ''}"><label for="ppEmail">Email address</label><input id="ppEmail" type="email" maxlength="80" autocomplete="off" inputmode="email" value="${esc(d.email)}" placeholder="name@example.com"><div class="msg-err">${esc(e.email || '')}</div></div>
       <div class="field"><label for="ppOrg">Organization <span>(optional)</span></label><input id="ppOrg" maxlength="50" autocomplete="off" value="${esc(d.org)}" placeholder="Your organization"><div class="msg-err"></div></div>
       ${ppSaveMode() !== 'off' ? `<label class="pp-consent${e.save ? ' err' : ''}"><input type="checkbox" id="ppSave"${d.save ? ' checked' : ''}><span><b>Save my passport so I can open it again later${ppSaveMode() === 'required' ? '' : ' <em>(optional)</em>'}</b>${esc(consentBody())}</span></label>${e.save ? `<div class="msg-err pp-consent-err">${esc(e.save)}</div>` : ''}` : ''}
-      <div class="privacy">${ic('shield')}<span><b>Privacy notice:</b> ${ppSaveMode() === 'off' ? `your name, email and photo stay in this kiosk’s memory only — they are never uploaded or saved, and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.` : ppSaveMode() === 'required' ? 'your passport is saved with GDRFA as described above, and this kiosk forgets you on reset.' : `unless you tick “Save my passport”, your name, email and photo stay in this kiosk’s memory only and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.`} Your email is never printed on the passport or included in the QR code.</span></div>
+      <div class="privacy">${ic('shield')}<span><b>Privacy notice:</b> ${ppSaveMode() === 'off' ? `your name, email and photo stay in this kiosk’s memory only — they are never uploaded or saved, and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.` : ppSaveMode() === 'required' ? 'your passport is saved with GDRFA as described above, and this kiosk forgets you on reset.' : `unless you tick “Save my passport”, your name, email and photo stay in this kiosk’s memory only and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.`} Your email is never printed on the passport or included in the QR code.${aiAvatarOn() ? ' If you choose the AI 3D Traveler, your photo is sent to an external AI service (fal.ai) only after you agree, and is not kept there.' : ''}</span></div>
     </div><div>
       <div class="stage-sec">Choose your avatar</div>
-      <div class="tabs" role="tablist">${[['preset', 'spark', 'Select avatar'], ['upload', 'upload', 'Upload photo'], ['camera', 'camera', 'Use camera']].map(([id, icn, l]) => `<button class="tab${d.tab === id ? ' active' : ''}" role="tab" aria-selected="${d.tab === id}" data-action="ava-tab" data-id="${id}">${ic(icn)}${l}</button>`).join('')}</div>
+      <div class="tabs" role="tablist">${[['preset', 'spark', 'Select avatar'], ['upload', 'upload', 'Upload photo'], ['camera', 'camera', 'Use camera'], ...(aiAvatarOn() ? [['ai', 'rocket', 'AI 3D Traveler']] : [])].map(([id, icn, l]) => `<button class="tab${d.tab === id ? ' active' : ''}" role="tab" aria-selected="${d.tab === id}" data-action="ava-tab" data-id="${id}">${ic(icn)}${l}</button>`).join('')}</div>
       <div id="avaPanel"></div>
       <div class="ava-preview"><canvas id="avaPreview" width="240" height="240" aria-label="Selected avatar preview"></canvas><p id="avaPreviewText"></p></div>
     </div></div>`;
@@ -1254,6 +1256,8 @@ function renderAvaPanel() {
   if (d.tab === 'preset') {
     panel.innerHTML = `<div class="ava-grid">${DATA.avatars.map(a => `<div><button class="ava-opt${d.avatar.kind === 'preset' && d.avatar.id === a.id ? ' sel' : ''}" data-action="ava-pick" data-id="${a.id}" aria-label="Avatar ${esc(a.name)}"><canvas width="160" height="160" data-ava="${a.id}"></canvas></button><div class="ava-name">${esc(a.name)}</div></div>`).join('')}</div>`;
     $$('canvas[data-ava]', panel).forEach(c => paintAvatarInto(c, { kind: 'preset', id: c.dataset.ava }));
+  } else if (d.tab === 'ai' && aiAvatarOn()) {
+    renderAiPanel(panel);
   } else if (d.tab === 'upload') {
     panel.innerHTML = `<button class="upload-zone" data-action="ava-upload">${ic('upload')}<b>Choose a photo from this device</b><span class="small">JPG, PNG or WebP · up to 10 MB · ${ppSaveMode() === 'off' ? 'processed locally, never uploaded' : 'processed on this device; saved only as part of your passport, if you choose to save it'}</span></button>`;
   } else {
@@ -1267,7 +1271,7 @@ function renderAvaPanel() {
 function updateAvaPreview() {
   const c = $('#avaPreview'); if (!c) return; const av = state.draft.avatar;
   paintAvatarInto(c, av);
-  $('#avaPreviewText').innerHTML = av.kind === 'photo' ? '<b>Your photo</b><br>Shown on your passport and, only if you confirm, on the big screen.' : `<b>${esc((byId(DATA.avatars, av.id) || DATA.avatars[0]).name)} avatar</b><br>A privacy-friendly alternative to a real photo.`;
+  $('#avaPreviewText').innerHTML = av.kind === 'photo' && av.ai ? '<b>Your 3D traveler</b><br>Created by AI from your photo. Shown on your passport and, only if you confirm, on the big screen.' : av.kind === 'photo' ? '<b>Your photo</b><br>Shown on your passport and, only if you confirm, on the big screen.' : `<b>${esc((byId(DATA.avatars, av.id) || DATA.avatars[0]).name)} avatar</b><br>A privacy-friendly alternative to a real photo.`;
 }
 let camStream = null;
 async function startCamera() {
@@ -1282,7 +1286,7 @@ async function startCamera() {
     stopCamera();
     const name = err && err.name;
     msg.textContent = name === 'NotAllowedError' ? 'Camera permission was declined. You can upload a photo or choose an avatar instead.' : name === 'NotFoundError' ? 'No camera was found on this device. Please upload a photo or choose an avatar.' : 'The camera could not be started on this device. Please upload a photo or choose an avatar.';
-    if ($('#camActions')) $('#camActions').innerHTML = `<button class="btn btn-ghost" data-action="cam-start">Try again</button><button class="btn btn-ghost" data-action="ava-tab" data-id="upload">Upload instead</button>`;
+    if ($('#camActions')) $('#camActions').innerHTML = `<button class="btn btn-ghost" data-action="cam-start">Try again</button>${state.draft.tab === 'ai' ? '<button class="btn btn-ghost" data-action="ava-upload">Upload instead</button>' : '<button class="btn btn-ghost" data-action="ava-tab" data-id="upload">Upload instead</button>'}`;
   }
 }
 function stopCamera() { if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; } const v = $('#camVideo'); if (v) { v.srcObject = null; } }
@@ -1292,6 +1296,7 @@ function capturePhoto() {
   const s = Math.max(S / v.videoWidth, S / v.videoHeight); x.translate(S, 0); x.scale(-1, 1);
   x.drawImage(v, (S - v.videoWidth * s) / 2, (S - v.videoHeight * s) / 2, v.videoWidth * s, v.videoHeight * s);
   stopCamera();
+  if (state.draft.tab === 'ai') { aiSetSource(c); return; }
   setPhotoFromCanvas(c, () => { $('#camBox').innerHTML = `<canvas width="512" height="512" id="camShot" style="width:100%;height:100%;object-fit:cover"></canvas>`; $('#camShot').getContext('2d').drawImage(c, 0, 0); $('#camActions').innerHTML = `<button class="btn btn-ghost" data-action="ava-tab" data-id="camera">${ic('camera')} Retake</button>`; });
 }
 function setPhotoFromCanvas(c, done) {
@@ -1307,11 +1312,76 @@ function handleFile(file) {
   const url = URL.createObjectURL(file), img = new Image();
   img.onload = () => {
     const S = 512, c = document.createElement('canvas'); c.width = c.height = S; coverDraw(c.getContext('2d'), img, 0, 0, S, S); URL.revokeObjectURL(url);
+    if (state.draft.tab === 'ai') { aiSetSource(c); return; }
     setPhotoFromCanvas(c, () => { const p = $('#avaPanel .upload-zone'); if (p) p.querySelector('b').textContent = 'Photo selected — tap to choose a different one'; });
   };
   img.onerror = () => { URL.revokeObjectURL(url); toast('That image could not be opened. Please try another photo.'); };
   img.src = url;
 }
+/* ---------- AI 3D Traveler avatar ----------
+   The visitor agrees, takes or uploads a photo, and POST /api/avatar turns it into a stylised 3D traveler
+   (fal.ai, see server/avatar.js). The photo goes to the AI service only after the visitor agrees and taps
+   "Create"; the result becomes their avatar ({ kind: 'photo', ai: true }) for the passport and the big screen. */
+const aiAvatarOn = () => !!(CONFIG.served && CONFIG.avatarAi && CONFIG.avatarAi.enabled);
+const AI_LINES = ['Scanning your features…', 'Issuing your digital passport…', 'Opening the smart gate…', 'Rendering your 3D traveler…'];
+let aiCtrl = null, aiTicker = 0;
+function renderAiPanel(panel) {
+  const a = state.draft.ai, supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  const shot = a.result || a.source;
+  const box = a.busy
+    ? `<div class="cam-box ai-box"><img src="${shot}" alt="" class="ai-dim"><div class="cam-msg ai-wait"><span class="spinner" aria-hidden="true"></span><span id="aiLine">${AI_LINES[0]}</span><small>About 15 seconds</small></div></div>`
+    : shot
+      ? `<div class="cam-box ai-box"><img src="${shot}" alt="${a.result ? 'Your 3D traveler' : 'Your photo'}">${a.result ? '<span class="ai-badge">AI 3D Traveler</span>' : ''}</div>`
+      : `<div class="cam-box" id="camBox"><video id="camVideo" playsinline muted hidden></video><div class="cam-msg" id="camMsg">${supported ? 'Take a selfie and AI turns you into a 3D traveler of the future. Tap “Start camera”; your browser will ask for permission.' : 'Camera capture is not supported in this browser. Please upload a photo instead.'}</div></div>`;
+  const actions = a.busy
+    ? ''
+    : a.result
+      ? `<button class="btn btn-ghost" data-action="ai-retake">${ic('camera')} Start again</button>`
+      : a.source
+        ? `<button class="btn btn-ghost" data-action="ai-retake">${ic('camera')} Retake</button><button class="btn btn-gold" data-action="ai-create"${a.consent ? '' : ' disabled'}>${ic('rocket')} Create my 3D traveler</button>`
+        : `${supported ? `<button class="btn btn-primary" data-action="cam-start">${ic('camera')} Start camera</button>` : ''}<button class="btn btn-ghost" data-action="ava-upload">${ic('upload')} Upload photo</button>`;
+  panel.innerHTML = `<label class="pp-consent ai-consent"><input type="checkbox" id="aiConsent"${a.consent ? ' checked' : ''}${a.busy ? ' disabled' : ''}><span><b>I agree to my photo being sent to an external AI service</b>Your photo is sent to fal.ai to create your 3D avatar. It is not kept by that service, and this kiosk only keeps it until you reset.</span></label>
+    ${box}<div class="cam-actions" id="camActions">${actions}</div>${a.error ? `<div class="msg-err ai-err" role="alert">${esc(a.error)}</div>` : ''}`;
+  const cb = $('#aiConsent', panel);
+  cb.addEventListener('change', () => { a.consent = cb.checked; const b = $('[data-action="ai-create"]', panel); if (b) b.disabled = !a.consent; });
+  if (a.busy) { let i = 0; clearInterval(aiTicker); aiTicker = setInterval(() => { const l = $('#aiLine'); if (!l) { clearInterval(aiTicker); return; } l.textContent = AI_LINES[++i % AI_LINES.length]; }, 3500); }
+}
+function aiSetSource(c) {
+  const a = state.draft.ai;
+  a.source = c.toDataURL('image/jpeg', .9); a.result = null; a.error = '';
+  renderAvaPanel();
+}
+async function aiCreate() {
+  const draft = state.draft, a = draft.ai;
+  if (a.busy || !a.source) return; // never double-submit: every generation is billable
+  if (!a.consent) { a.error = 'Please tick the box to agree before creating your avatar.'; renderAvaPanel(); return; }
+  a.busy = true; a.error = ''; renderAvaPanel();
+  aiCtrl = new AbortController();
+  const ctrl = aiCtrl, timer = setTimeout(() => ctrl.abort(), 90000);
+  let image = null, error = '';
+  try {
+    const res = await fetch('api/avatar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: a.source, consent: true, style: 'digital-traveler' }), signal: ctrl.signal });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.image) throw new Error(body.error || 'Your 3D traveler could not be created. Please try again.');
+    image = body.image;
+  } catch (e) {
+    error = e.name === 'AbortError' ? 'This is taking too long. Please try again, or choose another option.' : e.message;
+  } finally { clearTimeout(timer); clearInterval(aiTicker); if (aiCtrl === ctrl) aiCtrl = null; }
+  if (state.draft !== draft) return; // the kiosk was reset meanwhile: drop the result
+  a.busy = false;
+  if (!image) { a.error = error; if (draft.tab === 'ai') renderAvaPanel(); else toast(error); return; }
+  const img = new Image();
+  img.onload = () => {
+    if (state.draft !== draft) return;
+    a.result = image;
+    if (draft.tab === 'ai') { draft.avatar = { kind: 'photo', img, ai: true }; renderAvaPanel(); toast('Your 3D traveler is ready.'); }
+    else toast('Your 3D traveler is ready — open the AI 3D Traveler tab to use it.');
+  };
+  img.onerror = () => { if (state.draft !== draft) return; a.error = 'The avatar could not be displayed. Please try again.'; if (draft.tab === 'ai') renderAvaPanel(); };
+  img.src = image;
+}
+function aiCancel() { if (aiCtrl) { aiCtrl.abort(); aiCtrl = null; } clearInterval(aiTicker); }
+
 function validateDraft() {
   const d = state.draft, errors = {};
   d.name = cleanText(d.name, 50); d.email = cleanText(d.email, 80); d.org = cleanText(d.org, 50);
@@ -1769,7 +1839,7 @@ function confirmDialog({ icon = 'alert', title, text, ok, onOk }) {
    RESET + INACTIVITY
    ===================================================================== */
 function resetExperience(silent) {
-  stopCamera(); bigscreen.stop();
+  stopCamera(); aiCancel(); bigscreen.stop();
   ['modal', 'confirm', 'idle'].forEach(hideOverlay);
   $('#wizard').classList.remove('open');
   const keepView = state.view;
@@ -1833,12 +1903,14 @@ const ACTIONS = {
   'wiz-passport-open': () => openWizard({ step: 5 }),
   'wiz-step': d => wizGo(+d.id),
   'wiz-done': () => { closeWizard(); navigate('journey'); },
-  'ava-tab': d => { state.draft.tab = d.id; $$('.tab').forEach(t => { const on = t.dataset.id === d.id; t.classList.toggle('active', on); t.setAttribute('aria-selected', on); }); renderAvaPanel(); },
+  'ava-tab': d => { state.draft.tab = d.id; if (d.id === 'ai' && state.draft.ai.result && !(state.draft.avatar.kind === 'photo' && state.draft.avatar.ai)) { const img = new Image(); img.onload = () => { state.draft.avatar = { kind: 'photo', img, ai: true }; updateAvaPreview(); }; img.src = state.draft.ai.result; } $$('.tab').forEach(t => { const on = t.dataset.id === d.id; t.classList.toggle('active', on); t.setAttribute('aria-selected', on); }); renderAvaPanel(); },
   'ava-pick': d => { state.draft.avatar = { kind: 'preset', id: d.id }; $$('.ava-opt').forEach(b => b.classList.toggle('sel', b.dataset.id === d.id)); updateAvaPreview(); },
   'ava-upload': () => $('#fileInput').click(),
   'cam-start': () => startCamera(),
   'cam-stop': () => renderAvaPanel(),
   'cam-capture': () => capturePhoto(),
+  'ai-create': () => aiCreate(),
+  'ai-retake': () => { const a = state.draft.ai; a.source = null; a.result = null; a.error = ''; if (state.draft.avatar.ai) state.draft.avatar = { kind: 'preset', id: 'orbit' }; renderAvaPanel(); },
   'pp-generate': async (d, btn) => {
     if (!validateDraft()) { renderPassportForm(); const f = $('.field.err input, .pp-consent.err input'); if (f) f.focus(); return; }
     state.passport = buildPassport(state.passport);
@@ -1852,7 +1924,7 @@ const ACTIONS = {
   'pp-download': () => downloadPassport(),
   'pp-view-journey': () => { if (state.wizard.open) closeWizard(); navigate('journey'); setTimeout(() => { const r = $('#journeyRoot .roadmap'); if (r) r.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); }, 80); },
   'qr-open': () => openQRDest(),
-  'bs-confirm': () => confirmDialog({ icon: 'screen', title: 'Show on the big screen?', text: `Your name (“${state.passport.name}”) and your ${state.passport.avatar.kind === 'photo' ? 'photo' : 'avatar'} will be displayed full-screen for about 8 seconds and may be visible to people nearby. Nothing is recorded or saved.`, ok: 'Yes, show me', onOk: () => bigscreen.play() }),
+  'bs-confirm': () => confirmDialog({ icon: 'screen', title: 'Show on the big screen?', text: `Your name (“${state.passport.name}”) and your ${state.passport.avatar.kind === 'photo' && !state.passport.avatar.ai ? 'photo' : 'avatar'} will be displayed full-screen for about 8 seconds and may be visible to people nearby. Nothing is recorded or saved.`, ok: 'Yes, show me', onOk: () => bigscreen.play() }),
   'bs-skip': () => bigscreen.stop(),
   'confirm-ok': () => { const fn = confirmDialog.onOk; confirmDialog.onOk = null; hideOverlay('confirm'); if (fn) fn(); },
   'confirm-cancel': () => { confirmDialog.onOk = null; hideOverlay('confirm'); }
@@ -1937,7 +2009,7 @@ async function loadRuntimeConfig() {
     const res = await fetch('api/config', { cache: 'no-store', signal: ctrl.signal });
     if (!res.ok) return;
     const c = await res.json();
-    ['aiEnabled', 'aiTimeoutMs', 'publicBaseUrl', 'scheduleMode', 'eventTimezone', 'idleWarnSeconds', 'idleResetSeconds', 'fekra', 'passport'].forEach(k => { if (c[k] !== undefined) CONFIG[k] = c[k]; });
+    ['aiEnabled', 'aiTimeoutMs', 'publicBaseUrl', 'scheduleMode', 'eventTimezone', 'idleWarnSeconds', 'idleResetSeconds', 'fekra', 'passport', 'avatarAi'].forEach(k => { if (c[k] !== undefined) CONFIG[k] = c[k]; });
   } catch (e) { /* offline: keep defaults */ } finally { clearTimeout(timer); }
 }
 async function init() {

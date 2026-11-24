@@ -10,6 +10,7 @@ const { createFekra } = require('./fekra');
 const { createNews } = require('./news');
 const { createStore } = require('./fekra-store');
 const { createPassportStore } = require('./passport-store');
+const { createAvatar } = require('./avatar');
 const { createApp } = require('./app');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -44,9 +45,10 @@ if (config.passport.save !== 'off') {
   try { passports = createPassportStore({ dir: config.passport.storeDir, persistent: config.passport.storePersistent, retentionDays: config.passport.retentionDays, logger }); }
   catch (err) { logger.error('passport_store_unavailable', { detail: String(err.message).slice(0, 200) }); }
 }
-const handler = createApp({ config, recommender, fekra, store, passports, news, rules, content, catalog, logger, publicDir: PUBLIC_DIR, version });
+const avatar = createAvatar({ config, logger });
+const handler = createApp({ config, recommender, fekra, store, passports, avatar, news, rules, content, catalog, logger, publicDir: PUBLIC_DIR, version });
 const server = http.createServer(handler);
-server.requestTimeout = Math.max(config.ai.timeoutMs, config.fekra.timeoutMs * 2) + 15000; // an innovation check is two calls
+server.requestTimeout = Math.max(config.ai.timeoutMs, config.fekra.timeoutMs * 2, config.avatar.timeoutMs) + 15000; // an innovation check is two calls
 server.headersTimeout = 20000;
 server.keepAliveTimeout = 65000; // longer than typical proxy idle timeouts
 
@@ -56,7 +58,8 @@ server.listen(config.port, config.host, () => {
     port: config.port, version,
     ai: config.ai.enabled ? { model: config.ai.model, effort: config.ai.effort, fallbacks: config.ai.fallbacks } : (config.ai.apiKeySet ? 'disabled (AI_ENABLED=false)' : 'disabled (no ANTHROPIC_API_KEY — using offline rules)'),
     fekra: { ...fekra.status(), storage: store ? store.status() : 'unavailable' },
-    passports: { save: config.passport.save, storage: passports ? passports.status() : 'unavailable', staffExport: !!config.passport.adminToken }, news: { enabled: config.news.enabled, refreshMinutes: config.news.refreshMinutes },
+    passports: { save: config.passport.save, storage: passports ? passports.status() : 'unavailable', staffExport: !!config.passport.adminToken },
+    avatarAi: config.avatar.enabled ? { model: config.avatar.model } : 'disabled (no FAL_KEY)', news: { enabled: config.news.enabled, refreshMinutes: config.news.refreshMinutes },
     scheduleMode: config.kiosk.scheduleMode, trustProxy: config.trustProxy, courses: catalog.courses.length
   });
 });

@@ -46,6 +46,7 @@ function timezone(env, name, def) {
 function loadConfig(env = process.env) {
   const onRailway = !!(env.RAILWAY_ENVIRONMENT_NAME || env.RAILWAY_ENVIRONMENT || env.RAILWAY_PROJECT_ID);
   const apiKeySet = !!str(env, 'ANTHROPIC_API_KEY', null);
+  const falKey = str(env, 'FAL_KEY', null);
   // DATA_DIR: one persistent folder (on Railway, a mounted volume such as /data) for everything the app saves.
   const path = require('path'), dataDir = str(env, 'DATA_DIR', null);
   const saveDir = (name, sub) => str(env, name, null) || (dataDir ? path.join(dataDir, sub) : path.join(require('os').tmpdir(), `cft-${sub}`));
@@ -99,6 +100,16 @@ function loadConfig(env = process.env) {
       adminToken: str(env, 'PASSPORT_ADMIN_TOKEN', null)
     },
 
+    // AI 3D Traveler avatar (fal.ai) — only used when the visitor opts in on the kiosk
+    avatar: {
+      enabled: bool(env, 'AVATAR_AI_ENABLED', true) && !!falKey,
+      apiKey: falKey,
+      model: str(env, 'AVATAR_AI_MODEL', 'fal-ai/flux-pro/kontext'),
+      timeoutMs: int(env, 'AVATAR_AI_TIMEOUT_MS', 60000, 10000, 180000),
+      maxCallsPerHour: int(env, 'AVATAR_AI_MAX_CALLS_PER_HOUR', 200, 0, 100000),
+      maxConcurrent: int(env, 'AVATAR_AI_MAX_CONCURRENT', 4, 1, 50)
+    },
+
     news: {
       enabled: bool(env, 'NEWS_ENABLED', true),
       refreshMinutes: int(env, 'NEWS_REFRESH_MINUTES', 30, 5, 1440),
@@ -118,6 +129,7 @@ function loadConfig(env = process.env) {
       idleResetSeconds: int(env, 'IDLE_RESET_SECONDS', 90, 15, 3600)
     }
   };
+  if (!/^[a-z0-9-]+(\/[a-z0-9.-]+)+$/i.test(cfg.avatar.model)) throw new Error('AVATAR_AI_MODEL must be a fal endpoint id such as fal-ai/flux-pro/kontext');
   if (cfg.passport.adminToken && cfg.passport.adminToken.length < 20) throw new Error('PASSPORT_ADMIN_TOKEN must be at least 20 characters');
   if (cfg.kiosk.idleWarnSeconds >= cfg.kiosk.idleResetSeconds) throw new Error('IDLE_WARN_SECONDS must be lower than IDLE_RESET_SECONDS');
   return cfg;

@@ -8,6 +8,7 @@
      GET|PUT /api/fekra/proposals/FK-…         open / update a saved proposal (X-Fekra-Key header)
      GET  /api/fekra/proposals/FK-…/versions   earlier versions of a saved proposal
      GET  /api/fekra/proposals                 the signed-in user's proposals (only with FEKRA_IDENTITY_HEADER)
+     POST /api/avatar                          { image (JPEG data URI), consent: true } -> { image } AI 3D Traveler avatar (see server/avatar.js)
      POST /api/passports                       save a visitor's passport (with their consent) -> { ref, key }
      GET|PUT|DELETE /api/passports/CFT-…       open / update / delete a saved passport (X-Passport-Key header)
      GET  /api/passports/CFT-…/image           the saved passport image (X-Passport-Key header)
@@ -32,6 +33,7 @@ const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt']);
 const MAX_BODY = 4 * 1024;
 const FEKRA_MAX_BODY = 256 * 1024; // Fekra sends the conversation with each request
 const PASSPORT_MAX_BODY = 2200 * 1024; // the passport image (JPEG, base64) plus the visitor's details
+const AVATAR_MAX_BODY = 1500 * 1024; // the visitor's photo (512 px JPEG, base64) for the AI avatar
 
 const CSP = [
   "default-src 'self'",
@@ -120,7 +122,7 @@ function csvCell(v) {
   return /[",\r\n]/.test(t) || t !== t.trim() ? '"' + t.replace(/"/g, '""') + '"' : t;
 }
 
-function createApp({ config, recommender, fekra, store, passports, news, rules, content, catalog = { courses: [] }, logger, publicDir, version }) {
+function createApp({ config, recommender, fekra, store, passports, avatar = null, news, rules, content, catalog = { courses: [] }, logger, publicDir, version }) {
   const limiter = createRateLimiter(config.rateLimitPerMinute);
   const root = path.resolve(publicDir);
   const startedAt = Date.now();
@@ -194,6 +196,23 @@ function createApp({ config, recommender, fekra, store, passports, news, rules, 
     } catch (err) {
       const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 502;
       return sendJson(res, status, { error: err.message && status < 500 ? err.message : 'Fekra could not complete the request.', reason: err.reason || 'error' });
+    }
+  }
+
+  /* ---------- AI 3D Traveler avatar ---------- */
+  async function handleAvatar(req, res) {
+    if (!sameOrigin(req)) return sendJson(res, 403, { error: 'Cross-origin requests are not allowed.' });
+    const rl = limiter.take(clientIp(req, config.trustProxy));
+    if (!rl.ok) return sendJson(res, 429, { error: 'Too many requests. Please wait a moment.' }, { 'Retry-After': String(rl.retryAfter) });
+    let body;
+    try { body = await readJsonBody(req, AVATAR_MAX_BODY); } catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
+    if (!avatar || !avatar.status().enabled) return sendJson(res, 503, { error: 'The AI avatar is not available.', reason: 'not_configured' });
+    if (body.consent !== true) return sendJson(res, 400, { error: 'The visitor has not agreed to send their photo to the AI avatar service.', reason: 'no_consent' });
+    try {
+      return sendJson(res, 200, await avatar.generate({ image: body.image, style: body.style }));
+    } catch (err) {
+      const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 502;
+      return sendJson(res, status, { error: err.status ? err.message : 'The AI avatar could not be created.', reason: err.reason || 'error' });
     }
   }
 
@@ -308,7 +327,7 @@ function createApp({ config, recommender, fekra, store, passports, news, rules, 
     try {
       if (pathname === '/api/health') {
         if (req.method !== 'GET' && req.method !== 'HEAD') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
-        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() }, fekra: fekra ? { ...fekra.status(), ...fekra.stats() } : { enabled: false }, passports: passportConfig(), news: news ? news.stats() : { enabled: false } });
+        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() }, fekra: fekra ? { ...fekra.status(), ...fekra.stats() } : { enabled: false }, passports: passportConfig(), avatarAi: avatar ? { ...avatar.status(), ...avatar.stats() } : { enabled: false }, news: news ? news.stats() : { enabled: false } });
       }
       if (pathname === '/api/config') {
         if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
@@ -322,6 +341,7 @@ function createApp({ config, recommender, fekra, store, passports, news, rules, 
           idleResetSeconds: config.kiosk.idleResetSeconds,
           fekra: { ...(fekra ? fekra.status() : { enabled: false }), idleResetSeconds: config.fekra.idleResetSeconds, storage: store ? store.status() : { available: false, persistent: false }, signIn: !!config.fekra.identityHeader },
           passport: passportConfig(),
+          avatarAi: { enabled: !!(avatar && avatar.status().enabled) },
           version
         });
       }
@@ -335,6 +355,10 @@ function createApp({ config, recommender, fekra, store, passports, news, rules, 
       if (pathname === '/api/recommend') {
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });
         return await handleRecommend(req, res);
+      }
+      if (pathname === '/api/avatar') {
+        if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });
+        return await handleAvatar(req, res);
       }
       const ppm = /^\/api\/passports(?:\/(export|CFT-[0-9A-Z]{5}))?(?:\/(image))?$/.exec(pathname);
       if (ppm && !(ppm[1] === 'export' && ppm[2])) return await handlePassports(req, res, ppm[1] || null, ppm[2] || null);
