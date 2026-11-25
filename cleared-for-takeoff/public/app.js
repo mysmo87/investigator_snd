@@ -131,7 +131,7 @@ const freshState = () => ({
   wizard: { open: false, step: 1, role: null, experience: null, interests: [], focusTrack: null, token: 0 },
   journey: null,
   draft: { name: '', email: '', org: '', save: false, tab: 'preset', avatar: { kind: 'preset', id: 'orbit' }, errors: {},
-    ai: { consent: false, source: null, result: null, busy: false, error: '' } }, // AI 3D Traveler tab
+    ai: { source: null, result: null, busy: false, error: '' } }, // AI 3D Traveler tab
   passport: null, attended: null
 });
 let state = freshState();
@@ -966,7 +966,7 @@ const R = {
   bigscreen: () => ({ blocks: [P('After creating your passport, tap “Show on Big Screen” to see an 8-second welcome animation with your avatar, your name and your learning track. You will always be asked to confirm first, because it may be visible to people nearby.')], actions: [{ label: 'Start My AI Journey', action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Is my data stored?'] }),
   journey: () => ({ blocks: [P('Your AI Journey is built from three answers: your role, your experience with AI and your interests. An AI recommender matches them to a primary learning track and picks real courses for your level from a curated catalogue:'), UL(['Discover — a topic to explore, introductory courses and a demo to visit', 'Learn — core courses and a session to join', 'Practice — hands-on courses or labs', 'Innovate — a stretch course and a practical next step for your work']), NOTE('Only your three answers are used — never your name, email or photo. If the AI service is unavailable, transparent rules on this kiosk build the journey instead.')],
     actions: [{ label: 'Start My AI Journey', action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Which learning track is right for me?'] }),
-  privacy: () => ({ blocks: [P('Privacy first:'), UL([...(ppSaveMode() === 'off' ? ['Your name, email and photo stay in this kiosk’s memory and are never sent anywhere'] : [ppSaveMode() === 'always' ? 'When you create your Agentic AI Passport, it is saved with GDRFA so its QR code keeps working' : 'Your name, email and photo stay in this kiosk’s memory unless you tick “Save my passport” when you create it', `A saved passport (name, email, organization, passport image and learning journey) is kept by GDRFA for ${ppDays()} days so its QR code keeps working; the GDRFA booth team can see it, and you can delete it at any time from your phone`]), 'To recommend courses, only your role, AI experience and interests are sent to the AI course recommender', ...(aiAvatarOn() ? ['If you choose the AI 3D Traveler avatar and agree, your photo is sent to an external AI service to create it. Neither the service nor this kiosk keeps the photo'] : []), 'Nothing is saved to browser storage', `Everything on this kiosk is cleared when you press Reset, or after ${CONFIG.idleResetSeconds} seconds of inactivity`])], follow: ['What is the Agentic AI Passport?', 'How does Cleared for Takeoff personalise my journey?'] }),
+  privacy: () => ({ blocks: [P('Privacy first:'), UL([...(ppSaveMode() === 'off' ? ['Your name, email and photo stay in this kiosk’s memory and are never sent anywhere'] : [ppSaveMode() === 'always' ? 'When you create your Agentic AI Passport, it is saved with GDRFA so its QR code keeps working' : 'Your name, email and photo stay in this kiosk’s memory unless you tick “Save my passport” when you create it', `A saved passport (name, email, organization, passport image and learning journey) is kept by GDRFA for ${ppDays()} days so its QR code keeps working; the GDRFA booth team can see it, and you can delete it at any time from your phone`]), 'To recommend courses, only your role, AI experience and interests are sent to the AI course recommender', ...(aiAvatarOn() ? ['If you choose the AI 3D Traveler avatar and tap “Create my 3D traveler”, your photo is sent to an external AI service to create it. Neither the service nor this kiosk keeps the photo'] : []), 'Nothing is saved to browser storage', `Everything on this kiosk is cleared when you press Reset, or after ${CONFIG.idleResetSeconds} seconds of inactivity`])], follow: ['What is the Agentic AI Passport?', 'How does Cleared for Takeoff personalise my journey?'] }),
   about: () => ({ blocks: [P('GDRFA — the General Directorate of Residency and Foreigners Affairs in Dubai — oversees residency, entry permits and related services. At GITEX, the booth explores how Agentic AI could make such services more proactive and seamless.'), NOTE('For official services and information, please use GDRFA’s official channels. This assistant is a demo.')], follow: ['What demos are available at the GDRFA booth?', 'What is Agentic AI?'] }),
   help: () => ({ blocks: [P('I’m the booth assistant for Agentic AI: Cleared for Takeoff. I answer from the booth’s content and course catalogue, and I can help you:'), UL(['Understand Agentic AI and Generative AI', 'Find today’s sessions and booth demos', 'Choose a learning track', 'Create your personalised AI Journey and Passport'])], follow: DATA.defaultSuggestions }),
   demo(d, t) {
@@ -1238,7 +1238,7 @@ function renderPassportForm() {
       <div class="field${e.email ? ' err' : ''}"><label for="ppEmail">Email address</label><input id="ppEmail" type="email" maxlength="80" autocomplete="off" inputmode="email" value="${esc(d.email)}" placeholder="name@example.com"><div class="msg-err">${esc(e.email || '')}</div></div>
       <div class="field"><label for="ppOrg">Organization <span>(optional)</span></label><input id="ppOrg" maxlength="50" autocomplete="off" value="${esc(d.org)}" placeholder="Your organization"><div class="msg-err"></div></div>
       ${ppSaveMode() === 'always' ? `<div class="pp-consent pp-auto">${ic('shield')}<span><b>Your passport is saved so its QR code keeps working</b>${esc(consentBody())}</span></div>` : ppSaveMode() !== 'off' ? `<label class="pp-consent${e.save ? ' err' : ''}"><input type="checkbox" id="ppSave"${d.save ? ' checked' : ''}><span><b>Save my passport so I can open it again later${ppSaveMode() === 'required' ? '' : ' <em>(optional)</em>'}</b>${esc(consentBody())}</span></label>${e.save ? `<div class="msg-err pp-consent-err">${esc(e.save)}</div>` : ''}` : ''}
-      <div class="privacy">${ic('shield')}<span><b>Privacy notice:</b> ${ppSaveMode() === 'off' ? `your name, email and photo stay in this kiosk’s memory only — they are never uploaded or saved, and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.` : ppSaveMode() === 'required' || ppSaveMode() === 'always' ? 'your passport is saved with GDRFA as described above, and this kiosk forgets you on reset.' : `unless you tick “Save my passport”, your name, email and photo stay in this kiosk’s memory only and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.`} Your email is never printed on the passport or included in the QR code.${aiAvatarOn() ? ' If you choose the AI 3D Traveler, your photo is sent to an external AI service only after you agree, and is not kept there.' : ''}</span></div>
+      <div class="privacy">${ic('shield')}<span><b>Privacy notice:</b> ${ppSaveMode() === 'off' ? `your name, email and photo stay in this kiosk’s memory only — they are never uploaded or saved, and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.` : ppSaveMode() === 'required' || ppSaveMode() === 'always' ? 'your passport is saved with GDRFA as described above, and this kiosk forgets you on reset.' : `unless you tick “Save my passport”, your name, email and photo stay in this kiosk’s memory only and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.`} Your email is never printed on the passport or included in the QR code.${aiAvatarOn() ? ' If you choose the AI 3D Traveler, your photo is sent to an external AI service only when you tap “Create my 3D traveler”, and is not kept there.' : ''}</span></div>
     </div><div>
       <div class="stage-sec">Choose your avatar</div>
       <div class="tabs" role="tablist">${[['preset', 'spark', 'Select avatar'], ['upload', 'upload', 'Upload photo'], ['camera', 'camera', 'Use camera'], ...(aiAvatarOn() ? [['ai', 'rocket', 'AI 3D Traveler']] : [])].map(([id, icn, l]) => `<button class="tab${d.tab === id ? ' active' : ''}" role="tab" aria-selected="${d.tab === id}" data-action="ava-tab" data-id="${id}">${ic(icn)}${l}</button>`).join('')}</div>
@@ -1319,9 +1319,9 @@ function handleFile(file) {
   img.src = url;
 }
 /* ---------- AI 3D Traveler avatar ----------
-   The visitor agrees, takes or uploads a photo, and POST /api/avatar turns it into a stylised 3D traveler
-   (fal.ai, see server/avatar.js). The photo goes to the AI service only after the visitor agrees and taps
-   "Create"; the result becomes their avatar ({ kind: 'photo', ai: true }) for the passport and the big screen. */
+   The visitor reads the notice, takes or uploads a photo, and POST /api/avatar turns it into a stylised 3D traveler
+   (fal.ai, see server/avatar.js). The photo goes to the AI service only when the visitor taps "Create"
+   after seeing the notice (approved by GDRFA); the result becomes their avatar ({ kind: 'photo', ai: true }) for the passport and the big screen. */
 const aiAvatarOn = () => !!(CONFIG.served && CONFIG.avatarAi && CONFIG.avatarAi.enabled);
 const AI_LINES = ['Scanning your features…', 'Issuing your digital passport…', 'Opening the smart gate…', 'Rendering your 3D traveler…'];
 let aiCtrl = null, aiTicker = 0;
@@ -1338,12 +1338,10 @@ function renderAiPanel(panel) {
     : a.result
       ? `<button class="btn btn-ghost" data-action="ai-retake">${ic('camera')} Start again</button>`
       : a.source
-        ? `<button class="btn btn-ghost" data-action="ai-retake">${ic('camera')} Retake</button><button class="btn btn-gold" data-action="ai-create"${a.consent ? '' : ' disabled'}>${ic('rocket')} Create my 3D traveler</button>`
+        ? `<button class="btn btn-ghost" data-action="ai-retake">${ic('camera')} Retake</button><button class="btn btn-gold" data-action="ai-create">${ic('rocket')} Create my 3D traveler</button>`
         : `${supported ? `<button class="btn btn-primary" data-action="cam-start">${ic('camera')} Start camera</button>` : ''}<button class="btn btn-ghost" data-action="ava-upload">${ic('upload')} Upload photo</button>`;
-  panel.innerHTML = `<label class="pp-consent ai-consent"><input type="checkbox" id="aiConsent"${a.consent ? ' checked' : ''}${a.busy ? ' disabled' : ''}><span><b>I agree to my photo being sent to an external AI service</b>Your photo is used only to create your 3D avatar. It is not kept by that service, and this kiosk only keeps it until you reset.</span></label>
+  panel.innerHTML = `<div class="pp-consent pp-auto ai-consent">${ic('shield')}<span><b>Your photo is sent to an external AI service</b>When you tap “Create my 3D traveler”, your photo is used only to create your 3D avatar. It is not kept by that service, and this kiosk clears it for the next visitor.</span></div>
     ${box}<div class="cam-actions" id="camActions">${actions}</div>${a.error ? `<div class="msg-err ai-err" role="alert">${esc(a.error)}</div>` : ''}`;
-  const cb = $('#aiConsent', panel);
-  cb.addEventListener('change', () => { a.consent = cb.checked; const b = $('[data-action="ai-create"]', panel); if (b) b.disabled = !a.consent; });
   if (a.busy) { let i = 0; clearInterval(aiTicker); aiTicker = setInterval(() => { const l = $('#aiLine'); if (!l) { clearInterval(aiTicker); return; } l.textContent = AI_LINES[++i % AI_LINES.length]; }, 3500); }
 }
 function aiSetSource(c) {
@@ -1354,7 +1352,6 @@ function aiSetSource(c) {
 async function aiCreate() {
   const draft = state.draft, a = draft.ai;
   if (a.busy || !a.source) return; // never double-submit: every generation is billable
-  if (!a.consent) { a.error = 'Please tick the box to agree before creating your avatar.'; renderAvaPanel(); return; }
   a.busy = true; a.error = ''; renderAvaPanel();
   aiCtrl = new AbortController();
   const ctrl = aiCtrl, timer = setTimeout(() => ctrl.abort(), 90000);
