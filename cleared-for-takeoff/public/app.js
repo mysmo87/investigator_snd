@@ -1223,6 +1223,7 @@ async function runProcessing() {
   const { plan, source } = await planPromise;
   if (token !== state.wizard.token || state.wizard.step !== 3) return;
   state.journey = hydratePlan(plan, profile, source);
+  sendEvent('journey_generated', { role: profile.role, experience: profile.experience, track: state.journey.primary && state.journey.primary.id, secondTrack: state.journey.secondary && state.journey.secondary.id, level: state.journey.levelName, source });
   if (state.passport) { state.passport = buildPassport(state.passport); if (state.passport.saved) syncSavedPassport(); }
   await wait(REDUCED ? 100 : 450);
   if (token !== state.wizard.token || state.wizard.step !== 3) return;
@@ -1399,6 +1400,11 @@ function buildPassport(prev) {
 /* ---------- saving the passport with GDRFA (only when the visitor ticks the box) ----------
    POST /api/passports creates it under the passport number and returns a private key; the QR code then carries
    both, so scanning it later opens the saved passport on the visitor's phone. Editing updates it; unticking deletes it. */
+/* anonymous interaction counts for the staff page (no name, email or photo); never blocks the visitor */
+function sendEvent(type, fields = {}) {
+  if (!CONFIG.served) return;
+  try { fetch('api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, ...fields }), keepalive: true }).catch(() => {}); } catch { /* ignore */ }
+}
 const ppWantSave = () => ppSaveMode() === 'always' || (ppSaveMode() !== 'off' && state.draft.save);
 function ppSaveMode() { const c = CONFIG.passport; return CONFIG.served && c && c.storage && c.storage.available ? c.save : 'off'; }
 const ppDays = () => (CONFIG.passport && CONFIG.passport.retentionDays) || 180;
@@ -1406,7 +1412,7 @@ function consentBody() { return ` GDRFA keeps your name, email, organization, pa
 function passportPayload(p) {
   const j = p.journey;
   return {
-    ref: p.number, consent: true, consentText: (ppSaveMode() === 'always' ? 'Saved automatically; the visitor was shown this notice before creating the passport: Your passport is saved so its QR code keeps working.' : 'Save my passport so I can open it again later.') + consentBody(),
+    ref: p.number, avatarSource: p.avatar && p.avatar.ai ? 'ai' : p.avatar && p.avatar.kind === 'photo' ? 'photo' : 'preset', consent: true, consentText: (ppSaveMode() === 'always' ? 'Saved automatically; the visitor was shown this notice before creating the passport: Your passport is saved so its QR code keeps working.' : 'Save my passport so I can open it again later.') + consentBody(),
     visitor: { name: p.name, email: p.email, org: p.org },
     journey: { track: j.primary.id, secondary: j.secondary ? j.secondary.id : null, level: j.level, summary: j.summary, source: j.source,
       stages: j.stages.map(s => ({ key: s.key, topic: s.topic, next: s.next, courses: s.courses.map(c => c.ref) })) },
@@ -1887,7 +1893,7 @@ const ACTIONS = {
   'track-filter': d => { state.trackFilter = d.filter; renderTracks(); },
   'session-filter': d => { state.sessionFilter = d.filter; renderSessionList(); },
   'zone-filter': d => { state.zoneFilter = state.zoneFilter === d.zone ? null : d.zone; renderSessionList(); },
-  'mark-attended': d => { state.attended = state.attended === d.id ? null : d.id; if (state.passport && state.passport.saved) syncSavedPassport(); toast(state.attended ? 'Session added to your Agentic AI Passport.' : 'Session removed from your passport.'); openSession(d.id); if (state.view === 'sessions') renderSessionList(); if (state.view === 'journey') renderJourney(); },
+  'mark-attended': d => { state.attended = state.attended === d.id ? null : d.id; if (state.attended) sendEvent('session_attended', { session: d.id }); if (state.passport && state.passport.saved) syncSavedPassport(); toast(state.attended ? 'Session added to your Agentic AI Passport.' : 'Session removed from your passport.'); openSession(d.id); if (state.view === 'sessions') renderSessionList(); if (state.view === 'journey') renderJourney(); },
   'wiz-close': () => closeWizard(),
   'wiz-role': d => { state.wizard.role = d.id; renderWizard(); },
   'wiz-exp': d => { state.wizard.experience = d.id; renderWizard(); },
@@ -1922,7 +1928,7 @@ const ACTIONS = {
   'pp-download': () => downloadPassport(),
   'pp-view-journey': () => { if (state.wizard.open) closeWizard(); navigate('journey'); setTimeout(() => { const r = $('#journeyRoot .roadmap'); if (r) r.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); }, 80); },
   'qr-open': () => openQRDest(),
-  'bs-confirm': () => confirmDialog({ icon: 'screen', title: 'Show on the big screen?', text: `Your name (“${state.passport.name}”) and your ${state.passport.avatar.kind === 'photo' && !state.passport.avatar.ai ? 'photo' : 'avatar'} will be displayed full-screen for about 8 seconds and may be visible to people nearby. Nothing is recorded or saved.`, ok: 'Yes, show me', onOk: () => bigscreen.play() }),
+  'bs-confirm': () => confirmDialog({ icon: 'screen', title: 'Show on the big screen?', text: `Your name (“${state.passport.name}”) and your ${state.passport.avatar.kind === 'photo' && !state.passport.avatar.ai ? 'photo' : 'avatar'} will be displayed full-screen for about 8 seconds and may be visible to people nearby. Nothing is recorded or saved.`, ok: 'Yes, show me', onOk: () => { bigscreen.play(); sendEvent('big_screen_shown'); } }),
   'bs-skip': () => bigscreen.stop(),
   'confirm-ok': () => { const fn = confirmDialog.onOk; confirmDialog.onOk = null; hideOverlay('confirm'); if (fn) fn(); },
   'confirm-cancel': () => { confirmDialog.onOk = null; hideOverlay('confirm'); }

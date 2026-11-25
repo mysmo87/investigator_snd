@@ -11,6 +11,7 @@ const { createNews } = require('./news');
 const { createStore } = require('./fekra-store');
 const { createPassportStore } = require('./passport-store');
 const { createAvatar } = require('./avatar');
+const { createInteractionLog } = require('./interactions');
 const { createApp } = require('./app');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -46,7 +47,10 @@ if (config.passport.save !== 'off') {
   catch (err) { logger.error('passport_store_unavailable', { detail: String(err.message).slice(0, 200) }); }
 }
 const avatar = createAvatar({ config, logger });
-const handler = createApp({ config, recommender, fekra, store, passports, avatar, news, rules, content, catalog, logger, publicDir: PUBLIC_DIR, version });
+let interactions = null;
+try { interactions = createInteractionLog({ dir: config.interactions.storeDir, persistent: config.interactions.storePersistent, content, timezone: config.kiosk.eventTimezone, logger }); }
+catch (err) { logger.error('interaction_log_unavailable', { detail: String(err.message).slice(0, 200) }); }
+const handler = createApp({ config, recommender, fekra, store, passports, avatar, interactions, news, rules, content, catalog, logger, publicDir: PUBLIC_DIR, version });
 const server = http.createServer(handler);
 server.requestTimeout = Math.max(config.ai.timeoutMs, config.fekra.timeoutMs * 2, config.avatar.timeoutMs) + 15000; // an innovation check is two calls
 server.headersTimeout = 20000;

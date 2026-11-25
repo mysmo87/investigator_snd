@@ -100,6 +100,12 @@ function loadConfig(env = process.env) {
       adminToken: str(env, 'PASSPORT_ADMIN_TOKEN', null)
     },
 
+    // Anonymous interaction log (counts only, no personal data) for the staff page
+    interactions: {
+      storeDir: saveDir('INTERACTIONS_DIR', 'interactions'),
+      storePersistent: savePersistent('INTERACTIONS_DIR')
+    },
+
     // AI 3D Traveler avatar (fal.ai) — only used when the visitor opts in on the kiosk
     avatar: {
       enabled: bool(env, 'AVATAR_AI_ENABLED', true) && !!falKey,

@@ -18,6 +18,54 @@
     }));
     $('sCount').textContent = q ? `${shown.length} of ${rows.length} saved passports` : `${rows.length} saved passport${rows.length === 1 ? '' : 's'}`;
   }
+  /* ---------- Interactions (anonymous counts) ---------- */
+  const ORDER = ['journey_generated', 'passport_created', 'passport_deleted', 'avatar_ai_created', 'big_screen_shown', 'session_attended', 'fekra_proposal_saved'];
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const n = v => (v || 0).toLocaleString('en-GB');
+  function bars(title, counts) {
+    const box = el('div', 'i-box'); box.append(el('h3', null, title));
+    const entries = Object.entries(counts || {}).sort((a, b) => b[1] - a[1]);
+    if (!entries.length) { box.append(el('p', 'i-empty', 'No data yet')); return box; }
+    const max = entries[0][1], total = entries.reduce((s, [, v]) => s + v, 0);
+    entries.forEach(([label, v]) => {
+      const row = el('div', 'i-row'); row.title = `${label}: ${n(v)} (${Math.round(v / total * 100)}%)`;
+      const bar = el('span', 'bar'), fill = el('i'); fill.style.width = `${Math.max(2, v / max * 100)}%`; bar.append(fill);
+      row.append(el('span', 'lbl', label), el('span', 'val', `${n(v)} · ${Math.round(v / total * 100)}%`), bar);
+      box.append(row);
+    });
+    return box;
+  }
+  function renderInteractions(s) {
+    const L = s.labels || {};
+    const tiles = ORDER.map(t => {
+      const tile = el('div', 'i-tile' + (t === 'journey_generated' ? ' hero' : ''));
+      tile.append(el('small', null, L[t] || t), el('b', null, n(s.totals[t])), el('span', null, `Today: ${n(s.todayTotals[t])}`));
+      return tile;
+    });
+    if (s.conversion != null) { const c = el('div', 'i-tile'); c.append(el('small', null, 'Journeys that ended in a passport'), el('b', null, `${s.conversion}%`), el('span', null, 'All time')); tiles.splice(2, 0, c); }
+    $('iTiles').replaceChildren(...tiles);
+    $('iBreak').replaceChildren(
+      bars('Journeys by learning track', s.journeys.byTrack), bars('Journeys by level', s.journeys.byLevel),
+      bars('Journeys by role', s.journeys.byRole), bars('Passports by avatar', s.passports.byAvatar),
+      bars('Recommended by', s.journeys.bySource));
+    const cols = ['journey_generated', 'passport_created', 'passport_deleted', 'avatar_ai_created', 'big_screen_shown'];
+    $('iDaysHead').replaceChildren(el('th', null, 'Day'), ...cols.map(c => el('th', null, L[c] || c)));
+    $('iDays').replaceChildren(...(s.byDay.length ? s.byDay : [{ date: 'No interactions yet' }]).map(d => {
+      const tr = document.createElement('tr'); tr.append(cell(d.date === 'No interactions yet' ? d.date : day(d.date + 'T12:00:00Z'), 'mono'), ...cols.map(c => cell(d.date === 'No interactions yet' ? '' : n(d[c]), 'n'))); return tr;
+    }));
+  }
+  async function loadInteractions() {
+    $('iErr').hidden = true;
+    try {
+      const res = await fetch('api/interactions', { headers: { Authorization: `Bearer ${key}` }, cache: 'no-store' });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || 'The interaction counts could not be loaded.');
+      renderInteractions(out);
+      if (!out.storage.persistent) { $('iErr').textContent = 'Temporary storage: interaction counts are lost whenever the server is redeployed. Attach a volume on Railway and set DATA_DIR.'; $('iErr').hidden = false; }
+    } catch (e) { $('iErr').textContent = e.message; $('iErr').hidden = false; }
+    $('sInter').hidden = false;
+  }
+
   function fail(msg) { const e = $('sErr'); e.textContent = msg; e.hidden = false; }
   async function load() {
     $('sErr').hidden = true;
@@ -34,10 +82,22 @@
     $('sWarn').hidden = !!out.storage.persistent;
     $('sLogin').hidden = true; $('sList').hidden = false;
     render();
+    loadInteractions();
   }
   $('sForm').addEventListener('submit', e => { e.preventDefault(); key = $('sKey').value.trim(); $('sKey').value = ''; if (key) load(); });
   $('sFilter').addEventListener('input', render);
-  $('sLock').addEventListener('click', () => { key = ''; rows = []; $('sRows').replaceChildren(); $('sFilter').value = ''; $('sList').hidden = true; $('sLogin').hidden = false; $('sKey').focus(); });
+  $('sLock').addEventListener('click', () => { key = ''; rows = []; $('sRows').replaceChildren(); $('sFilter').value = ''; $('sList').hidden = true; $('sInter').hidden = true; $('iTiles').replaceChildren(); $('iBreak').replaceChildren(); $('iDays').replaceChildren(); $('sLogin').hidden = false; $('sKey').focus(); });
+  $('iCsv').addEventListener('click', async () => {
+    const btn = $('iCsv'); btn.disabled = true;
+    try {
+      const res = await fetch('api/interactions?format=csv', { headers: { Authorization: `Bearer ${key}` }, cache: 'no-store' });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob(), url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = `agentic-ai-interactions-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch { window.alert('The interactions CSV could not be downloaded. Try again.'); }
+    btn.disabled = false;
+  });
   $('sCsv').addEventListener('click', async () => {
     const btn = $('sCsv'); btn.disabled = true;
     try {

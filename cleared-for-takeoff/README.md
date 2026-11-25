@@ -104,6 +104,15 @@ When a visitor creates their passport, the form offers **"Save my passport so I 
 - **Saving mode:** by default (`PASSPORT_SAVE=always`) every passport is saved, with no checkbox; the form shows a notice explaining what is kept and for how long, as approved by GDRFA. `optional` brings back the "Save my passport" checkbox, `required` makes ticking it a condition of creating a passport, and `off` never saves.
 - **Persistence:** saved passports are files on the server. **On Railway, attach a volume and set `DATA_DIR`**, or they are lost on every deploy. The staff page shows a warning while storage is temporary.
 
+## Interaction counts (staff page)
+
+The staff page (`/staff.html`) opens with an **Interactions** section above the saved passports. It shows anonymous counts that are kept even when a visitor deletes their passport, or when a passport expires after 180 days:
+
+- **Counted:** learning journeys created, passports created, passports deleted by visitors, AI 3D avatars created, big-screen moments, sessions marked as attended, and Fekra proposals saved.
+- **Shown:** each count all-time and for today (`EVENT_TIMEZONE`, Dubai by default), the share of journeys that ended in a passport, and breakdowns by track, level, role, avatar type and "recommended by". There's also a table per day. **Download interactions CSV** exports every event with its time, in Dubai time.
+- **No personal data:** events never hold a name, email, organization, photo, passport number or IP address. They hold only the event type, the time and whitelisted values such as track or level. They're stored as one append-only file, `interactions.jsonl`, under `DATA_DIR` (or `INTERACTIONS_DIR`), and the app never deletes them.
+- **Where events come from:** the server records passports created and deleted, AI avatars and Fekra saves itself. The kiosk sends journeys, big-screen moments and attended sessions to `POST /api/events`, which accepts only those types, from the same origin, under the usual rate limit.
+
 ## AI 3D Traveler avatar (fal.ai)
 
 With `FAL_KEY` set, the passport's "Choose your avatar" step gets a fourth tab, **AI 3D Traveler**, next to Select avatar, Upload photo and Use camera.
@@ -222,6 +231,7 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `AVATAR_AI_TIMEOUT_MS` | No | `60000` | Timeout per avatar generation. |
 | `AVATAR_AI_MAX_CALLS_PER_HOUR` | No | `200` | Spend guard for the AI avatar. |
 | `AVATAR_AI_MAX_CONCURRENT` | No | `4` | Avatar generations running at the same time. |
+| `INTERACTIONS_DIR` | No | `DATA_DIR/interactions` | Folder for the anonymous interaction log. |
 | `NEWS_ENABLED` | No | `true` | Live news in the ticker. When off, the curated sample headlines show. |
 | `NEWS_REFRESH_MINUTES` | No | `30` | How often the server reads the feeds. |
 | `NEWS_MAX_ITEMS` | No | `30` | Headlines in the ticker loop. |

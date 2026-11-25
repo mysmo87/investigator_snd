@@ -29,6 +29,27 @@
   th{color:var(--text-3);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;background:rgba(3,12,32,.6)}
   td.mono{font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
   [hidden]{display:none !important}
+  /* Interactions */
+  .i-head{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-bottom:.3rem}
+  .i-head h2{margin:0;font-size:1.15rem}
+  .i-head .grow{flex:1}
+  .i-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(10.5rem,1fr));gap:.6rem;margin:.6rem 0 1rem}
+  .i-tile{padding:.75rem .85rem;border:1px solid var(--line);border-radius:.8rem;background:rgba(3,12,32,.55)}
+  .i-tile small{display:block;font-size:.72rem;letter-spacing:.06em;color:var(--text-3);text-transform:uppercase;line-height:1.35;min-height:2em}
+  .i-tile b{display:block;font-size:1.9rem;line-height:1.1;margin-top:.3rem;color:var(--text);font-variant-numeric:tabular-nums}
+  .i-tile span{font-size:.78rem;color:var(--text-2)}
+  .i-tile.hero{border-color:rgba(244,216,143,.45);background:rgba(244,216,143,.06)}
+  .i-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));gap:.8rem;margin-bottom:1rem}
+  .i-box{padding:.75rem .85rem;border:1px solid var(--line);border-radius:.8rem;background:rgba(3,12,32,.45)}
+  .i-box h3{margin:0 0 .55rem;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:600}
+  .i-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.15rem .6rem;align-items:center;font-size:.84rem;margin-bottom:.45rem}
+  .i-row .lbl{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .i-row .val{color:var(--text-2);font-variant-numeric:tabular-nums}
+  .i-row .bar{grid-column:1 / -1;height:.4rem;border-radius:.2rem;background:rgba(96,170,255,.12);overflow:hidden}
+  .i-row .bar i{display:block;height:100%;border-radius:0 .2rem .2rem 0;background:#2e8bff}
+  .i-empty{color:var(--text-3);font-size:.84rem}
+  table.i-days{min-width:40rem}
+  table.i-days td.n{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -40,12 +61,20 @@
   <section class="s-card" id="sLogin">
     <p class="j-eyebrow">GDRFA staff only</p>
     <h1>Saved Agentic AI Passports</h1>
-    <p>Visitors who ticked “Save my passport” at the kiosk. Enter the staff key (the server’s PASSPORT_ADMIN_TOKEN) to see the list and download it for Excel. The key is kept only while this page is open.</p>
+    <p>Visitor interactions and every saved passport. Enter the staff key (the server’s PASSPORT_ADMIN_TOKEN) to see the list and download it for Excel. The key is kept only while this page is open.</p>
     <form class="s-form" id="sForm" autocomplete="off">
       <input type="password" id="sKey" placeholder="Staff key" aria-label="Staff key" autocomplete="off" required>
       <button class="j-btn gold" type="submit">Show saved passports</button>
     </form>
     <p class="s-msg err" id="sErr" role="alert" hidden></p>
+  </section>
+  <section class="s-card" id="sInter" hidden>
+    <div class="i-head"><h2>Interactions</h2><span class="grow"></span><button class="j-btn gold" type="button" id="iCsv">Download interactions CSV</button></div>
+    <p class="s-msg" id="iInfo">Anonymous counts of everything visitors did at the kiosk: no names, emails or photos. They are kept even when a visitor deletes their passport.</p>
+    <p class="s-msg err" id="iErr" hidden></p>
+    <div class="i-tiles" id="iTiles"></div>
+    <div class="i-grid" id="iBreak"></div>
+    <div class="s-scroll"><table class="i-days"><thead><tr id="iDaysHead"></tr></thead><tbody id="iDays"></tbody></table></div>
   </section>
   <section class="s-card" id="sList" hidden>
     <div class="s-bar"><b id="sCount"></b><span class="grow"></span><input type="search" id="sFilter" placeholder="Filter by name, email, organization or track" aria-label="Filter"><button class="j-btn gold" type="button" id="sCsv">Download CSV (Excel)</button><button class="j-btn" type="button" id="sLock">Lock</button></div>

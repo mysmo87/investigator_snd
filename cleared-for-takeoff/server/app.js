@@ -9,6 +9,8 @@
      GET  /api/fekra/proposals/FK-…/versions   earlier versions of a saved proposal
      GET  /api/fekra/proposals                 the signed-in user's proposals (only with FEKRA_IDENTITY_HEADER)
      POST /api/avatar                          { image (JPEG data URI), consent: true } -> { image } AI 3D Traveler avatar (see server/avatar.js)
+     POST /api/events                          { type, ...fields } anonymous kiosk event (see server/interactions.js)
+     GET  /api/interactions[?format=csv]       interaction totals / every event, for GDRFA staff (Authorization: Bearer PASSPORT_ADMIN_TOKEN)
      POST /api/passports                       save a visitor's passport (with their consent) -> { ref, key }
      GET|PUT|DELETE /api/passports/CFT-…       open / update / delete a saved passport (X-Passport-Key header)
      GET  /api/passports/CFT-…/image           the saved passport image (X-Passport-Key header)
@@ -33,6 +35,7 @@ const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt']);
 const MAX_BODY = 4 * 1024;
 const FEKRA_MAX_BODY = 256 * 1024; // Fekra sends the conversation with each request
 const PASSPORT_MAX_BODY = 2200 * 1024; // the passport image (JPEG, base64) plus the visitor's details
+const EVENT_MAX_BODY = 2 * 1024; // one anonymous kiosk event
 const AVATAR_MAX_BODY = 1500 * 1024; // the visitor's photo (512 px JPEG, base64) for the AI avatar
 
 const CSP = [
@@ -122,7 +125,7 @@ function csvCell(v) {
   return /[",\r\n]/.test(t) || t !== t.trim() ? '"' + t.replace(/"/g, '""') + '"' : t;
 }
 
-function createApp({ config, recommender, fekra, store, passports, avatar = null, news, rules, content, catalog = { courses: [] }, logger, publicDir, version }) {
+function createApp({ config, recommender, fekra, store, passports, avatar = null, interactions = null, news, rules, content, catalog = { courses: [] }, logger, publicDir, version }) {
   const limiter = createRateLimiter(config.rateLimitPerMinute);
   const root = path.resolve(publicDir);
   const startedAt = Date.now();
@@ -209,7 +212,9 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
     if (!avatar || !avatar.status().enabled) return sendJson(res, 503, { error: 'The AI avatar is not available.', reason: 'not_configured' });
     if (body.consent !== true) return sendJson(res, 400, { error: 'The visitor has not agreed to send their photo to the AI avatar service.', reason: 'no_consent' });
     try {
-      return sendJson(res, 200, await avatar.generate({ image: body.image, style: body.style }));
+      const out = await avatar.generate({ image: body.image, style: body.style });
+      if (interactions) interactions.record('avatar_ai_created');
+      return sendJson(res, 200, out);
     } catch (err) {
       const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 502;
       return sendJson(res, status, { error: err.status ? err.message : 'The AI avatar could not be created.', reason: err.reason || 'error' });
@@ -241,7 +246,7 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
     if (!store) return sendJson(res, 503, { error: 'Saving is not available.', reason: 'no_store' });
     const identity = identityOf(req), key = req.headers['x-fekra-key'];
     try {
-      if (!ref && req.method === 'POST') { const body = await readJsonBody(req, FEKRA_MAX_BODY); return sendJson(res, 201, await store.create(storeData(body), identity)); }
+      if (!ref && req.method === 'POST') { const body = await readJsonBody(req, FEKRA_MAX_BODY); const out = await store.create(storeData(body), identity); if (interactions) interactions.record('fekra_proposal_saved'); return sendJson(res, 201, out); }
       if (!ref && req.method === 'GET') return sendJson(res, 200, { proposals: await store.list(identity) });
       if (ref && sub === 'versions' && req.method === 'GET') return sendJson(res, 200, { versions: await store.versions(ref, key, identity) });
       if (ref && !sub && req.method === 'GET') return sendJson(res, 200, await store.get(ref, key, identity));
@@ -252,6 +257,40 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
       if (status >= 500) logger.error('fekra_store_failed', { detail: String(err.message).slice(0, 300) });
       return sendJson(res, status, { error: status < 500 ? err.message : 'The proposal could not be saved.', reason: err.reason || 'error' });
     }
+  }
+
+  /* ---------- anonymous interaction log ---------- */
+  async function handleEvent(req, res) {
+    if (!sameOrigin(req)) return sendJson(res, 403, { error: 'Cross-origin requests are not allowed.' });
+    const rl = limiter.take(clientIp(req, config.trustProxy));
+    if (!rl.ok) return sendJson(res, 429, { error: 'Too many requests. Please wait a moment.' }, { 'Retry-After': String(rl.retryAfter) });
+    let body;
+    try { body = await readJsonBody(req, EVENT_MAX_BODY); } catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
+    if (!interactions) return sendJson(res, 503, { error: 'Interaction log unavailable.', reason: 'no_store' });
+    if (!interactions.acceptsFromClient(body.type)) return sendJson(res, 400, { error: 'Unknown event.', reason: 'bad_event' });
+    interactions.record(body.type, body);
+    return sendJson(res, 202, { ok: true });
+  }
+  async function handleInteractions(req, res) {
+    if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
+    if (!config.passport.adminToken) return sendJson(res, 503, { error: 'Staff access is not configured (PASSPORT_ADMIN_TOKEN).', reason: 'not_configured' });
+    if (!staffAuthorized(req)) { logger.warn('interactions_export_denied', { ip: clientIp(req, config.trustProxy) }); return sendJson(res, 401, { error: 'The staff key is not correct.', reason: 'unauthorized' }); }
+    if (!interactions) return sendJson(res, 503, { error: 'Interaction log unavailable.', reason: 'no_store' });
+    if (new URL(req.url, 'http://localhost').searchParams.get('format') === 'csv') {
+      const tz = config.kiosk.eventTimezone;
+      const local = iso => { const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(iso)).map(x => [x.type, x.value])); return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`; };
+      const title = (list, id) => { const x = (list || []).find(t => t.id === id); return x ? (x.title || x.label) : (id || ''); };
+      const cols = ['time', 'event', 'role', 'experience', 'track', 'secondTrack', 'level', 'recommendedBy', 'avatar', 'session'];
+      const rows = (await interactions.list()).map(ev => ({
+        time: local(ev.at), event: ev.type, role: ev.role ? title(content.roles, ev.role) : '', experience: ev.experience ? title(content.experience, ev.experience) : '',
+        track: ev.track ? title(content.tracks, ev.track) : '', secondTrack: ev.secondTrack ? title(content.tracks, ev.secondTrack) : '', level: ev.level || '',
+        recommendedBy: ev.source === 'ai' ? 'AI' : ev.source === 'rules' ? 'Booth rules' : '', avatar: ev.avatar || '', session: ev.session ? title(content.sessions, ev.session) : ''
+      }));
+      const csv = '\ufeff' + [cols.join(','), ...rows.map(r => cols.map(c => csvCell(r[c])).join(','))].join('\r\n') + '\r\n';
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Disposition': `attachment; filename="agentic-ai-interactions-${new Date().toISOString().slice(0, 10)}.csv"` });
+      return res.end(csv);
+    }
+    return sendJson(res, 200, { ...(await interactions.summary()), storage: interactions.status() });
   }
 
   /* ---------- saved passports ---------- */
@@ -298,7 +337,9 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
         const body = await readJsonBody(req, PASSPORT_MAX_BODY);
         if (body.consent !== true) return sendJson(res, 400, { error: 'The visitor has not agreed to save their passport.', reason: 'no_consent' });
         const data = { ref: String(body.ref || ''), ...cleanPassport(body, content, catalog) };
-        return sendJson(res, 201, await passports.create(data, decodeImage(body.image), body.consentText));
+        const out = await passports.create(data, decodeImage(body.image), body.consentText);
+        if (interactions) interactions.record('passport_created', { track: data.journey.track, level: (content.levels || [])[data.journey.level], source: data.journey.source, avatar: body.avatarSource });
+        return sendJson(res, 201, out);
       }
       if (ref && sub === 'image' && req.method === 'GET') {
         const img = await passports.getImage(ref, key);
@@ -307,7 +348,7 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
       }
       if (ref && !sub && req.method === 'GET') return sendJson(res, 200, await passports.get(ref, key));
       if (ref && !sub && req.method === 'PUT') { const body = await readJsonBody(req, PASSPORT_MAX_BODY); return sendJson(res, 200, await passports.update(ref, key, cleanPassport(body, content, catalog), decodeImage(body.image))); }
-      if (ref && !sub && req.method === 'DELETE') return sendJson(res, 200, await passports.delete(ref, key));
+      if (ref && !sub && req.method === 'DELETE') { const out = await passports.delete(ref, key); if (interactions) interactions.record('passport_deleted'); return sendJson(res, 200, out); }
       return sendJson(res, 405, { error: 'Method not allowed' });
     } catch (err) {
       const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 500;
@@ -327,7 +368,7 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
     try {
       if (pathname === '/api/health') {
         if (req.method !== 'GET' && req.method !== 'HEAD') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
-        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() }, fekra: fekra ? { ...fekra.status(), ...fekra.stats() } : { enabled: false }, passports: passportConfig(), avatarAi: avatar ? { ...avatar.status(), ...avatar.stats() } : { enabled: false }, news: news ? news.stats() : { enabled: false } });
+        return sendJson(res, 200, { status: 'ok', version, deploy: DEPLOY, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000), ai: { enabled: config.ai.enabled, model: config.ai.enabled ? config.ai.model : null, ...recommender.stats() }, fekra: fekra ? { ...fekra.status(), ...fekra.stats() } : { enabled: false }, passports: passportConfig(), avatarAi: avatar ? { ...avatar.status(), ...avatar.stats() } : { enabled: false }, interactions: interactions ? interactions.status() : { available: false }, news: news ? news.stats() : { enabled: false } });
       }
       if (pathname === '/api/config') {
         if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
@@ -356,6 +397,11 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });
         return await handleRecommend(req, res);
       }
+      if (pathname === '/api/events') {
+        if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });
+        return await handleEvent(req, res);
+      }
+      if (pathname === '/api/interactions') return await handleInteractions(req, res);
       if (pathname === '/api/avatar') {
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'POST' });
         return await handleAvatar(req, res);
