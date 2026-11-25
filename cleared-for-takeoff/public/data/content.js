@@ -143,7 +143,7 @@
       keywords: ['cleared for takeoff', 'takeoff', 'future radar', 'this app', 'this experience', 'this kiosk', 'this screen'],
       overview: 'This experience: a personal guide that curates AI news, demos and learning journeys around your role, experience and interests.',
       challenge: 'Visitors face an overwhelming amount of AI information and few clear starting points.',
-      how: ['You share your role, experience and interests — nothing else', 'Claude (Anthropic) picks real courses for your level from a curated catalogue', 'Every pick is checked against the catalogue; offline rules take over if the AI is unavailable', 'Your passport is created on the kiosk — name, email and photo never leave it'],
+      how: ['You share your role, experience and interests — nothing else', 'AI picks real courses for your level from a curated catalogue', 'Every pick is checked against the catalogue; offline rules take over if the AI is unavailable', 'Your passport is saved securely with GDRFA so its QR code keeps working, and the kiosk clears itself for the next visitor'],
       benefits: ['A personal starting point in under two minutes', 'Real courses matched to your level', 'A take-home passport with a QR code to your courses', 'Privacy by design'],
       tracks: ['agentic', 'emerging', 'cx'], tags: ['agentic', 'genai', 'future', 'cx'],
       questions: ['How does Cleared for Takeoff personalise my journey?', 'What is the Agentic AI Passport?', 'Is my data stored?'] },
