@@ -101,7 +101,7 @@ test('HTTP: consent is required, the visitor opens and deletes their passport, s
     assert.equal((await req('DELETE', '/api/passports/CFT-AB12C', null, k)).status, 200);
     assert.equal((await req('GET', '/api/passports/CFT-AB12C', null, k)).status, 404);
     const cfg = await req('GET', '/api/config');
-    assert.deepEqual(cfg.body.passport, { save: 'optional', storage: { available: true, persistent: true, retentionDays: 180 }, retentionDays: 180 });
+    assert.deepEqual(cfg.body.passport, { save: 'always', storage: { available: true, persistent: true, retentionDays: 180 }, retentionDays: 180 });
   } finally { server.close(); passports.stop(); }
 });
 
@@ -125,4 +125,10 @@ test('saving is off when PASSPORT_SAVE=off, and a short staff token is refused',
   assert.throws(() => loadConfig({ PASSPORT_ADMIN_TOKEN: 'short' }), /at least 20/);
   assert.equal(loadConfig({}).passport.storePersistent, false);
   assert.equal(loadConfig({ PASSPORT_STORE_DIR: '/data/p' }).passport.storePersistent, true);
+});
+
+test('PASSPORT_SAVE defaults to always and accepts every mode', () => {
+  assert.equal(loadConfig({}).passport.save, 'always');
+  for (const m of ['off', 'optional', 'required', 'always']) assert.equal(loadConfig({ PASSPORT_SAVE: m }).passport.save, m);
+  assert.throws(() => loadConfig({ PASSPORT_SAVE: 'sometimes' }), /PASSPORT_SAVE/);
 });

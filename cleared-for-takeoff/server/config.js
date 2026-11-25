@@ -93,7 +93,7 @@ function loadConfig(env = process.env) {
 
     // Saved Agentic AI Passports (only with the visitor's consent)
     passport: {
-      save: oneOf(env, 'PASSPORT_SAVE', 'optional', ['off', 'optional', 'required']),
+      save: oneOf(env, 'PASSPORT_SAVE', 'always', ['off', 'optional', 'required', 'always']),
       storeDir: saveDir('PASSPORT_STORE_DIR', 'passports'),
       storePersistent: savePersistent('PASSPORT_STORE_DIR'),
       retentionDays: int(env, 'PASSPORT_RETENTION_DAYS', 180, 1, 3650),

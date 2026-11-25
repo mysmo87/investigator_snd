@@ -101,7 +101,7 @@ When a visitor creates their passport, the form offers **"Save my passport so I 
   - The email is never printed on the passport or put in the QR code.
 - **Retention:** each saved passport is deleted automatically after `PASSPORT_RETENTION_DAYS` (default 180). The server checks every hour.
 - **Staff access:** open `/staff.html` and enter the staff key (`PASSPORT_ADMIN_TOKEN`). It lists every saved passport (passport number, time, name, email, organization, track, level, attended session, deletion date) with a filter and **Download CSV (Excel)**. The same data is available at `GET /api/passports/export?format=csv` with `Authorization: Bearer <PASSPORT_ADMIN_TOKEN>`. Without the variable, staff access is off.
-- **Making the box mandatory:** `PASSPORT_SAVE=required` makes saving a condition of creating a passport. `off` removes the option entirely.
+- **Saving mode:** by default (`PASSPORT_SAVE=always`) every passport is saved, with no checkbox; the form shows a notice explaining what is kept and for how long, as approved by GDRFA. `optional` brings back the "Save my passport" checkbox, `required` makes ticking it a condition of creating a passport, and `off` never saves.
 - **Persistence:** saved passports are files on the server. **On Railway, attach a volume and set `DATA_DIR`**, or they are lost on every deploy. The staff page shows a warning while storage is temporary.
 
 ## AI 3D Traveler avatar (fal.ai)
@@ -208,7 +208,7 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `FEKRA_MAX_CALLS_PER_HOUR` | No | `300` | Spend guard for Fekra (an innovation check counts as 2). |
 | `FEKRA_IDLE_RESET_SECONDS` | No | `600` | Inactivity reset while an idea is in progress. |
 | `DATA_DIR` | **Recommended** | system temp dir | One persistent folder for everything the app saves: proposals go in `DATA_DIR/fekra`, passports in `DATA_DIR/passports`. **On Railway, attach a volume (for example at `/data`) and set `DATA_DIR=/data`**; otherwise saved proposals and passports are lost on the next deploy. |
-| `PASSPORT_SAVE` | No | `optional` | `optional`: visitors may tick "Save my passport". `required`: they must, to create a passport. `off`: passports are never saved. |
+| `PASSPORT_SAVE` | No | `always` | `always`: every passport is saved, with no checkbox; the visitor sees a notice saying so (approved by GDRFA). `optional`: visitors may tick "Save my passport". `required`: they must tick it to create a passport. `off`: passports are never saved. |
 | `PASSPORT_RETENTION_DAYS` | No | `180` | Saved passports are deleted automatically after this many days. |
 | `PASSPORT_ADMIN_TOKEN` | For staff access | — | Staff key for `/staff.html` and the CSV export. At least 20 random characters; mark it as a secret. Without it, nobody can list saved passports. |
 | `PASSPORT_STORE_DIR` | No | `DATA_DIR/passports` | Overrides the passports folder. |
@@ -253,7 +253,7 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
   - Attach a Railway volume and set `DATA_DIR`.
   - Set `PASSPORT_ADMIN_TOKEN` to a long random value and give it only to the booth team.
   - Have GDRFA's data-protection team approve the consent wording on the passport form (`consentBody()` in `public/app.js`) and the retention period.
-  - Decide whether saving stays optional (recommended) or becomes `PASSPORT_SAVE=required`.
+  - Saving is automatic (`PASSPORT_SAVE=always`), as approved by GDRFA. Keep the on-screen notice in step with what is actually stored.
 - **AI 3D Traveler avatar:**
   - Have GDRFA's data-protection team approve sending visitor photos to fal.ai, and the consent wording in the AI tab (`renderAiPanel()` in `public/app.js`).
   - Add credits to the fal account and set a spend limit there.
