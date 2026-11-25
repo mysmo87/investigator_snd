@@ -1,0 +1,16 @@
+{
+  "name": "investigator-snd",
+  "private": true,
+  "description": "Repository root. The deployable app lives in cleared-for-takeoff/ (npm workspace), so Railway can build from the repo root or with Root Directory set to cleared-for-takeoff.",
+  "workspaces": [
+    "cleared-for-takeoff"
+  ],
+  "scripts": {
+    "start": "npm start -w cleared-for-takeoff",
+    "test": "npm test -w cleared-for-takeoff",
+    "check": "npm run check -w cleared-for-takeoff"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
