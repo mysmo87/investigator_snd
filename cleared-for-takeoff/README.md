@@ -109,21 +109,19 @@ Fekra turns an employee's idea into a management-ready innovation proposal. **Th
 - **Submission (`POST /api/fekra/submit`)** forwards the proposal to `FEKRA_SUBMIT_URL` when configured; otherwise the page says submission is not connected and that nothing was sent.
 - **Without an API key** the page says the AI service isn't connected and disables input; it never shows canned answers.
 
-### Emailing the proposal PDF
+### Capturing an email when the PDF is downloaded
 
-When someone taps **Generate Proposal PDF**, Fekra first asks for an email address. The dialog says GDRFA keeps the email with the proposal so the innovation team can follow up.
+When someone taps **Generate Proposal PDF**, Fekra first asks for their email address. The dialog says GDRFA keeps it, with a copy of the proposal, so the innovation team can send the proposal to them.
 
 1. The PDF downloads in the browser as before.
-2. The server emails it to that address, together with the link and access code that reopen the proposal.
-3. The address is stored with the saved proposal: when it was downloaded, the language, and whether the email went out.
-4. The anonymous interaction log counts *Fekra PDFs downloaded* and *Fekra PDFs emailed*. It never stores the address.
+2. The email address and a copy of that PDF are kept with the saved proposal, on the same data volume. A later download replaces the copy.
+3. **Nothing is emailed automatically.** The GDRFA team sends the proposal themselves.
+4. The anonymous interaction log counts *Fekra PDFs downloaded*. It never stores the address.
 
-- **Staff view:** `/staff.html` (same staff key) lists every saved proposal with who downloaded it, and **Download Fekra CSV** exports one row per download. The data is also at `GET /api/fekra/export?format=csv`.
-- **Sending:** emails go out through [Resend](https://resend.com)'s HTTPS API. Railway blocks outbound SMTP on its Hobby plan, and an HTTPS API works on every plan.
-  - Set `RESEND_API_KEY` (a secret) and `MAIL_FROM`, an address on a domain you have verified in Resend, for example `GDRFA Fekra <fekra@your-domain.ae>`.
-  - Until both are set, addresses are still recorded, but nothing is sent. The person is told so, and the staff page shows a warning.
-- **Limits:** a proposal can be emailed at most 5 times an hour, and the whole server at most `MAIL_MAX_PER_HOUR` times (200 by default), so the kiosk can't be used to flood an inbox.
-- **Asking for the email:** `FEKRA_PDF_EMAIL=required` (the default) asks for an email before every download. `optional` adds a "Download only" button. `off` downloads without asking.
+- **Staff view:** `/staff.html` (same staff key) lists every saved proposal with the email to send to and a **Download PDF** button for the copy.
+  - **Download Fekra CSV** exports one row per download.
+  - The data is also at `GET /api/fekra/export?format=csv` and `GET /api/fekra/export/FK-…/pdf`.
+- **Asking for the email:** `FEKRA_PDF_EMAIL=required` (the default) asks for an email before every download. `optional` adds a "Download without email" button. `off` downloads without asking.
 
 ## Saved passports: capturing visitor details
 
@@ -266,11 +264,7 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `FEKRA_IDENTITY_HEADER` | No | — | Header set by GDRFA single sign-on (for example `x-ms-client-principal-name`). When set, proposals belong to the signed-in user. Only use it behind a proxy that controls this header. |
 | `FEKRA_SUBMIT_URL` | No | — | Management review endpoint that receives submitted proposals. Without it, submission reports "not connected". |
 | `FEKRA_SUBMIT_TOKEN` | No | — | Bearer token sent to `FEKRA_SUBMIT_URL` (mark it as a secret). |
-| `FEKRA_PDF_EMAIL` | No | `required` | Before a proposal PDF downloads: `required` asks for an email, `optional` lets people skip, `off` never asks. |
-| `RESEND_API_KEY` | For email | — | Resend API key used to email proposal PDFs (mark it as a secret). Without it, nothing is sent. |
-| `MAIL_FROM` | For email | — | Sender, on a domain verified in Resend, e.g. `GDRFA Fekra <fekra@your-domain.ae>`. |
-| `MAIL_REPLY_TO` | No | — | Where replies to those emails go, e.g. the innovation team's mailbox. |
-| `MAIL_MAX_PER_HOUR` | No | `200` | Spend and abuse guard for outgoing email (each proposal is also limited to 5 an hour). |
+| `FEKRA_PDF_EMAIL` | No | `required` | Before a proposal PDF downloads: `required` asks for an email (kept with the proposal for GDRFA to send it on), `optional` lets people skip, `off` never asks. |
 | `FAL_KEY` | For the AI avatar | — | fal.ai API key. Turns on the **AI 3D Traveler** avatar tab. Mark it as a secret. Without it, the tab is hidden. |
 | `AVATAR_AI_ENABLED` | No | `true` | Kill switch for the AI avatar without removing the key. |
 | `AVATAR_AI_MODEL` | No | `fal-ai/flux-pro/kontext` | fal endpoint id for the avatar. |
@@ -316,7 +310,7 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 - **Fekra:**
   - Confirm with your data-governance team that employees may send idea descriptions to Claude. The page asks them not to share personal or classified information.
   - Connect the management review system with `FEKRA_SUBMIT_URL` (and `FEKRA_SUBMIT_TOKEN`).
-  - To email proposal PDFs, verify a sending domain in Resend and set `RESEND_API_KEY` and `MAIL_FROM` (and `MAIL_REPLY_TO` for replies). Have the data-protection team approve the email notice in the download dialog.
+  - Have the data-protection team approve the email notice in the PDF download dialog, and agree who sends the proposals on and when.
   - Give saved proposals persistent storage: attach a Railway volume and set `DATA_DIR` to it. For named ownership, put the site behind GDRFA single sign-on and set `FEKRA_IDENTITY_HEADER`.
   - Fekra does not see internal GDRFA projects. The innovation check searches only the public web, and its limitations say so.
 

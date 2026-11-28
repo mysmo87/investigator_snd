@@ -69,11 +69,10 @@
       pendingSubmitTitle: 'Submission isn’t connected yet', pendingSubmitText: 'Your proposal has not been sent. The management review system hasn’t been connected to Fekra yet. Save it or generate the PDF, and share it through your usual channel. Once GDRFA connects the review system, this button will send the proposal and show its reference number.',
       sentTitle: 'Proposal submitted', sentText: ref => ref ? `Your proposal was sent for management review. Reference: ${ref}` : 'Your proposal was sent for management review.', ok: 'OK',
       pdfDone: 'PDF downloaded.', pdfFailed: 'The PDF couldn’t be created in this browser.', needIdea: 'Describe your idea first.',
-      emailTitle: 'Get your proposal', emailIntro: 'Enter your email address. The PDF downloads here, and we email it to you with a link to reopen this proposal.',
-      emailLabel: 'Email address', optionalTag: '(optional)', emailPh: 'name@example.ae', emailNote: 'GDRFA keeps your email with this proposal so the innovation team can follow up with you.',
-      emailGo: 'Download & email', emailSkip: 'Download only', emailBad: 'Please enter a valid email address.', emailSending: 'Sending the PDF to your email…',
-      emailSent: e => `PDF downloaded and sent to ${e}.`, emailNotSetUp: 'PDF downloaded. Email isn’t set up on this server yet, so nothing was sent.',
-      emailFailed: 'PDF downloaded, but the email couldn’t be sent. Please try again later.', emailLimited: 'PDF downloaded. This proposal was already emailed several times this hour, so it wasn’t sent again.'
+      emailTitle: 'Get your proposal', emailIntro: 'Enter your email address. The PDF downloads here, and the GDRFA innovation team will send your proposal to this address.',
+      emailLabel: 'Email address', optionalTag: '(optional)', emailPh: 'name@example.ae', emailNote: 'GDRFA keeps your email and a copy of this proposal so its innovation team can send it to you and follow up.',
+      emailGo: 'Download', emailSkip: 'Download without email', emailBad: 'Please enter a valid email address.',
+      emailSaved: e => `PDF downloaded. The GDRFA team will send your proposal to ${e}.`, emailNotSaved: 'PDF downloaded, but your email couldn’t be saved. Please try again.'
     },
     ar: {
       dir: 'rtl', brand: 'فكرة', tagline: 'فكرتك، مستقبلنا', headline: 'فكرتك الكبيرة القادمة تبدأ هنا.', sub: 'استكشفها. تحقّق منها. اجعلها واقعاً.',
@@ -124,11 +123,10 @@
       pendingSubmitTitle: 'الإرسال غير متصل بعد', pendingSubmitText: 'لم يتم إرسال مقترحك. لم يُربط نظام المراجعة الإدارية بفكرة بعد. احفظه أو أنشئ ملف PDF وشاركه عبر القناة المعتادة. عند ربط نظام المراجعة، سيرسل هذا الزر المقترح ويعرض رقمه المرجعي.',
       sentTitle: 'تم إرسال المقترح', sentText: ref => ref ? `تم إرسال مقترحك للمراجعة الإدارية. الرقم المرجعي: ${ref}` : 'تم إرسال مقترحك للمراجعة الإدارية.', ok: 'حسناً',
       pdfDone: 'تم تنزيل ملف PDF.', pdfFailed: 'تعذّر إنشاء ملف PDF في هذا المتصفح.', needIdea: 'صف فكرتك أولاً.',
-      emailTitle: 'احصل على مقترحك', emailIntro: 'أدخل بريدك الإلكتروني. سيُنزَّل ملف PDF هنا، وسنرسله إلى بريدك مع رابط لإعادة فتح هذا المقترح.',
-      emailLabel: 'البريد الإلكتروني', optionalTag: '(اختياري)', emailPh: 'name@example.ae', emailNote: 'تحتفظ إقامة دبي ببريدك الإلكتروني مع هذا المقترح ليتمكن فريق الابتكار من التواصل معك.',
-      emailGo: 'نزّل وأرسل إلى بريدي', emailSkip: 'التنزيل فقط', emailBad: 'يُرجى إدخال بريد إلكتروني صحيح.', emailSending: 'نرسل ملف PDF إلى بريدك…',
-      emailSent: e => `تم تنزيل ملف PDF وإرساله إلى ${e}.`, emailNotSetUp: 'تم تنزيل ملف PDF. البريد الإلكتروني غير مُعدّ على هذا الخادم بعد، لذا لم يُرسل شيء.',
-      emailFailed: 'تم تنزيل ملف PDF، لكن تعذّر إرسال البريد. يُرجى المحاولة لاحقاً.', emailLimited: 'تم تنزيل ملف PDF. أُرسل هذا المقترح عدة مرات خلال هذه الساعة، لذا لم يُرسل مجدداً.'
+      emailTitle: 'احصل على مقترحك', emailIntro: 'أدخل بريدك الإلكتروني. سيُنزَّل ملف PDF هنا، وسيرسل فريق الابتكار في إقامة دبي مقترحك إلى هذا العنوان.',
+      emailLabel: 'البريد الإلكتروني', optionalTag: '(اختياري)', emailPh: 'name@example.ae', emailNote: 'تحتفظ إقامة دبي ببريدك الإلكتروني ونسخة من هذا المقترح ليرسله فريق الابتكار إليك ويتواصل معك.',
+      emailGo: 'تنزيل', emailSkip: 'التنزيل دون بريد', emailBad: 'يُرجى إدخال بريد إلكتروني صحيح.',
+      emailSaved: e => `تم تنزيل ملف PDF. سيرسل فريق إقامة دبي مقترحك إلى ${e}.`, emailNotSaved: 'تم تنزيل ملف PDF، لكن تعذّر حفظ بريدك الإلكتروني. يُرجى المحاولة مرة أخرى.'
     }
   };
 
@@ -664,14 +662,15 @@
     const srcs = sources(); if (srcs.length) blocks.push({ type: 'refs', items: srcs.map(s => ({ title: s.title || host(s.url), url: s.url })) }); else blocks.push({ type: 'note', text: PL.noSources });
     return { dir: L.dir, lang: fk.lang, title: p.title || PL.untitled, reference: fk.saved ? fk.saved.ref : null, labels: PL, logo: ORG_LOGO, blocks };
   }
-  /* "Generate Proposal PDF": first ask for an email to send it to (FEKRA_PDF_EMAIL: required | optional | off) */
+  /* "Generate Proposal PDF": first ask for an email (FEKRA_PDF_EMAIL: required | optional | off). The email and a copy of
+     the PDF are kept with the proposal so the GDRFA team can send it on later; nothing is emailed automatically. */
   const pdfEmailMode = () => (CONFIG.served && storage().available && CONFIG.fekra && CONFIG.fekra.pdfEmail) || 'off';
   const EMAIL_OK = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]{2,}$/;
   function pdfDialog() {
     const L = t(), mode = pdfEmailMode();
     if (!filled.overview(P())) { toast(L.needIdea); return; }
     if (mode === 'off') { generatePdf({}); return; }
-    $('#confirmBox').innerHTML = `<div class="dialog-ic">${ic('send')}</div><h3 id="confirmTitle">${esc(L.emailTitle)}</h3><p>${esc(L.emailIntro)}</p>
+    $('#confirmBox').innerHTML = `<div class="dialog-ic">${ic('download')}</div><h3 id="confirmTitle">${esc(L.emailTitle)}</h3><p>${esc(L.emailIntro)}</p>
       <form class="fk-open-form fk-email-form" data-action-form="fk-email" novalidate><label><span>${esc(L.emailLabel)}${mode === 'optional' ? ' ' + esc(L.optionalTag) : ''}</span><input id="fkEmail" type="email" inputmode="email" autocomplete="email" dir="ltr" maxlength="254" value="${esc(fk.email || '')}" placeholder="${esc(L.emailPh)}" data-autofocus></label>
       <p class="fk-email-note">${ic('shield')}<span>${esc(L.emailNote)}</span></p>
       <p class="fk-open-err" id="fkEmailErr" role="alert"></p>
@@ -696,16 +695,14 @@
     reportDownload(blob, email);
   }
   const blobToDataUrl = b => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).replace(/^data:[^;,]*;base64,/, 'data:application/pdf;base64,')); r.onerror = no; r.readAsDataURL(b); });
-  /* the server emails the PDF and keeps the address with the proposal (and counts the download) */
+  /* the server keeps the email and a copy of the PDF with the proposal (and counts the download) */
   async function reportDownload(blob, email) {
     const L = t(), saved = fk.saved, epoch = fk.epoch;
-    if (email) toast(L.emailSending);
     try {
-      const pdf = email ? await blobToDataUrl(blob) : null;
-      const r = await http('POST', `api/fekra/proposals/${saved.ref}/download`, { email, lang: fk.lang, pdf }, 90000, { 'X-Fekra-Key': saved.key });
-      if (epoch !== fk.epoch) return;
-      toast(!email ? L.pdfDone : r.emailed ? L.emailSent(email) : r.reason === 'not_configured' ? L.emailNotSetUp : r.reason === 'rate_limited' ? L.emailLimited : L.emailFailed);
-    } catch (e) { if (epoch === fk.epoch) toast(email ? L.emailFailed : L.pdfDone); }
+      const pdf = await blobToDataUrl(blob);
+      await http('POST', `api/fekra/proposals/${saved.ref}/download`, { email, lang: fk.lang, pdf }, 90000, { 'X-Fekra-Key': saved.key });
+      if (epoch === fk.epoch) toast(email ? L.emailSaved(email) : L.pdfDone);
+    } catch (e) { if (epoch === fk.epoch) toast(email ? L.emailNotSaved : L.pdfDone); }
   }
 
   /* ---------- submission (integration point) ---------- */

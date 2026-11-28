@@ -79,23 +79,31 @@ function createStore({ dir, persistent = false, logger, now = () => new Date() }
     const old = list.map(f => { try { return summary(JSON.parse(fs.readFileSync(path.join(versionsDir(ref), f), 'utf8'))); } catch { return null; } }).filter(Boolean);
     return [summary(rec), ...old].sort((a, b) => b.version - a.version);
   }
-  /* A PDF download: who it was sent to and whether the email went out. Kept with the proposal (not a new version);
-     the last 100 are kept. */
-  async function recordDownload(ref, key, identity, entry) {
+  /* A PDF download: the email the person gave (so GDRFA can send the proposal to them later) and a copy of the PDF
+     they downloaded (the latest replaces the previous one). Kept with the proposal, not as a new version; the last
+     100 downloads are listed. */
+  const pdfFile = ref => path.join(root, `${ref}.pdf`);
+  async function recordDownload(ref, key, identity, entry, pdf) {
     return withLock(ref, () => {
       const rec = read(ref); authorize(rec, key, identity);
-      const downloads = [...(rec.downloads || []), { at: now().toISOString(), email: entry.email || null, lang: entry.lang === 'ar' ? 'ar' : 'en', emailed: entry.emailed || 'no' }].slice(-100);
-      writeAtomic(file(ref), JSON.stringify({ ...rec, downloads }));
-      logger && logger.info('fekra_store', { op: 'download', ref });
+      if (pdf) writeAtomic(pdfFile(ref), pdf);
+      const downloads = [...(rec.downloads || []), { at: now().toISOString(), email: entry.email || null, lang: entry.lang === 'ar' ? 'ar' : 'en' }].slice(-100);
+      writeAtomic(file(ref), JSON.stringify({ ...rec, downloads, pdfAt: pdf ? now().toISOString() : rec.pdfAt || null }));
+      logger && logger.info('fekra_store', { op: 'download', ref, pdf: !!pdf });
       return { ref, title: rec.title };
     });
+  }
+  /* the kept PDF, for GDRFA staff (the route checks the staff key) */
+  async function staffPdf(ref) {
+    if (!REF_RE.test(String(ref))) throw fail(404, 'not_found', 'Proposal not found.');
+    try { return fs.readFileSync(pdfFile(ref)); } catch { throw fail(404, 'not_found', 'No PDF has been downloaded for this proposal yet.'); }
   }
   /* every saved proposal, newest first, with its downloads: for GDRFA staff (no access codes, no content) */
   async function staffList() {
     return fs.readdirSync(root).filter(f => f.endsWith('.json') && REF_RE.test(f.replace(/\.json$/, '')))
       .map(f => { try { return JSON.parse(fs.readFileSync(path.join(root, f), 'utf8')); } catch { return null; } })
       .filter(Boolean)
-      .map(r => ({ ...summary(r), owner: r.owner || null, downloads: (r.downloads || []).slice().reverse() }))
+      .map(r => ({ ...summary(r), owner: r.owner || null, pdfAt: r.pdfAt || null, downloads: (r.downloads || []).slice().reverse() }))
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
   }
   async function list(identity) {
@@ -104,7 +112,7 @@ function createStore({ dir, persistent = false, logger, now = () => new Date() }
       .map(f => { try { return JSON.parse(fs.readFileSync(path.join(root, f), 'utf8')); } catch { return null; } })
       .filter(r => r && r.owner === identity).map(summary).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
   }
-  return { create, get, update, versions, list, recordDownload, staffList, status: () => ({ available: true, persistent }), STATUSES, REF_RE };
+  return { create, get, update, versions, list, recordDownload, staffList, staffPdf, status: () => ({ available: true, persistent }), STATUSES, REF_RE };
 }
 
 module.exports = { createStore, STATUSES, REF_RE, normKey };

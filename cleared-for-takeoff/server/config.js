@@ -89,18 +89,8 @@ function loadConfig(env = process.env) {
       storeDir: saveDir('FEKRA_STORE_DIR', 'fekra'),
       storePersistent: savePersistent('FEKRA_STORE_DIR'),
       identityHeader: str(env, 'FEKRA_IDENTITY_HEADER', null) ? str(env, 'FEKRA_IDENTITY_HEADER', null).toLowerCase() : null,
-      // before the PDF downloads, ask for an email to send it to: required | optional | off
+      // before the PDF downloads, ask for an email (kept with the proposal; GDRFA sends it on): required | optional | off
       pdfEmail: oneOf(env, 'FEKRA_PDF_EMAIL', 'required', ['required', 'optional', 'off'])
-    },
-
-    // Outgoing email (Fekra sends the proposal PDF to whoever downloads it); see server/mailer.js
-    mail: {
-      apiKey: str(env, 'RESEND_API_KEY', null),
-      from: str(env, 'MAIL_FROM', null),
-      replyTo: str(env, 'MAIL_REPLY_TO', null),
-      maxPerHour: int(env, 'MAIL_MAX_PER_HOUR', 200, 1, 100000),
-      maxPerGroupPerHour: 5,
-      timeoutMs: int(env, 'MAIL_TIMEOUT_MS', 20000, 2000, 120000)
     },
 
     // Saved Agentic AI Passports (only with the visitor's consent)

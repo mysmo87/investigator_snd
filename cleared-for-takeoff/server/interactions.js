@@ -27,8 +27,7 @@ function schema(content) {
     big_screen_shown: {},
     session_attended: { session: one(sessions) },
     fekra_proposal_saved: {},
-    fekra_pdf_downloaded: { lang: pick(['en', 'ar']) },
-    fekra_proposal_emailed: { lang: pick(['en', 'ar']) }
+    fekra_pdf_downloaded: { lang: pick(['en', 'ar']), withEmail: pick([true, false]) }
   };
 }
 const CLIENT_TYPES = ['journey_generated', 'big_screen_shown', 'session_attended']; // the rest are recorded by the server itself
@@ -41,8 +40,7 @@ const LABELS = {
   big_screen_shown: 'Shown on the big screen',
   session_attended: 'Sessions marked as attended',
   fekra_proposal_saved: 'Fekra proposals saved',
-  fekra_pdf_downloaded: 'Fekra PDFs downloaded',
-  fekra_proposal_emailed: 'Fekra PDFs emailed'
+  fekra_pdf_downloaded: 'Fekra PDFs downloaded'
 };
 
 function createInteractionLog({ dir, persistent = false, content, timezone = 'Asia/Dubai', logger, now = () => new Date() }) {
