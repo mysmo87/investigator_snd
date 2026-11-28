@@ -445,6 +445,9 @@ details.fk-sec-p[open]>summary::before{transform:rotate(45deg)}
 .fk-open-form label{display:flex;flex-direction:column;gap:.3rem;font-size:.8rem;color:var(--text-2)}
 .fk-open-form input{padding:.65rem .8rem;border-radius:.6rem;border:1px solid var(--line-2);background:rgba(3,12,32,.7);color:#fff;font:inherit;font-size:1rem;letter-spacing:.06em;direction:ltr;text-transform:uppercase;outline:0}
 .fk-open-form input:focus{border-color:rgba(216,177,91,.7)}
+.fk-email-form input{text-transform:none;letter-spacing:0;text-align:left}
+.fk-email-note{display:flex;gap:.5rem;align-items:flex-start;margin:0;font-size:.82rem;line-height:1.5;color:var(--text-2);text-align:start}
+.fk-email-note .ic{flex:none;width:1.1rem;height:1.1rem;color:var(--live)}
 .fk-open-err{min-height:1.2em;margin:0;font-size:.8rem;color:#ffb3bf}
 @media (max-width:760px){ .fk-save-codes{grid-template-columns:1fr} .fk-dl{grid-template-columns:1fr} }
 @media (prefers-reduced-motion:reduce){ .fk-spin{animation:none} }

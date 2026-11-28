@@ -10,6 +10,7 @@ const { createFekra } = require('./fekra');
 const { createNews } = require('./news');
 const { createStore } = require('./fekra-store');
 const { createPassportStore } = require('./passport-store');
+const { createMailer } = require('./mailer');
 const { createAvatar } = require('./avatar');
 const { createInteractionLog } = require('./interactions');
 const { createApp } = require('./app');
@@ -53,7 +54,8 @@ const avatar = createAvatar({ config, logger });
 let interactions = null;
 try { interactions = createInteractionLog({ dir: config.interactions.storeDir, persistent: config.interactions.storePersistent, content, timezone: config.kiosk.eventTimezone, logger }); }
 catch (err) { logger.error('interaction_log_unavailable', { detail: String(err.message).slice(0, 200) }); }
-const handler = createApp({ config, recommender, fekra, store, passports, avatar, interactions, news, rules, content, catalog, logger, publicDir: PUBLIC_DIR, version });
+const mailer = createMailer({ config, logger });
+const handler = createApp({ config, recommender, fekra, store, passports, avatar, interactions, mailer, news, rules, content, catalog, logger, publicDir: PUBLIC_DIR, version });
 const server = http.createServer(handler);
 server.requestTimeout = Math.max(config.ai.timeoutMs, config.fekra.timeoutMs * 2, config.avatar.timeoutMs) + 15000; // an innovation check is two calls
 server.headersTimeout = 20000;
@@ -64,7 +66,7 @@ server.listen(config.port, config.host, () => {
   logger.info('server_started', {
     port: config.port, version,
     ai: config.ai.enabled ? { model: config.ai.model, effort: config.ai.effort, fallbacks: config.ai.fallbacks } : (config.ai.apiKeySet ? 'disabled (AI_ENABLED=false)' : 'disabled (no ANTHROPIC_API_KEY — using offline rules)'),
-    fekra: { ...fekra.status(), storage: store ? store.status() : 'unavailable' },
+    fekra: { ...fekra.status(), storage: store ? store.status() : 'unavailable', pdfEmail: config.fekra.pdfEmail, mail: mailer.status() },
     passports: { save: config.passport.save, storage: passports ? passports.status() : 'unavailable', staffExport: !!config.passport.adminToken },
     avatarAi: config.avatar.enabled ? { model: config.avatar.model } : 'disabled (no FAL_KEY)', news: { enabled: config.news.enabled, refreshMinutes: config.news.refreshMinutes },
     scheduleMode: config.kiosk.scheduleMode, trustProxy: config.trustProxy, courses: catalog.courses.length

@@ -61,7 +61,7 @@
   <section class="s-card" id="sLogin">
     <p class="j-eyebrow">GDRFA staff only</p>
     <h1>Saved Agentic AI Passports</h1>
-    <p>Visitor interactions and every saved passport. Enter the staff key (the server’s PASSPORT_ADMIN_TOKEN) to see the list and download it for Excel. The key is kept only while this page is open.</p>
+    <p>Visitor interactions, every saved passport, and the Fekra proposals people downloaded with their email. Enter the staff key (the server’s PASSPORT_ADMIN_TOKEN) to see the list and download it for Excel. The key is kept only while this page is open.</p>
     <form class="s-form" id="sForm" autocomplete="off">
       <input type="password" id="sKey" placeholder="Staff key" aria-label="Staff key" autocomplete="off" required>
       <button class="j-btn gold" type="submit">Show saved passports</button>
@@ -81,6 +81,12 @@
     <p class="s-msg" id="sInfo"></p>
     <p class="s-msg warn" id="sWarn" hidden>Temporary storage: saved passports are lost whenever the server is redeployed. Attach a volume on Railway and set DATA_DIR to keep them.</p>
     <div class="s-scroll"><table><thead><tr><th>Passport</th><th>Saved</th><th>Name</th><th>Email</th><th>Organization</th><th>Track</th><th>Level</th><th>Attended</th><th>Delete after</th></tr></thead><tbody id="sRows"></tbody></table></div>
+  </section>
+  <section class="s-card" id="sFekra" hidden>
+    <div class="s-bar"><b id="fCount"></b><span class="grow"></span><input type="search" id="fFilter" placeholder="Filter by title, reference or email" aria-label="Filter Fekra proposals"><button class="j-btn gold" type="button" id="fCsv">Download Fekra CSV</button></div>
+    <p class="s-msg" id="fInfo">Every saved Fekra proposal. When someone downloads its PDF, the email they entered is kept here and the PDF is emailed to them.</p>
+    <p class="s-msg warn" id="fWarn" hidden></p>
+    <div class="s-scroll"><table><thead><tr><th>Reference</th><th>Title</th><th>Status</th><th>Updated</th><th>Downloaded by</th><th>Emailed</th></tr></thead><tbody id="fRows"></tbody></table></div>
   </section>
 </main>
 <script src="staff.js"></script>

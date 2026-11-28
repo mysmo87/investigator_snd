@@ -8,6 +8,8 @@
      GET|PUT /api/fekra/proposals/FK-…         open / update a saved proposal (X-Fekra-Key header)
      GET  /api/fekra/proposals/FK-…/versions   earlier versions of a saved proposal
      GET  /api/fekra/proposals                 the signed-in user's proposals (only with FEKRA_IDENTITY_HEADER)
+     POST /api/fekra/proposals/FK-…/download   a PDF download: { email, lang, pdf } -> the PDF is emailed, the email kept with the proposal
+     GET  /api/fekra/export[?format=csv]       every saved proposal and who downloaded it, for GDRFA staff (Authorization: Bearer PASSPORT_ADMIN_TOKEN)
      POST /api/avatar                          { image (JPEG data URI), consent: true } -> { image } AI 3D Traveler avatar (see server/avatar.js)
      POST /api/events                          { type, ...fields } anonymous kiosk event (see server/interactions.js)
      GET  /api/interactions[?format=csv]       interaction totals / every event, for GDRFA staff (Authorization: Bearer PASSPORT_ADMIN_TOKEN)
@@ -25,6 +27,7 @@ const zlib = require('zlib');
 const crypto = require('crypto');
 const { cleanProposal, cleanCheck, SECTION_KEYS, SECTION_FIELDS } = require('./fekra');
 const { cleanPassport, decodeImage } = require('./passport-store');
+const { normKey } = require('./fekra-store');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -34,6 +37,27 @@ const MIME = {
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt']);
 const MAX_BODY = 4 * 1024;
 const FEKRA_MAX_BODY = 256 * 1024; // Fekra sends the conversation with each request
+const FEKRA_PDF_MAX_BODY = 16 * 1024 * 1024; // a proposal PDF (base64) to email
+const PDF_MAX_BYTES = 12 * 1024 * 1024; // larger PDFs are not attached: the email carries the link only
+const EMAIL_RE = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]{2,}$/;
+const escHtml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* the email that carries a proposal PDF, in the proposal's language */
+function proposalEmail({ lang, title, ref, key, link }) {
+  const t = title || (lang === 'ar' ? 'مقترح بلا عنوان' : 'Untitled proposal');
+  if (lang === 'ar') {
+    return {
+      subject: `مقترحك في «فكرة»: ${t} (${ref})`,
+      text: `مرحباً،\n\nتجد مرفقاً مقترحك الابتكاري «${t}» (المرجع ${ref})، الذي أعددته مع «فكرة» في جناح إقامة دبي.\n\nلفتح المقترح ومتابعة العمل عليه: ${link}\nالمرجع: ${ref} · رمز الوصول: ${key}\n\nاحتفظ بهذه الرسالة لنفسك، فالرابط والرمز يفتحان مقترحك.\n\nفكرة · إقامة دبي`,
+      html: `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;line-height:1.7;color:#14213d"><p>مرحباً،</p><p>تجد مرفقاً مقترحك الابتكاري «<b>${escHtml(t)}</b>» (المرجع ${escHtml(ref)})، الذي أعددته مع «فكرة» في جناح إقامة دبي.</p><p>لفتح المقترح ومتابعة العمل عليه: <a href="${escHtml(link)}">افتح مقترحك</a><br>المرجع: <b dir="ltr">${escHtml(ref)}</b> · رمز الوصول: <b dir="ltr">${escHtml(key)}</b></p><p style="color:#5b6478">احتفظ بهذه الرسالة لنفسك، فالرابط والرمز يفتحان مقترحك.</p><p>فكرة · إقامة دبي</p></div>`
+    };
+  }
+  return {
+    subject: `Your Fekra proposal: ${t} (${ref})`,
+    text: `Hello,\n\nAttached is your innovation proposal "${t}" (reference ${ref}), prepared with Fekra at the GDRFA booth.\n\nTo open it again and keep working on it: ${link}\nReference: ${ref} · Access code: ${key}\n\nKeep this email to yourself: the link and code open your proposal.\n\nFekra · GDRFA`,
+    html: `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#14213d"><p>Hello,</p><p>Attached is your innovation proposal “<b>${escHtml(t)}</b>” (reference ${escHtml(ref)}), prepared with Fekra at the GDRFA booth.</p><p>To open it again and keep working on it: <a href="${escHtml(link)}">open your proposal</a><br>Reference: <b>${escHtml(ref)}</b> · Access code: <b>${escHtml(key)}</b></p><p style="color:#5b6478">Keep this email to yourself: the link and code open your proposal.</p><p>Fekra · GDRFA</p></div>`
+  };
+}
 const PASSPORT_MAX_BODY = 2200 * 1024; // the passport image (JPEG, base64) plus the visitor's details
 const EVENT_MAX_BODY = 2 * 1024; // one anonymous kiosk event
 const AVATAR_MAX_BODY = 1500 * 1024; // the visitor's photo (512 px JPEG, base64) for the AI avatar
@@ -125,7 +149,7 @@ function csvCell(v) {
   return /[",\r\n]/.test(t) || t !== t.trim() ? '"' + t.replace(/"/g, '""') + '"' : t;
 }
 
-function createApp({ config, recommender, fekra, store, passports, avatar = null, interactions = null, news, rules, content, catalog = { courses: [] }, logger, publicDir, version }) {
+function createApp({ config, recommender, fekra, store, passports, avatar = null, interactions = null, mailer = null, news, rules, content, catalog = { courses: [] }, logger, publicDir, version }) {
   const limiter = createRateLimiter(config.rateLimitPerMinute);
   const root = path.resolve(publicDir);
   const startedAt = Date.now();
@@ -251,12 +275,67 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
       if (ref && sub === 'versions' && req.method === 'GET') return sendJson(res, 200, { versions: await store.versions(ref, key, identity) });
       if (ref && !sub && req.method === 'GET') return sendJson(res, 200, await store.get(ref, key, identity));
       if (ref && !sub && req.method === 'PUT') { const body = await readJsonBody(req, FEKRA_MAX_BODY); return sendJson(res, 200, await store.update(ref, key, identity, { baseVersion: body.baseVersion, data: storeData(body) })); }
+      if (ref && sub === 'download' && req.method === 'POST') return await handleDownload(req, res, ref, key, identity);
       return sendJson(res, 405, { error: 'Method not allowed' });
     } catch (err) {
       const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 500;
       if (status >= 500) logger.error('fekra_store_failed', { detail: String(err.message).slice(0, 300) });
       return sendJson(res, status, { error: status < 500 ? err.message : 'The proposal could not be saved.', reason: err.reason || 'error' });
     }
+  }
+
+  /* A proposal PDF was downloaded: email it to the address given and keep that address with the proposal.
+     The PDF itself is built in the browser; it is attached to the email and not stored on the server. */
+  function publicBase(req) {
+    if (config.publicBaseUrl) return config.publicBaseUrl.replace(/\/?$/, '/');
+    const host = String((config.trustProxy && req.headers['x-forwarded-host']) || req.headers.host || '').split(',')[0].trim();
+    const proto = String((config.trustProxy && req.headers['x-forwarded-proto']) || 'http').split(',')[0].trim() === 'https' ? 'https' : 'http';
+    return `${proto}://${host}/`;
+  }
+  async function handleDownload(req, res, ref, key, identity) {
+    const mode = config.fekra.pdfEmail;
+    const body = await readJsonBody(req, FEKRA_PDF_MAX_BODY);
+    const lang = body.lang === 'ar' ? 'ar' : 'en';
+    const email = mode === 'off' ? '' : String(body.email || '').trim().slice(0, 254);
+    if (email && !EMAIL_RE.test(email)) return sendJson(res, 400, { error: 'Please enter a valid email address.', reason: 'bad_email' });
+    if (!email && mode === 'required') return sendJson(res, 400, { error: 'An email address is needed to download the proposal.', reason: 'email_required' });
+    const rec = await store.get(ref, key, identity); // checks the access code first
+    let emailed = email ? 'failed' : 'no', reason = null;
+    if (email) {
+      let pdf = null;
+      const m = /^data:application\/pdf;base64,([A-Za-z0-9+/=]+)$/.exec(String(body.pdf || ''));
+      if (m) { const buf = Buffer.from(m[1], 'base64'); if (buf.length <= PDF_MAX_BYTES && buf.slice(0, 5).toString('latin1') === '%PDF-') pdf = buf; }
+      const code = normKey(key).replace(/(.{4})(?=.)/g, '$1-');
+      const msg = proposalEmail({ lang, title: rec.title, ref, key: code, link: `${publicBase(req)}#fekra=${ref}~${normKey(key)}` });
+      const slug = String(rec.title || 'proposal').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'proposal';
+      try {
+        if (!mailer) throw Object.assign(new Error('Email is not set up on this server.'), { reason: 'not_configured' });
+        await mailer.send({ to: email, ...msg, attachments: pdf ? [{ filename: `Fekra-${ref}-${slug}.pdf`, content: pdf }] : [], group: ref });
+        emailed = 'sent';
+      } catch (err) { reason = err.reason || 'send_failed'; emailed = reason === 'not_configured' ? 'not_configured' : reason === 'rate_limited' ? 'rate_limited' : 'failed'; }
+    }
+    await store.recordDownload(ref, key, identity, { email: email || null, lang, emailed });
+    if (interactions) { interactions.record('fekra_pdf_downloaded', { lang }); if (emailed === 'sent') interactions.record('fekra_proposal_emailed', { lang }); }
+    return sendJson(res, 200, { recorded: true, emailed: emailed === 'sent', status: emailed, reason });
+  }
+  /* GDRFA staff: every saved proposal and who downloaded it */
+  async function handleFekraExport(req, res) {
+    if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
+    const rl = limiter.take(clientIp(req, config.trustProxy));
+    if (!rl.ok) return sendJson(res, 429, { error: 'Too many requests. Please wait a moment.' }, { 'Retry-After': String(rl.retryAfter) });
+    if (!config.passport.adminToken) return sendJson(res, 503, { error: 'Staff access is not configured (PASSPORT_ADMIN_TOKEN).', reason: 'not_configured' });
+    if (!staffAuthorized(req)) { logger.warn('fekra_export_denied', { ip: clientIp(req, config.trustProxy) }); return sendJson(res, 401, { error: 'The staff key is not correct.', reason: 'unauthorized' }); }
+    if (!store) return sendJson(res, 503, { error: 'Saving is not available.', reason: 'no_store' });
+    const proposals = await store.staffList();
+    logger.info('fekra_export', { rows: proposals.length });
+    if (new URL(req.url, 'http://localhost').searchParams.get('format') === 'csv') {
+      const cols = ['reference', 'title', 'status', 'created', 'updated', 'email', 'downloaded', 'emailed', 'language'];
+      const rows = proposals.flatMap(p => (p.downloads.length ? p.downloads : [null]).map(d => ({ reference: p.ref, title: p.title, status: p.status, created: p.createdAt, updated: p.updatedAt, email: d ? d.email || '' : '', downloaded: d ? d.at : '', emailed: d ? d.emailed : '', language: d ? d.lang : p.lang })));
+      const csv = '\ufeff' + [cols.join(','), ...rows.map(r => cols.map(c => csvCell(r[c])).join(','))].join('\r\n') + '\r\n';
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Disposition': `attachment; filename="fekra-proposals-${new Date().toISOString().slice(0, 10)}.csv"` });
+      return res.end(csv);
+    }
+    return sendJson(res, 200, { count: proposals.length, mail: mailer ? mailer.status() : { enabled: false }, storage: store.status(), proposals });
   }
 
   /* ---------- anonymous interaction log ---------- */
@@ -381,7 +460,7 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
           idleWarnSeconds: config.kiosk.idleWarnSeconds,
           idleResetSeconds: config.kiosk.idleResetSeconds,
           defaultLang: config.kiosk.defaultLang,
-          fekra: { ...(fekra ? fekra.status() : { enabled: false }), idleResetSeconds: config.fekra.idleResetSeconds, storage: store ? store.status() : { available: false, persistent: false }, signIn: !!config.fekra.identityHeader },
+          fekra: { ...(fekra ? fekra.status() : { enabled: false }), idleResetSeconds: config.fekra.idleResetSeconds, storage: store ? store.status() : { available: false, persistent: false }, signIn: !!config.fekra.identityHeader, pdfEmail: config.fekra.pdfEmail, mail: !!(mailer && mailer.enabled) },
           passport: passportConfig(),
           avatarAi: { enabled: !!(avatar && avatar.status().enabled) },
           version
@@ -409,7 +488,8 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
       }
       const ppm = /^\/api\/passports(?:\/(export|CFT-[0-9A-Z]{5}))?(?:\/(image))?$/.exec(pathname);
       if (ppm && !(ppm[1] === 'export' && ppm[2])) return await handlePassports(req, res, ppm[1] || null, ppm[2] || null);
-      const pm = /^\/api\/fekra\/proposals(?:\/(FK-[0-9A-Z-]{6,20}))?(?:\/(versions))?$/.exec(pathname);
+      if (pathname === '/api/fekra/export') return await handleFekraExport(req, res);
+      const pm = /^\/api\/fekra\/proposals(?:\/(FK-[0-9A-Z-]{6,20}))?(?:\/(versions|download))?$/.exec(pathname);
       if (pm) return await handleProposals(req, res, pm[1] || null, pm[2] || null);
       const fm = /^\/api\/fekra\/([a-z]+)$/.exec(pathname);
       if (fm && FEKRA_OPS[fm[1]]) {

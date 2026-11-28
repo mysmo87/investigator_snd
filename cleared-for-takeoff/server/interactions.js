@@ -26,7 +26,9 @@ function schema(content) {
     avatar_ai_created: {},
     big_screen_shown: {},
     session_attended: { session: one(sessions) },
-    fekra_proposal_saved: {}
+    fekra_proposal_saved: {},
+    fekra_pdf_downloaded: { lang: pick(['en', 'ar']) },
+    fekra_proposal_emailed: { lang: pick(['en', 'ar']) }
   };
 }
 const CLIENT_TYPES = ['journey_generated', 'big_screen_shown', 'session_attended']; // the rest are recorded by the server itself
@@ -38,7 +40,9 @@ const LABELS = {
   avatar_ai_created: 'AI 3D avatars created',
   big_screen_shown: 'Shown on the big screen',
   session_attended: 'Sessions marked as attended',
-  fekra_proposal_saved: 'Fekra proposals saved'
+  fekra_proposal_saved: 'Fekra proposals saved',
+  fekra_pdf_downloaded: 'Fekra PDFs downloaded',
+  fekra_proposal_emailed: 'Fekra PDFs emailed'
 };
 
 function createInteractionLog({ dir, persistent = false, content, timezone = 'Asia/Dubai', logger, now = () => new Date() }) {

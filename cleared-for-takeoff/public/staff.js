@@ -19,7 +19,7 @@
     $('sCount').textContent = q ? `${shown.length} of ${rows.length} saved passports` : `${rows.length} saved passport${rows.length === 1 ? '' : 's'}`;
   }
   /* ---------- Interactions (anonymous counts) ---------- */
-  const ORDER = ['journey_generated', 'passport_created', 'passport_deleted', 'avatar_ai_created', 'big_screen_shown', 'session_attended', 'fekra_proposal_saved'];
+  const ORDER = ['journey_generated', 'passport_created', 'passport_deleted', 'avatar_ai_created', 'big_screen_shown', 'session_attended', 'fekra_proposal_saved', 'fekra_pdf_downloaded', 'fekra_proposal_emailed'];
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const n = v => (v || 0).toLocaleString('en-GB');
   function bars(title, counts) {
@@ -67,6 +67,50 @@
   }
 
   function fail(msg) { const e = $('sErr'); e.textContent = msg; e.hidden = false; }
+  /* ---------- Fekra proposals and who downloaded them ---------- */
+  let proposals = [];
+  const STATUS = { draft: 'Draft', under_review: 'Under review', finalized: 'Finalized' };
+  const SENT = { sent: 'Sent', not_configured: 'Email not set up', failed: 'Failed', rate_limited: 'Limit reached', no: 'No email given' };
+  function renderFekra() {
+    const q = $('fFilter').value.trim().toLowerCase();
+    const shown = q ? proposals.filter(p => [p.ref, p.title, ...p.downloads.map(d => d.email || '')].join(' ').toLowerCase().includes(q)) : proposals;
+    $('fRows').replaceChildren(...shown.map(p => {
+      const tr = document.createElement('tr');
+      const emails = [...new Set(p.downloads.map(d => d.email).filter(Boolean))];
+      const last = p.downloads[0];
+      tr.append(cell(p.ref, 'mono'), cell(p.title || '(untitled)'), cell(STATUS[p.status] || p.status), cell(when(p.updatedAt)), cell(emails.join(', ') || '—'), cell(last ? `${SENT[last.emailed] || last.emailed} · ${when(last.at)}` + (p.downloads.length > 1 ? ` (${p.downloads.length} downloads)` : '') : '—'));
+      return tr;
+    }));
+    const withEmail = proposals.filter(p => p.downloads.some(d => d.email)).length;
+    $('fCount').textContent = `${proposals.length} Fekra proposal${proposals.length === 1 ? '' : 's'} · ${withEmail} downloaded with an email`;
+  }
+  async function loadFekra() {
+    try {
+      const res = await fetch('api/fekra/export', { headers: { Authorization: `Bearer ${key}` }, cache: 'no-store' });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || 'The Fekra proposals could not be loaded.');
+      proposals = out.proposals || [];
+      const warn = [];
+      if (!out.storage || !out.storage.persistent) warn.push('Temporary storage: proposals are lost whenever the server is redeployed. Attach a volume on Railway and set DATA_DIR.');
+      if (!out.mail || !out.mail.enabled) warn.push('Email is not set up (RESEND_API_KEY and MAIL_FROM), so emails are recorded but no PDF is sent.');
+      $('fWarn').textContent = warn.join(' '); $('fWarn').hidden = !warn.length;
+      renderFekra();
+    } catch (e) { $('fWarn').textContent = e.message; $('fWarn').hidden = false; }
+    $('sFekra').hidden = false;
+  }
+  $('fFilter').addEventListener('input', renderFekra);
+  $('fCsv').addEventListener('click', async () => {
+    const btn = $('fCsv'); btn.disabled = true;
+    try {
+      const res = await fetch('api/fekra/export?format=csv', { headers: { Authorization: `Bearer ${key}` }, cache: 'no-store' });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob(), url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = `fekra-proposals-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch { window.alert('The Fekra CSV could not be downloaded. Try again.'); }
+    btn.disabled = false;
+  });
+
   async function load() {
     $('sErr').hidden = true;
     let res;
@@ -83,10 +127,11 @@
     $('sLogin').hidden = true; $('sList').hidden = false;
     render();
     loadInteractions();
+    loadFekra();
   }
   $('sForm').addEventListener('submit', e => { e.preventDefault(); key = $('sKey').value.trim(); $('sKey').value = ''; if (key) load(); });
   $('sFilter').addEventListener('input', render);
-  $('sLock').addEventListener('click', () => { key = ''; rows = []; $('sRows').replaceChildren(); $('sFilter').value = ''; $('sList').hidden = true; $('sInter').hidden = true; $('iTiles').replaceChildren(); $('iBreak').replaceChildren(); $('iDays').replaceChildren(); $('sLogin').hidden = false; $('sKey').focus(); });
+  $('sLock').addEventListener('click', () => { key = ''; rows = []; $('sRows').replaceChildren(); $('sFilter').value = ''; $('sList').hidden = true; $('sInter').hidden = true; $('sFekra').hidden = true; proposals = []; $('fRows').replaceChildren(); $('fFilter').value = ''; $('iTiles').replaceChildren(); $('iBreak').replaceChildren(); $('iDays').replaceChildren(); $('sLogin').hidden = false; $('sKey').focus(); });
   $('iCsv').addEventListener('click', async () => {
     const btn = $('iCsv'); btn.disabled = true;
     try {
