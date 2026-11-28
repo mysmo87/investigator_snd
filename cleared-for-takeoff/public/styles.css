@@ -850,3 +850,17 @@ body[data-view="home"] .content{padding:0}
 .course-qr canvas{width:min(15rem,100%);height:auto;border-radius:.8rem;background:#fff;padding:.6rem;display:block;margin:.4rem auto .6rem}
 @media (max-width:1200px){.level-cols{grid-template-columns:1fr}}
 .modal-body .full{grid-column:1/-1}
+
+/* ---------- language switch + Arabic (right to left) ---------- */
+.lang-btn{margin-right:1rem;padding:.62rem 1.1rem;border-radius:999px;border:1px solid rgba(96,170,255,.35);background:rgba(8,24,60,.55);color:var(--text);font:600 1rem/1 var(--f-ar);cursor:pointer;white-space:nowrap}
+.lang-btn[lang="en"]{font-family:var(--f-body);letter-spacing:.04em}
+.lang-btn:hover,.lang-btn:focus-visible{border-color:var(--cyan);background:rgba(46,139,255,.18)}
+.lang-btn-sm{margin:0 .6rem;padding:.5rem .9rem;font-size:.9rem}
+html[lang="ar"]{--f-display:"Noto Kufi Arabic","Noto Sans Arabic","Segoe UI",Tahoma,sans-serif;--f-body:"Noto Sans Arabic","Inter Variable","Inter","Segoe UI",Tahoma,sans-serif}
+html[lang="ar"] body,html[lang="ar"] body *{letter-spacing:0!important} /* Arabic letters join: never space them apart */
+html[dir="rtl"] .ic-arrow,html[dir="rtl"] .ic-chevL,html[dir="rtl"] .ic-chevR,html[dir="rtl"] .ic-send{transform:scaleX(-1)}
+html[dir="rtl"] .clock{margin-left:1.6rem;margin-right:auto;text-align:left}
+html[dir="rtl"] .lang-btn{margin-right:0;margin-left:1rem}
+html[dir="rtl"] .tk-viewport{direction:ltr} /* the headlines keep crawling the same way; each keeps its own direction */
+html[dir="rtl"] .tk-item:not([dir]){direction:rtl;unicode-bidi:isolate}
+#fkLang{display:none} /* the kiosk header's language switch drives Fekra too */

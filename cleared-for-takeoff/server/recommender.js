@@ -17,15 +17,16 @@ const Anthropic = require('@anthropic-ai/sdk').default;
 const SESSION_STATUSES = ['live', 'upcoming', 'done'];
 const FALLBACK_MODELS = /^claude-(opus-5|fable-5|sonnet-5-5)/; // models that accept fallbacks: "default"
 
-function buildSystemPrompt(content, catalog) {
+function buildSystemPrompt(content, catalog, contentAr) {
+  const ar = (list, id) => { const x = contentAr && (contentAr[list] || []).find(y => y.id === id); return x ? x.title : undefined; };
   const compact = {
-    learningTracks: content.tracks.map(t => ({ id: t.id, title: t.title, audienceLevel: t.level, description: t.desc, stageTopics: t.path })),
-    levels: content.experience.map(e => ({ id: e.id, label: e.label, passportLevel: content.levels[e.level] })),
+    learningTracks: content.tracks.map(t => ({ id: t.id, title: t.title, titleArabic: ar('tracks', t.id), audienceLevel: t.level, description: t.desc, stageTopics: t.path })),
+    levels: content.experience.map(e => ({ id: e.id, label: e.label, passportLevel: content.levels[e.level], passportLevelArabic: contentAr ? contentAr.levels[e.level] : undefined })),
     interests: content.interests.map(i => ({ id: i.id, label: i.label })),
     roles: content.roles.map(r => ({ id: r.id, label: r.label })),
     courses: catalog.courses.map(c => ({ id: c.id, title: c.title, provider: c.provider, category: c.category, level: c.level, format: c.format, approxHours: c.hours, tracks: c.tracks, interests: c.interests, stages: c.stages, summary: c.summary })),
-    boothDemos: content.demos.filter(d => d.id !== 'radar').map(d => ({ id: d.id, title: d.title, zone: d.zone, tracks: d.tracks, tags: d.tags, overview: d.overview })),
-    boothSessions: content.sessions.map(s => ({ id: s.id, title: s.title, type: s.type, track: s.track, tags: s.tags, description: s.desc }))
+    boothDemos: content.demos.filter(d => d.id !== 'radar').map(d => ({ id: d.id, title: d.title, titleArabic: ar('demos', d.id), zone: d.zone, tracks: d.tracks, tags: d.tags, overview: d.overview })),
+    boothSessions: content.sessions.map(s => ({ id: s.id, title: s.title, titleArabic: ar('sessions', s.id), type: s.type, track: s.track, tags: s.tags, description: s.desc }))
   };
   return [
     `You are the learning-journey recommender for "${content.meta.product}", an interactive kiosk at the GDRFA (General Directorate of Residency and Foreigners Affairs, Dubai) booth at ${content.meta.event}.`,
@@ -37,7 +38,7 @@ function buildSystemPrompt(content, catalog) {
     '- Choose courses for fit (the visitor\'s level, interests, role, track and stage), never for the provider. Keep the journey vendor-neutral: draw on several providers, use at most two courses from any one provider, and prefer two different providers within a stage when both fit well.',
     '- experienceId: for discover and practice suggest a booth demo; for learn and innovate suggest a booth session. Choose sessions that are live or upcoming according to the visitor message, never completed ones, and do not repeat a demo or session.',
     '- topic is a short headline for the stage (under ten words). why is one sentence telling the visitor why these courses suit them. nextStep is one concrete action they can take within 30 days that fits their role. summary is one or two sentences addressed to the visitor as "you".',
-    '- Write plain, warm, professional English. Describe courses only with what the reference data says. Do not mention prices, and do not suggest that GDRFA runs or endorses the external courses.',
+    '- Write plain, warm, professional English, unless the visitor message asks for Arabic: then write topic, why, nextStep and summary in clear Modern Standard Arabic, use the titleArabic and passportLevelArabic names for tracks, levels, demos and sessions, and keep course titles and provider names exactly as they appear in the reference data. Describe courses only with what the reference data says. Do not mention prices, and do not suggest that GDRFA runs or endorses the external courses.',
     '',
     'Reference data (JSON):',
     JSON.stringify(compact)
@@ -74,7 +75,7 @@ function buildSchema(content, catalog) {
   };
 }
 
-function buildUserMessage(profile, sessions, content) {
+function buildUserMessage(profile, sessions, content, lang = 'en') {
   const label = (list, id) => (list.find(x => x.id === id) || {}).label || id;
   const visitor = {
     role: { id: profile.role, label: label(content.roles, profile.role) },
@@ -84,7 +85,7 @@ function buildUserMessage(profile, sessions, content) {
   if (profile.focusTrack) visitor.startedFromTrack = profile.focusTrack;
   const sessionStatus = {};
   sessions.forEach(s => { sessionStatus[s.id] = s.status; });
-  return `Visitor answers (JSON): ${JSON.stringify(visitor)}\nBooth session status right now (JSON): ${JSON.stringify(sessionStatus)}\nCreate this visitor's journey.`;
+  return `Visitor answers (JSON): ${JSON.stringify(visitor)}\nBooth session status right now (JSON): ${JSON.stringify(sessionStatus)}\n${lang === 'ar' ? 'The visitor is using the kiosk in Arabic: write the journey text in Arabic.\n' : ''}Create this visitor's journey.`;
 }
 
 /* Normalise the session status list sent by the kiosk (enum-only). */
@@ -120,10 +121,10 @@ class LruCache {
   get size() { return this.map.size; }
 }
 
-function createRecommender({ config, content, catalog, rules, logger, client }) {
+function createRecommender({ config, content, catalog, contentAr = null, catalogAr = null, rules, logger, client }) {
   const ai = config.ai;
   const anthropic = ai.enabled ? (client || new Anthropic()) : null;
-  const system = [{ type: 'text', text: buildSystemPrompt(content, catalog), cache_control: { type: 'ephemeral' } }];
+  const system = [{ type: 'text', text: buildSystemPrompt(content, catalog, contentAr), cache_control: { type: 'ephemeral' } }];
   const schema = buildSchema(content, catalog);
   const useFallbacks = ai.fallbacks === 'default' && FALLBACK_MODELS.test(ai.model);
   const cache = new LruCache(ai.cacheMax, ai.cacheTtlMs);
@@ -139,12 +140,12 @@ function createRecommender({ config, content, catalog, rules, logger, client }) 
     budget.calls += 1; return true;
   };
 
-  async function callClaude(profile, sessions) {
+  async function callClaude(profile, sessions, lang) {
     const params = {
       model: ai.model,
       max_tokens: ai.maxTokens,
       system,
-      messages: [{ role: 'user', content: buildUserMessage(profile, sessions, content) }],
+      messages: [{ role: 'user', content: buildUserMessage(profile, sessions, content, lang) }],
       output_config: { effort: ai.effort, format: { type: 'json_schema', schema } }
     };
     const opts = { timeout: ai.timeoutMs, maxRetries: 1 };
@@ -185,15 +186,17 @@ function createRecommender({ config, content, catalog, rules, logger, client }) 
   }
 
   /* Returns { plan, source: 'ai' | 'rules', model?, cached?, reason? } — never throws for API failures. */
-  async function recommend(profile, rawSessions) {
+  async function recommend(profile, rawSessions, language) {
     const sessions = normaliseSessions(rawSessions, content);
-    const ctx = { content, catalog, sessions };
+    const lang = language === 'ar' && contentAr ? 'ar' : 'en';
+    // the rules (fallback and repairs) write in the same language, from the matching content
+    const ctx = lang === 'ar' ? { content: contentAr, catalog: catalogAr || catalog, sessions, lang } : { content, catalog, sessions };
     const rulesResult = (reason) => ({ plan: rules.buildRulesPlan(profile, ctx), source: 'rules', reason });
 
     if (!anthropic) return rulesResult(ai.apiKeySet ? 'ai_disabled' : 'no_api_key');
     if (Date.now() < breaker.openUntil) return rulesResult('circuit_open');
 
-    const key = JSON.stringify([profile.role, profile.experience, [...profile.interests].sort(), profile.focusTrack || '', sessions.filter(s => s.status !== 'done').map(s => s.id).sort()]);
+    const key = JSON.stringify([lang, profile.role, profile.experience, [...profile.interests].sort(), profile.focusTrack || '', sessions.filter(s => s.status !== 'done').map(s => s.id).sort()]);
     const hit = cache.get(key);
     if (hit) return { ...hit, cached: true };
     if (inflight.has(key)) return inflight.get(key);
@@ -202,13 +205,13 @@ function createRecommender({ config, content, catalog, rules, logger, client }) 
     const started = Date.now();
     const task = (async () => {
       try {
-        const { parsed, model, usage } = await callClaude(profile, sessions);
+        const { parsed, model, usage } = await callClaude(profile, sessions, lang);
         const { plan, repairs } = rules.sanitizePlan(parsed, profile, ctx);
         breaker.failures = 0;
         const result = { plan, source: 'ai', model };
         cache.set(key, result);
         logger.info('recommendation', {
-          source: 'ai', model, latencyMs: Date.now() - started, repairs,
+          source: 'ai', model, lang, latencyMs: Date.now() - started, repairs,
           inputTokens: usage && usage.input_tokens, outputTokens: usage && usage.output_tokens,
           cacheReadTokens: usage && usage.cache_read_input_tokens, cacheWriteTokens: usage && usage.cache_creation_input_tokens
         });

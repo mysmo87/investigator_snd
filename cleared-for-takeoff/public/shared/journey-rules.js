@@ -18,6 +18,22 @@
   const LEVELS = ['beginner', 'intermediate', 'advanced'];
   const LIMITS = { topic: 90, why: 240, nextStep: 240, summary: 420 };
   const ROLE_SENTENCE = { gov: 'government employee', tech: 'technology professional', student: 'student', leader: 'business leader', other: 'curious visitor' };
+  /* the sentences the rules write, per language (ctx.lang; the titles and labels come from the content passed in) */
+  const TEXT = {
+    en: {
+      why: (level, track, list) => `Chosen for your ${level} level in ${track}${list ? ` and your interest in ${list}` : ''}.`,
+      summary: (role, exp, interests, primary, secondary) => `As a ${ROLE_SENTENCE[role]} with ${exp.toLowerCase()} AI experience, interested in ${interests}, your journey centres on ${primary} — with ${secondary} as your stretch track.`,
+      list: arr => (arr.length > 1 ? arr.slice(0, -1).join(', ') + ' and ' + arr[arr.length - 1] : (arr[0] || '')),
+      course: 'recommended course'
+    },
+    ar: {
+      why: (level, track, list) => `اخترناها لتناسب مستوى «${level}» في مسار «${track}»${list ? ` واهتمامك بـ${list}` : ''}.`,
+      summary: (role, exp, interests, primary, secondary) => `بصفتك ${({ gov: 'موظفاً حكومياً', tech: 'متخصصاً في التقنية', student: 'طالباً', leader: 'قائداً في الأعمال', other: 'زائراً شغوفاً بالذكاء الاصطناعي' })[role]} بخبرة «${exp}» في الذكاء الاصطناعي، ومع اهتمامك بـ${interests}، تتمحور رحلتك حول مسار «${primary}»، مع مسار «${secondary}» لتوسيع آفاقك.`,
+      list: arr => arr.join(' و'),
+      course: 'الدورة الموصى بها'
+    }
+  };
+  const textFor = ctx => TEXT[ctx && ctx.lang === 'ar' ? 'ar' : 'en'];
 
   /* Optional steering (Learning Flight Map): limits the visitor can set. */
   const TIME_LIMITS = { any: Infinity, medium: 10, short: 2 };   // max hours per course
@@ -28,7 +44,6 @@
   const MAX_PER_PROVIDER = 2;
   const providerKey = c => String(c.provider || '').split(/ on | × | & /)[0].trim().toLowerCase();
   const clip = (s, max) => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
-  const listText = arr => arr.length > 1 ? arr.slice(0, -1).join(', ') + ' and ' + arr[arr.length - 1] : (arr[0] || '');
 
   function levelIndex(content, experienceId) {
     const e = byId(content.experience, experienceId);
@@ -124,7 +139,7 @@
      Pinned courses are placed first in the earliest stage they fit. If no course in a stage meets
      the constraints, the time limit and then all limits are relaxed for that stage (stage.relaxed). */
   function buildRulesPlan(profile, ctx, options) {
-    const { content, catalog } = ctx, R = content.rules;
+    const { content, catalog } = ctx, R = content.rules, T = textFor(ctx);
     const lvl = levelIndex(content, profile.experience);
     const ranked = rankTracks(profile, content), primary = ranked[0], secondary = ranked[1];
     const usedC = new Set(), usedE = new Set(), usedP = {};
@@ -151,13 +166,13 @@
       usedE.add(expId);
       const tpl = (R.nextSteps[profile.role] || R.nextSteps.other)[stage];
       const nextStep = tpl.replace('{demo}', experienceTitle(ctx, expId)).replace('{session}', experienceTitle(ctx, expId))
-        .replace('{course}', courses[0] ? courses[0].title : 'recommended course').replace('{track}', primary.title);
+        .replace('{course}', courses[0] ? courses[0].title : T.course).replace('{track}', primary.title);
       const matched = profile.interests.filter(i => courses.some(c => c.interests.includes(i))).map(i => byId(content.interests, i).label);
       return {
         stage,
         topic: primary.path[stage][lvl],
         courseIds: courses.map(c => c.id),
-        why: `Chosen for your ${content.levels[lvl]} level in ${primary.title}${matched.length ? ` and your interest in ${listText(matched.slice(0, 2))}` : ''}.`,
+        why: T.why(content.levels[lvl], primary.title, matched.length ? T.list(matched.slice(0, 2)) : ''),
         nextStep,
         experienceId: expId,
         pinned: pinStage[stage].map(c => c.id),
@@ -167,7 +182,7 @@
     return {
       primaryTrack: primary.id,
       secondaryTrack: secondary.id,
-      summary: `As a ${ROLE_SENTENCE[profile.role]} with ${byId(content.experience, profile.experience).label.toLowerCase()} AI experience, interested in ${listText(interestLabels)}, your journey centres on ${primary.title} — with ${secondary.title} as your stretch track.`,
+      summary: T.summary(profile.role, byId(content.experience, profile.experience).label, T.list(interestLabels), primary.title, secondary.title),
       stages
     };
   }

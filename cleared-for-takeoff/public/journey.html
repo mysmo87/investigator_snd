@@ -8,22 +8,28 @@
 <title>My AI Journey — Agentic AI: Cleared for Takeoff</title>
 <meta name="description" content="Your personalised Agentic AI learning journey from the GDRFA booth at GITEX 2026.">
 <link rel="icon" href="assets/gdrfa-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="journey.css">
 </head>
 <body>
 <header class="j-top">
   <div class="j-logo"><img src="assets/gdrfa-logo.png" alt="Federal Authority for Identity &amp; Citizenship — General Directorate of Residency and Foreigners Affairs, Dubai"></div>
-  <p class="j-brand">AGENTIC AI: <span>CLEARED FOR TAKEOFF</span></p>
+  <p class="j-brand" id="jBrand">AGENTIC AI: <span>CLEARED FOR TAKEOFF</span></p>
+  <button class="j-lang" id="jLang" type="button" lang="ar">العربية</button>
 </header>
 <main id="journey" class="j-main" aria-live="polite">
   <p class="j-empty">Loading your journey…</p>
 </main>
 <footer class="j-foot">
-  <p>Courses are run by their providers; content, pricing and certificates may change. GDRFA does not operate these courses.</p>
+  <p id="jFoot">Courses are run by their providers; content, pricing and certificates may change. GDRFA does not operate these courses.</p>
   <p id="jPrivacy">This page is built from the code in your QR link — it contains no personal information.</p>
 </footer>
 <script src="data/content.js"></script>
+<script src="data/content-ar.js"></script>
 <script src="data/catalog.js"></script>
+<script src="shared/localize.js"></script>
 <script src="journey.js"></script>
 </body>
 </html>

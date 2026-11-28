@@ -182,7 +182,7 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
     try { body = await readJsonBody(req); } catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
     const { profile, error } = rules.validateProfile(body, content);
     if (error) return sendJson(res, 400, { error });
-    const result = await recommender.recommend(profile, body.sessions);
+    const result = await recommender.recommend(profile, body.sessions, body.lang === 'ar' ? 'ar' : 'en');
     sendJson(res, 200, { source: result.source, model: result.source === 'ai' ? result.model : undefined, cached: !!result.cached, plan: result.plan });
   }
 
@@ -380,6 +380,7 @@ function createApp({ config, recommender, fekra, store, passports, avatar = null
           eventTimezone: config.kiosk.eventTimezone,
           idleWarnSeconds: config.kiosk.idleWarnSeconds,
           idleResetSeconds: config.kiosk.idleResetSeconds,
+          defaultLang: config.kiosk.defaultLang,
           fekra: { ...(fekra ? fekra.status() : { enabled: false }), idleResetSeconds: config.fekra.idleResetSeconds, storage: store ? store.status() : { available: false, persistent: false }, signIn: !!config.fekra.identityHeader },
           passport: passportConfig(),
           avatarAi: { enabled: !!(avatar && avatar.status().enabled) },

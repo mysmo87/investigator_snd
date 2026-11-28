@@ -18,6 +18,7 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const content = require('../public/data/content.js');
 const catalog = require('../public/data/catalog.js');
 const rules = require('../public/shared/journey-rules.js');
+const localize = require('../public/shared/localize.js');
 const { version } = require('../package.json');
 
 let config;
@@ -35,7 +36,9 @@ if (contentErrors.length) {
   process.exit(1);
 }
 
-const recommender = createRecommender({ config, content, catalog, rules, logger });
+const contentAr = localize.localizeContent(content, require('../public/data/content-ar.js'));
+const catalogAr = localize.localizeCatalog(catalog, require('../public/data/content-ar.js'));
+const recommender = createRecommender({ config, content, catalog, contentAr, catalogAr, rules, logger });
 const fekra = createFekra({ config, logger });
 const news = createNews({ config, logger });
 let store = null;

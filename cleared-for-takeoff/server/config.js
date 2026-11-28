@@ -132,7 +132,8 @@ function loadConfig(env = process.env) {
       scheduleMode: oneOf(env, 'SCHEDULE_MODE', 'relative', SCHEDULE_MODES),
       eventTimezone: timezone(env, 'EVENT_TIMEZONE', 'Asia/Dubai'),
       idleWarnSeconds: int(env, 'IDLE_WARN_SECONDS', 75, 10, 3600),
-      idleResetSeconds: int(env, 'IDLE_RESET_SECONDS', 90, 15, 3600)
+      idleResetSeconds: int(env, 'IDLE_RESET_SECONDS', 90, 15, 3600),
+      defaultLang: oneOf(env, 'KIOSK_DEFAULT_LANG', 'en', ['en', 'ar'])
     }
   };
   if (!/^[a-z0-9-]+(\/[a-z0-9.-]+)+$/i.test(cfg.avatar.model)) throw new Error('AVATAR_AI_MODEL must be a fal endpoint id such as fal-ai/flux-pro/kontext');

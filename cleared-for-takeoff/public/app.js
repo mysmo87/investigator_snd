@@ -5,9 +5,15 @@
    Content, course catalogue and journey rules are loaded from
    data/content.js, data/catalog.js and shared/journey-rules.js.
    ===================================================================== */
-const DATA = window.CFT_CONTENT;
-const CATALOG = window.CFT_CATALOG;
+/* Language: tr('English', {vars}) gives the text in the kiosk's language (i18n.js); _t() only marks a string for
+   translation where it is defined, and tr() translates it where it is shown. DATA and CATALOG follow the language. */
+const I18N = window.I18N, tr = I18N.tr, _t = s => s;
+const DATA_EN = window.CFT_CONTENT, CATALOG_EN = window.CFT_CATALOG;
+const CONTENT_AR = window.CFT_LOCALIZE.localizeContent(DATA_EN, window.CFT_CONTENT_AR);
+const CATALOG_AR = window.CFT_LOCALIZE.localizeCatalog(CATALOG_EN, window.CFT_CONTENT_AR);
+let DATA = DATA_EN, CATALOG = CATALOG_EN;
 const RULES = window.CFT_RULES;
+const LOCALE = () => (I18N.lang === 'ar' ? 'ar-AE-u-nu-latn' : 'en-GB');
 /* Runtime settings. Defaults keep the kiosk working when the page is opened
    from disk; when served by the API server they are replaced by GET /api/config. */
 /* Original (dark-ink) logo for white backgrounds — the passport card draws it on a white plate. */
@@ -16,7 +22,7 @@ const CONFIG = {
   served: /^https?:$/.test(location.protocol),
   aiEnabled: false, aiTimeoutMs: 20000, publicBaseUrl: null,
   scheduleMode: 'relative', eventTimezone: 'Asia/Dubai',
-  idleWarnSeconds: 75, idleResetSeconds: 90,
+  idleWarnSeconds: 75, idleResetSeconds: 90, defaultLang: 'en',
   fekra: null, // Fekra innovation assistant availability (set from /api/config; see fekra.js)
   passport: null, // saving passports: { save: off|optional|required|always, storage, retentionDays } (set from /api/config)
   avatarAi: null // AI 3D Traveler avatar: { enabled } (set from /api/config)
@@ -31,7 +37,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const byId = (list, id) => list.find(x => x.id === id);
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-const fmtTime = ts => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: CONFIG.eventTimezone || undefined });
+const fmtTime = ts => new Date(ts).toLocaleTimeString(LOCALE(), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: CONFIG.eventTimezone || undefined });
 const zone = id => byId(DATA.booth.zones, id) || { label: id, short: id };
 const getTrack = id => byId(DATA.tracks, id);
 const getDemo = id => byId(DATA.demos, id);
@@ -99,11 +105,11 @@ const ICONS = {
   file: '<path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h4"/>',
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5 6.5-5s5.5 1.5 6.5 5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2 .6 3.2 2.2 3.8 5"/>'
 };
-const ic = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ICONS.spark}</svg>`;
+const ic = (name, cls = '') => `<svg class="ic ic-${name} ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ICONS.spark}</svg>`;
 function hydrateIcons(root) { $$('[data-icon]', root).forEach(n => { if (!n.querySelector('svg')) n.insertAdjacentHTML('afterbegin', ic(n.dataset.icon)); }); }
 const sample = (flag, text) => flag ? `<span class="demo-label">${text}</span>` : '';
-const DEMO_SHORT = { knowledge: 'Knowledge Assistant', border: 'Border Experience', automation: 'Service Automation', radar: 'Cleared for Takeoff', studio: 'Innovation Studio', analytics: 'Gov Analytics' };
-const CAT_LABEL = { agentic: 'Agentic AI', gov: 'Government AI', research: 'Research', emerging: 'Emerging Tech', events: 'Events' };
+const DEMO_SHORT = { knowledge: _t('Knowledge Assistant'), border: _t('Border Experience'), automation: _t('Service Automation'), radar: _t('Cleared for Takeoff'), studio: _t('Innovation Studio'), analytics: _t('Gov Analytics') };
+const CAT_LABEL = { agentic: _t('Agentic AI'), gov: _t('Government AI'), research: _t('Research'), emerging: _t('Emerging Tech'), events: _t('Events') };
 const CAT_COLORS = { agentic: ['#1d6dff', '#46d2ff'], gov: ['#0f8a8a', '#46d2ff'], research: ['#5b3dff', '#46d2ff'], emerging: ['#b8862b', '#f4d88f'], events: ['#c2417a', '#7a4dff'] };
 
 /* Decorative SVG art for cards (unique gradient ids per instance). */
@@ -166,7 +172,7 @@ function sessionsWithStatus() {
   return list;
 }
 const sessRange = s => `${fmtTime(s.start)}–${fmtTime(s.end)}`;
-const statusPill = s => s.status === 'live' ? '<span class="pill live"><i class="dot"></i>LIVE NOW</span>' : s.status === 'upcoming' ? '<span class="pill gold">UPCOMING</span>' : '<span class="pill done">COMPLETED</span>';
+const statusPill = s => s.status === 'live' ? `<span class="pill live"><i class="dot"></i>${tr('LIVE NOW')}</span>` : s.status === 'upcoming' ? `<span class="pill gold">${tr('UPCOMING')}</span>` : `<span class="pill done">${tr('COMPLETED')}</span>`;
 function sessWithStatus(id) { return sessionsWithStatus().find(s => s.id === id); }
 
 /* =====================================================================
@@ -628,16 +634,18 @@ function updateGlobe() { globe.setActive(state.view === 'home' && !state.wizard.
    NAVIGATION
    ===================================================================== */
 const NAV = [
-  { id: 'home', label: 'Agentic AI', rail: 'Home', icon: 'home' },
-  { id: 'experiences', label: 'Experiences', icon: 'grid' },
-  { id: 'ask', label: 'AI Assistant', icon: 'ask' },
-  { id: 'about', label: 'About', rail: 'About Agentic AI', icon: 'info' }
+  { id: 'home', label: _t('Agentic AI'), rail: _t('Home'), icon: 'home' },
+  { id: 'experiences', label: _t('Experiences'), icon: 'grid' },
+  { id: 'ask', label: _t('AI Assistant'), icon: 'ask' },
+  { id: 'about', label: _t('About'), rail: _t('About Agentic AI'), icon: 'info' }
 ];
 const VIEWS = ['home', 'experiences', 'news', 'demos', 'tracks', 'sessions', 'ask', 'journey', 'about'];
 const NAV_OF = { news: 'experiences', demos: 'experiences', tracks: 'experiences', sessions: 'experiences' }; // pages that live under Experiences
 function renderNav() {
-  $('#topNav').innerHTML = NAV.map(n => `<button class="tn-item" data-action="nav" data-view="${n.id}" data-label="${esc(n.label)}">${esc(n.label)}</button>`).join('');
-  $('#railItems').innerHTML = NAV.map(n => `<button class="rail-btn" data-action="nav" data-view="${n.id}" aria-label="${esc(n.rail || n.label)}" title="${esc(n.rail || n.label)}">${ic(n.icon)}<span class="rail-label">${esc(n.rail || n.label)}</span></button>`).join('');
+  $('#topNav').innerHTML = NAV.map(n => `<button class="tn-item" data-action="nav" data-view="${n.id}" data-label="${esc(tr(n.label))}">${esc(tr(n.label))}</button>`).join('');
+  $('#railItems').innerHTML = NAV.map(n => `<button class="rail-btn" data-action="nav" data-view="${n.id}" aria-label="${esc(tr(n.rail || n.label))}" title="${esc(tr(n.rail || n.label))}">${ic(n.icon)}<span class="rail-label">${esc(tr(n.rail || n.label))}</span></button>`).join('');
+  const active = state.view && (NAV_OF[state.view] || state.view);
+  $$('.tn-item, .rail-btn[data-view]').forEach(b => { if (b.dataset.view === active) { b.classList.add('active'); b.setAttribute('aria-current', 'page'); } });
 }
 const RENDER = { home: () => {}, experiences: renderExperiences, news: renderNews, demos: renderDemos, tracks: renderTracks, sessions: renderSessions, ask: renderAskSide, journey: renderJourney, about: renderAbout };
 function navigate(view) {
@@ -656,49 +664,49 @@ function navigate(view) {
 /* =====================================================================
    EXPERIENCES (hub for demos, learning tracks, news and live sessions)
    ===================================================================== */
-const EXP_TABS = [['experiences', 'Overview'], ['demos', 'Demos'], ['tracks', 'Learning tracks'], ['news', 'AI news'], ['sessions', 'Live sessions']];
-const expTabs = cur => `<nav class="xp-tabs" aria-label="Experiences">${EXP_TABS.map(([v, l]) => `<button class="xp-tab${v === cur ? ' active' : ''}" data-action="nav" data-view="${v}"${v === cur ? ' aria-current="page"' : ''}>${l}</button>`).join('')}</nav>`;
+const EXP_TABS = [['experiences', _t('Overview')], ['demos', _t('Demos')], ['tracks', _t('Learning tracks')], ['news', _t('AI news')], ['sessions', _t('Live sessions')]];
+const expTabs = cur => `<nav class="xp-tabs" aria-label="${esc(tr('Experiences'))}">${EXP_TABS.map(([v, l]) => `<button class="xp-tab${v === cur ? ' active' : ''}" data-action="nav" data-view="${v}"${v === cur ? ' aria-current="page"' : ''}>${tr(l)}</button>`).join('')}</nav>`;
 const pageHead = (kicker, title, text) => `<header class="xp-head"><p class="xp-kicker">${esc(kicker)}<b aria-hidden="true"></b></p><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}</header>`;
 function renderExperiences() {
   const ss = sessionsWithStatus(), live = ss.filter(s => s.status === 'live').length, left = ss.filter(s => s.status !== 'done').length;
   const dest = [
-    { v: 'demos', i: 'demos', t: 'Booth demos', d: 'Six experiences showing how Agentic AI could shape residency, travel and government services.', m: `${DATA.demos.length} demos`, flag: sample(DATA.meta.demosAreIllustrative, 'Illustrative') },
-    { v: 'tracks', i: 'tracks', t: 'Learning tracks', d: 'Six curated tracks — from first steps with AI agents to leading innovation programmes.', m: `${DATA.tracks.length} tracks · ${CATALOG.courses.length} courses` },
-    { v: 'news', i: 'news', t: 'Latest AI news', d: 'Curated highlights on Agentic AI, government innovation, research and emerging technology.', m: `${DATA.news.length} stories`, flag: sample(DATA.meta.newsIsSample, 'Sample') },
-    { v: 'sessions', i: 'sessions', t: 'Live sessions', d: 'Talks, showcases and hands-on workshops running throughout the day.', m: live ? `${live} live now · ${left} left today` : `${left} left today`, flag: sample(DATA.meta.sessionsAreSample, 'Sample') }
+    { v: 'demos', i: 'demos', t: tr('Booth demos'), d: tr('Six experiences showing how Agentic AI could shape residency, travel and government services.'), m: tr('{n} demos', { n: DATA.demos.length }), flag: sample(DATA.meta.demosAreIllustrative, tr('Illustrative')) },
+    { v: 'tracks', i: 'tracks', t: tr('Learning tracks'), d: tr('Six curated tracks — from first steps with AI agents to leading innovation programmes.'), m: tr('{n} tracks · {c} courses', { n: DATA.tracks.length, c: CATALOG.courses.length }) },
+    { v: 'news', i: 'news', t: tr('Latest AI news'), d: tr('Curated highlights on Agentic AI, government innovation, research and emerging technology.'), m: tr('{n} stories', { n: DATA.news.length }), flag: sample(DATA.meta.newsIsSample, tr('Sample')) },
+    { v: 'sessions', i: 'sessions', t: tr('Live sessions'), d: tr('Talks, showcases and hands-on workshops running throughout the day.'), m: live ? tr('{live} live now · {left} left today', { live, left }) : tr('{left} left today', { left }), flag: sample(DATA.meta.sessionsAreSample, tr('Sample')) }
   ];
   $('#experiencesRoot').innerHTML = `<div class="xp">${expTabs('experiences')}
-    ${pageHead('Experiences', 'Explore the GDRFA booth', 'Demos, learning tracks, the latest AI news and today’s sessions.')}
+    ${pageHead(tr('Experiences'), tr('Explore the GDRFA booth'), tr('Demos, learning tracks, the latest AI news and today’s sessions.'))}
     <div class="xp-grid">${dest.map(c => `<button class="xp-card" data-action="nav" data-view="${c.v}"><span class="xp-ic">${ic(c.i)}</span><h3>${esc(c.t)}</h3><p>${esc(c.d)}</p><span class="xp-meta"><span>${esc(c.m)}${c.flag ? ' ' + c.flag : ''}</span>${ic('arrow')}</span></button>`).join('')}</div>
     <div class="xp-lower">
       <div class="glass booth" id="boothPanel"></div>
-      <section class="xp-journey" aria-label="My AI Journey"><span class="xp-ic gold">${ic('journey')}</span><h3>My AI Journey</h3>
-        <p>Answer three quick questions and Cleared for Takeoff will build a personalised Discover → Learn → Practice → Innovate journey.</p>
-        <p class="small">Build your journey in under 2 minutes and take home a personalised Agentic AI Passport.</p>
-        ${state.journey ? `<button class="btn btn-gold" data-action="nav" data-view="journey">${ic('journey')} View my journey</button>` : `<button class="btn btn-gold" data-action="start-journey">${ic('journey')} Start My AI Journey</button>`}
+      <section class="xp-journey" aria-label="${esc(tr('My AI Journey'))}"><span class="xp-ic gold">${ic('journey')}</span><h3>${tr('My AI Journey')}</h3>
+        <p>${tr('Answer three quick questions and Cleared for Takeoff will build a personalised Discover → Learn → Practice → Innovate journey.')}</p>
+        <p class="small">${tr('Build your journey in under 2 minutes and take home a personalised Agentic AI Passport.')}</p>
+        ${state.journey ? `<button class="btn btn-gold" data-action="nav" data-view="journey">${ic('journey')} ${tr('View my journey')}</button>` : `<button class="btn btn-gold" data-action="start-journey">${ic('journey')} ${tr('Start My AI Journey')}</button>`}
       </section>
     </div></div>`;
   renderBooth();
 }
-const levelPill = l => `<span class="pill${l === 'Advanced' ? ' gold' : ''}">${esc(l)}</span>`;
+const levelPill = l => `<span class="pill${l === 'Advanced' ? ' gold' : ''}">${esc(tr(l))}</span>`;
 function renderBooth() {
   const ss = sessionsWithStatus(), live = ss.find(s => s.status === 'live'), up = ss.filter(s => s.status === 'upcoming'), next = up[0], later = up.slice(1, 3), now = Date.now();
-  let html = `<div class="panel-head">${ic('pin')}<h3>Today at the booth</h3>${sample(DATA.meta.sessionsAreSample, 'Sample')}<span class="spacer"></span><button class="link-btn" data-action="nav" data-view="sessions">Full schedule ${ic('arrow')}</button></div><div class="booth-body">`;
-  if (live) { const pct = Math.round((now - live.start) / (live.end - live.start) * 100); html += `<button class="sess-live" data-action="open-session" data-id="${live.id}"><div class="sess-top"><i class="dot"></i>Live now · ${esc(live.type)}</div><div class="sess-title">${esc(live.title)}</div><div class="sess-meta"><span>${ic('clock')}${sessRange(live)}</span><span>${ic('pin')}${esc(zone(live.zone).label)}</span></div><div class="progress"><i style="width:${pct}%"></i></div></button>`; }
-  if (next) { const mins = Math.max(1, Math.round((next.start - now) / 60000)); html += `<button class="sess-next" data-action="open-session" data-id="${next.id}"><div class="sess-top">${ic('clock')}Up next · starts in ${mins} min</div><div class="sess-title">${esc(next.title)}</div><div class="sess-meta"><span>${ic('clock')}${sessRange(next)}</span><span>${ic('pin')}${esc(zone(next.zone).label)}</span></div></button>`; }
-  if (later.length) html += `<div class="sub-label">Later today</div>` + later.map(s => `<button class="sess-row" data-action="open-session" data-id="${s.id}"><time>${fmtTime(s.start)}</time><div><div class="t">${esc(s.title)}</div><div class="z">${esc(s.type)} · ${esc(zone(s.zone).label)}</div></div></button>`).join('');
-  html += `<div class="sub-label">Available demos</div><div class="demo-chips">${DATA.demos.map(d => `<button class="demo-chip" data-action="open-demo" data-id="${d.id}">${ic(d.icon)}${esc(DEMO_SHORT[d.id])} <b>${esc(zone(d.zone).short)}</b></button>`).join('')}</div></div>`;
+  let html = `<div class="panel-head">${ic('pin')}<h3>${tr('Today at the booth')}</h3>${sample(DATA.meta.sessionsAreSample, tr('Sample'))}<span class="spacer"></span><button class="link-btn" data-action="nav" data-view="sessions">${tr('Full schedule')} ${ic('arrow')}</button></div><div class="booth-body">`;
+  if (live) { const pct = Math.round((now - live.start) / (live.end - live.start) * 100); html += `<button class="sess-live" data-action="open-session" data-id="${live.id}"><div class="sess-top"><i class="dot"></i>${tr('Live now')} · ${esc(tr(live.type))}</div><div class="sess-title">${esc(live.title)}</div><div class="sess-meta"><span>${ic('clock')}${sessRange(live)}</span><span>${ic('pin')}${esc(zone(live.zone).label)}</span></div><div class="progress"><i style="width:${pct}%"></i></div></button>`; }
+  if (next) { const mins = Math.max(1, Math.round((next.start - now) / 60000)); html += `<button class="sess-next" data-action="open-session" data-id="${next.id}"><div class="sess-top">${ic('clock')}${tr('Up next · starts in {m} min', { m: mins })}</div><div class="sess-title">${esc(next.title)}</div><div class="sess-meta"><span>${ic('clock')}${sessRange(next)}</span><span>${ic('pin')}${esc(zone(next.zone).label)}</span></div></button>`; }
+  if (later.length) html += `<div class="sub-label">${tr('Later today')}</div>` + later.map(s => `<button class="sess-row" data-action="open-session" data-id="${s.id}"><time>${fmtTime(s.start)}</time><div><div class="t">${esc(s.title)}</div><div class="z">${esc(tr(s.type))} · ${esc(zone(s.zone).label)}</div></div></button>`).join('');
+  html += `<div class="sub-label">${tr('Available demos')}</div><div class="demo-chips">${DATA.demos.map(d => `<button class="demo-chip" data-action="open-demo" data-id="${d.id}">${ic(d.icon)}${esc(tr(DEMO_SHORT[d.id]))} <b>${esc(zone(d.zone).short)}</b></button>`).join('')}</div></div>`;
   const el = $('#boothPanel'); if (el) el.innerHTML = html;
 }
 
 /* =====================================================================
    NEWS
    ===================================================================== */
-const daysAgo = d => d === 0 ? 'Today' : d === 1 ? 'Yesterday' : `${d} days ago`;
+const daysAgo = d => d === 0 ? tr('Today') : d === 1 ? tr('Yesterday') : tr('{d} days ago', { d });
 function renderNews() {
   $('#newsRoot').innerHTML = `${expTabs('news')}
-    <div class="view-head"><div><div class="eyebrow">${ic('live')} Cleared for Takeoff Intelligence Feed</div><h2>Latest AI News</h2><p>Curated highlights on Agentic AI, government innovation, research and emerging technology.</p></div>
-      <div class="news-tools">${sample(DATA.meta.newsIsSample, ic('alert') + ' Sample content · not live news')}<label class="search">${ic('search')}<span class="sr-only">Search news</span><input id="newsSearch" placeholder="Search the feed" maxlength="60" value="${esc(state.newsQuery)}"></label></div></div>
+    <div class="view-head"><div><div class="eyebrow">${ic('live')} ${tr('Cleared for Takeoff Intelligence Feed')}</div><h2>${tr('Latest AI News')}</h2><p>${tr('Curated highlights on Agentic AI, government innovation, research and emerging technology.')}</p></div>
+      <div class="news-tools">${sample(DATA.meta.newsIsSample, ic('alert') + ' ' + tr('Sample content · not live news'))}<label class="search">${ic('search')}<span class="sr-only">${tr('Search news')}</span><input id="newsSearch" placeholder="${esc(tr('Search the feed'))}" maxlength="60" value="${esc(state.newsQuery)}"></label></div></div>
     <div class="chips" id="newsChips" style="margin-bottom:1rem"></div>
     <div id="newsResults"></div>`;
   $('#newsSearch').addEventListener('input', e => { state.newsQuery = cleanText(e.target.value, 60); renderNewsResults(); });
@@ -706,15 +714,15 @@ function renderNews() {
 }
 function newsCard(n, featured) {
   return `<button class="card${featured ? ' news-featured' : ''}" data-action="open-news" data-id="${n.id}">
-    <div class="nart${featured ? ' nf-art' : ''}">${artSVG(CAT_COLORS[n.cat], hashStr(n.id) % 6)}${sample(DATA.meta.newsIsSample, 'Sample')}<span class="pill ncat">${esc(CAT_LABEL[n.cat])}</span></div>
-    <div class="card-body"><div class="small">${daysAgo(n.days)} · ${n.mins} min read · Cleared for Takeoff Editorial</div><h3>${esc(n.title)}</h3><p>${esc(featured ? n.summary : n.summary.split('. ')[0].replace(/\.$/, '') + '.')}</p>${featured ? `<ul>${n.points.map(pt => `<li>${esc(pt)}</li>`).join('')}</ul>` : ''}
-    <div class="card-foot"><span class="pill">${esc(getTrack(n.track).title)}</span><span class="explore">Read summary ${ic('arrow')}</span></div></div></button>`;
+    <div class="nart${featured ? ' nf-art' : ''}">${artSVG(CAT_COLORS[n.cat], hashStr(n.id) % 6)}${sample(DATA.meta.newsIsSample, tr('Sample'))}<span class="pill ncat">${esc(tr(CAT_LABEL[n.cat]))}</span></div>
+    <div class="card-body"><div class="small">${daysAgo(n.days)} · ${tr('{m} min read', { m: n.mins })} · ${tr('Cleared for Takeoff Editorial')}</div><h3>${esc(n.title)}</h3><p>${esc(featured ? n.summary : firstSentence(n.summary))}</p>${featured ? `<ul>${n.points.map(pt => `<li>${esc(pt)}</li>`).join('')}</ul>` : ''}
+    <div class="card-foot"><span class="pill">${esc(getTrack(n.track).title)}</span><span class="explore">${tr('Read summary')} ${ic('arrow')}</span></div></div></button>`;
 }
 function renderNewsResults() {
   const f = state.newsFilter, q = state.newsQuery.toLowerCase();
   $('#newsChips').innerHTML = DATA.newsCats.map(c => `<button class="chip${f === c.id ? ' active' : ''}" data-action="news-filter" data-filter="${c.id}">${c.icon ? ic(c.icon) : ''}${esc(c.label)}</button>`).join('');
   const items = DATA.news.filter(n => (f === 'all' || n.cat === f) && (!q || (n.title + ' ' + n.summary).toLowerCase().includes(q))).sort((a, b) => a.days - b.days);
-  if (!items.length) { $('#newsResults').innerHTML = `<div class="empty">No demo articles match your search. <button class="link-btn" data-action="news-filter" data-filter="all" data-clear="1">Clear filters</button></div>`; return; }
+  if (!items.length) { $('#newsResults').innerHTML = `<div class="empty">${tr('No demo articles match your search.')} <button class="link-btn" data-action="news-filter" data-filter="all" data-clear="1">${tr('Clear filters')}</button></div>`; return; }
   const featured = items.find(n => n.featured) || items[0], rest = items.filter(n => n !== featured);
   $('#newsResults').innerHTML = `<div class="news-layout">${newsCard(featured, true)}<div class="grid grid-2">${rest.map(n => newsCard(n)).join('')}</div></div>`;
 }
@@ -724,12 +732,12 @@ function renderNewsResults() {
    ===================================================================== */
 function renderDemos() {
   $('#demosRoot').innerHTML = `${expTabs('demos')}
-    <div class="view-head"><div><div class="eyebrow">${ic('pin')} Around the GDRFA booth</div><h2>Explore Demos</h2><p>Six experiences showing how Agentic AI could shape residency, travel and government services.</p></div>${sample(DATA.meta.demosAreIllustrative, ic('alert') + ' Illustrative capabilities · not all are deployed GDRFA services')}</div>
+    <div class="view-head"><div><div class="eyebrow">${ic('pin')} ${tr('Around the GDRFA booth')}</div><h2>${tr('Explore Demos')}</h2><p>${tr('Six experiences showing how Agentic AI could shape residency, travel and government services.')}</p></div>${sample(DATA.meta.demosAreIllustrative, ic('alert') + ' ' + tr('Illustrative capabilities · not all are deployed GDRFA services'))}</div>
     <div class="grid grid-3">${DATA.demos.map((d, i) => `
       <button class="card" data-action="open-demo" data-id="${d.id}">
         <div class="dart">${artSVG(d.colors, i + 2, 'bg')}<span class="pill dz">${ic('pin')}${esc(zone(d.zone).label)}</span><span class="pill ${d.live ? 'live' : 'gold'} ds">${esc(d.status)}</span><div class="big-ic">${ic(d.icon)}</div></div>
         <div class="card-body"><h3>${esc(d.title)}</h3><p>${esc(d.overview)}</p>
-          <div class="card-foot"><div class="card-meta">${d.tracks.slice(0, 2).map(t => `<span class="pill">${esc(getTrack(t).title)}</span>`).join('')}</div><span class="explore">Details ${ic('arrow')}</span></div></div>
+          <div class="card-foot"><div class="card-meta">${d.tracks.slice(0, 2).map(t => `<span class="pill">${esc(getTrack(t).title)}</span>`).join('')}</div><span class="explore">${tr('Details')} ${ic('arrow')}</span></div></div>
       </button>`).join('')}</div>`;
 }
 
@@ -740,16 +748,16 @@ function renderTracks() {
   const f = state.trackFilter, levels = ['all', 'Beginner', 'Intermediate', 'Advanced', 'All levels'];
   const list = DATA.tracks.filter(t => f === 'all' || t.level === f);
   $('#tracksRoot').innerHTML = `${expTabs('tracks')}
-    <div class="view-head"><div><div class="eyebrow">${ic('tracks')} Cleared for Takeoff Academy</div><h2>Learning Tracks</h2><p>Six curated tracks — from first steps with AI agents to leading innovation programmes.</p></div>
-      <div class="chips">${levels.map(l => `<button class="chip${f === l ? ' active' : ''}" data-action="track-filter" data-filter="${l}">${l === 'all' ? 'All tracks' : esc(l)}</button>`).join('')}</div></div>
+    <div class="view-head"><div><div class="eyebrow">${ic('tracks')} ${tr('Cleared for Takeoff Academy')}</div><h2>${tr('Learning Tracks')}</h2><p>${tr('Six curated tracks — from first steps with AI agents to leading innovation programmes.')}</p></div>
+      <div class="chips">${levels.map(l => `<button class="chip${f === l ? ' active' : ''}" data-action="track-filter" data-filter="${l}">${l === 'all' ? tr('All tracks') : esc(tr(l))}</button>`).join('')}</div></div>
     <div class="grid grid-3">${list.map(t => { const i = DATA.tracks.indexOf(t); return `
       <button class="card tv-card" data-action="open-track" data-id="${t.id}">
         <div class="track-art">${artSVG(t.colors, i)}<div class="ta-ic">${ic(t.icon)}</div><div class="ta-n">0${i + 1}</div></div>
         <div class="card-body"><div class="card-meta">${levelPill(t.level)}<span class="small">${esc(t.duration)}</span></div><h3>${esc(t.title)}</h3><p>${esc(t.desc)}</p>
           <ul class="mod-list">${t.modules.slice(0, 3).map((m, k) => `<li><b>0${k + 1}</b>${esc(m)}</li>`).join('')}</ul>
-          <div class="card-foot"><span class="small">${t.modules.length} modules · ${CATALOG.courses.filter(c => c.tracks.includes(t.id)).length} courses</span><span class="explore">Explore track ${ic('arrow')}</span></div></div>
-      </button>`; }).join('') || '<div class="empty">No tracks at this level.</div>'}</div>
-    <div class="cta-banner"><div class="dialog-ic" style="margin:0">${ic('spark')}</div><div><h3>Not sure where to start?</h3><p>Answer three quick questions and Cleared for Takeoff will build a personalised Discover → Learn → Practice → Innovate journey.</p></div><button class="btn btn-gold" data-action="start-journey">${ic('journey')} Start Your AI Journey</button></div>`;
+          <div class="card-foot"><span class="small">${tr('{m} modules · {c} courses', { m: t.modules.length, c: CATALOG.courses.filter(c => c.tracks.includes(t.id)).length })}</span><span class="explore">${tr('Explore track')} ${ic('arrow')}</span></div></div>
+      </button>`; }).join('') || `<div class="empty">${tr('No tracks at this level.')}</div>`}</div>
+    <div class="cta-banner"><div class="dialog-ic" style="margin:0">${ic('spark')}</div><div><h3>${tr('Not sure where to start?')}</h3><p>${tr('Answer three quick questions and Cleared for Takeoff will build a personalised Discover → Learn → Practice → Innovate journey.')}</p></div><button class="btn btn-gold" data-action="start-journey">${ic('journey')} ${tr('Start Your AI Journey')}</button></div>`;
 }
 
 /* =====================================================================
@@ -757,45 +765,45 @@ function renderTracks() {
    ===================================================================== */
 function renderSessions() {
   $('#sessionsRoot').innerHTML = `${expTabs('sessions')}
-    <div class="view-head"><div><div class="eyebrow">${ic('live')} GDRFA booth programme</div><h2>Live Sessions</h2><p>Talks, showcases and hands-on workshops running throughout the day. Tap a session for details.</p></div>${sample(DATA.meta.sessionsAreSample, ic('alert') + ' Sample schedule')}</div>
+    <div class="view-head"><div><div class="eyebrow">${ic('live')} ${tr('GDRFA booth programme')}</div><h2>${tr('Live Sessions')}</h2><p>${tr('Talks, showcases and hands-on workshops running throughout the day. Tap a session for details.')}</p></div>${sample(DATA.meta.sessionsAreSample, ic('alert') + ' ' + tr('Sample schedule'))}</div>
     <div class="sessions-layout"><div><div class="chips" id="sessChips" style="margin-bottom:1rem"></div><div class="timeline" id="sessList"></div></div>
-    <div><div class="glass map"><div class="panel-head">${ic('pin')}<h3>BOOTH MAP</h3><span class="spacer"></span><span class="small">Tap a zone to filter</span></div><div id="boothMap"></div><div class="zone-legend" id="zoneLegend"></div></div>
-    <div class="glass side-box" style="margin-top:1rem;padding:1.1rem"><div class="panel-head" style="margin-bottom:.4rem">${ic('passport')}<h3 style="font-size:1.1rem">PASSPORT TIP</h3></div><p class="small" style="font-size:.82rem;line-height:1.5;color:var(--text-2)">Open a session and tap <b>“I attended this session”</b> to add it to your Agentic AI Passport.</p></div></div></div>`;
+    <div><div class="glass map"><div class="panel-head">${ic('pin')}<h3>${tr('BOOTH MAP')}</h3><span class="spacer"></span><span class="small">${tr('Tap a zone to filter')}</span></div><div id="boothMap"></div><div class="zone-legend" id="zoneLegend"></div></div>
+    <div class="glass side-box" style="margin-top:1rem;padding:1.1rem"><div class="panel-head" style="margin-bottom:.4rem">${ic('passport')}<h3 style="font-size:1.1rem">${tr('PASSPORT TIP')}</h3></div><p class="small" style="font-size:.82rem;line-height:1.5;color:var(--text-2)">${tr('Open a session and tap “I attended this session” to add it to your Agentic AI Passport.')}</p></div></div></div>`;
   renderSessionList();
 }
 function renderSessionList() {
   if (!$('#sessList')) return;
   const f = state.sessionFilter, zf = state.zoneFilter, ss = sessionsWithStatus();
-  const opts = [['all', 'All sessions'], ['live', 'Live now'], ['upcoming', 'Upcoming'], ['done', 'Completed']];
-  $('#sessChips').innerHTML = opts.map(([id, l]) => `<button class="chip${f === id ? ' active' : ''}" data-action="session-filter" data-filter="${id}">${esc(l)}</button>`).join('') + (zf ? `<button class="chip active" data-action="zone-filter" data-zone="${zf}">${esc(zone(zf).label)} ✕</button>` : '');
+  const opts = [['all', _t('All sessions')], ['live', _t('Live now')], ['upcoming', _t('Upcoming')], ['done', _t('Completed')]];
+  $('#sessChips').innerHTML = opts.map(([id, l]) => `<button class="chip${f === id ? ' active' : ''}" data-action="session-filter" data-filter="${id}">${esc(tr(l))}</button>`).join('') + (zf ? `<button class="chip active" data-action="zone-filter" data-zone="${zf}">${esc(zone(zf).label)} ✕</button>` : '');
   const list = ss.filter(s => (f === 'all' || s.status === f) && (!zf || s.zone === zf));
   $('#sessList').innerHTML = list.map(s => `
     <button class="tl-item ${s.status}" data-action="open-session" data-id="${s.id}">
-      <div class="tl-time">${fmtTime(s.start)}<small>to ${fmtTime(s.end)}</small></div>
-      <div><div class="card-meta">${statusPill(s)}<span class="pill">${esc(s.type)}</span>${state.attended === s.id ? '<span class="pill gold">✓ Attended</span>' : ''}</div><h4>${esc(s.title)}</h4><div class="sess-meta"><span>${ic('pin')}${esc(zone(s.zone).label)}</span><span>${ic('users')}${esc(s.host)}${DATA.meta.sessionsAreSample ? ' (sample)' : ''}</span></div></div>
-      <span class="explore">Details ${ic('arrow')}</span>
-    </button>`).join('') || '<div class="empty">No sessions match this filter.</div>';
+      <div class="tl-time">${fmtTime(s.start)}<small>${tr('to {t}', { t: fmtTime(s.end) })}</small></div>
+      <div><div class="card-meta">${statusPill(s)}<span class="pill">${esc(tr(s.type))}</span>${state.attended === s.id ? `<span class="pill gold">✓ ${tr('Attended')}</span>` : ''}</div><h4>${esc(s.title)}</h4><div class="sess-meta"><span>${ic('pin')}${esc(zone(s.zone).label)}</span><span>${ic('users')}${esc(s.host)}${DATA.meta.sessionsAreSample ? ' ' + tr('(sample)') : ''}</span></div></div>
+      <span class="explore">${tr('Details')} ${ic('arrow')}</span>
+    </button>`).join('') || `<div class="empty">${tr('No sessions match this filter.')}</div>`;
   const zs = DATA.booth.zones;
-  $('#boothMap').innerHTML = `<svg viewBox="0 0 480 300" role="img" aria-label="Booth map">
+  $('#boothMap').innerHTML = `<svg viewBox="0 0 480 300" role="img" aria-label="${esc(tr('Booth map'))}" direction="ltr" style="direction:ltr">
     <rect x="4" y="4" width="472" height="292" rx="14" fill="rgba(46,139,255,.04)" stroke="rgba(96,170,255,.25)" stroke-dasharray="4 6"/>
     ${zs.map(z => { const on = zf === z.id, cnt = ss.filter(s => s.zone === z.id && s.status !== 'done').length, demos = DATA.demos.filter(d => d.zone === z.id); return `<g class="zone-shape" data-action="zone-filter" data-zone="${z.id}" role="button" tabindex="0" aria-label="${esc(z.label)}">
       <rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="10" fill="${on ? 'rgba(46,139,255,.35)' : 'rgba(46,139,255,.1)'}" stroke="${on ? '#46d2ff' : 'rgba(96,170,255,.4)'}"/>
-      <text x="${z.x + 12}" y="${z.y + 26}" fill="#eaf3ff" font-family="Rajdhani,Segoe UI,sans-serif" font-weight="700" font-size="${z.id === 'main' ? 20 : 17}">${esc(z.id === 'main' ? 'MAIN STAGE' : 'ZONE ' + z.short)}</text>
-      <text x="${z.x + 12}" y="${z.y + 46}" fill="#a9bfdf" font-family="Inter,Segoe UI,sans-serif" font-size="11">${esc(z.label.split('· ')[1] || 'Talks & panels')}</text>
+      <text x="${z.x + 12}" y="${z.y + 26}" fill="#eaf3ff" font-family="${I18N.lang === 'ar' ? 'Noto Kufi Arabic,' : ''}Rajdhani,Segoe UI,sans-serif" font-weight="700" font-size="${z.id === 'main' ? 20 : 17}">${esc(z.id === 'main' ? tr('MAIN STAGE') : tr('ZONE {z}', { z: z.short }))}</text>
+      <text x="${z.x + 12}" y="${z.y + 46}" fill="#a9bfdf" font-family="${I18N.lang === 'ar' ? 'Noto Sans Arabic,' : ''}Inter,Segoe UI,sans-serif" font-size="11">${esc(z.label.split('· ')[1] || tr('Talks & panels'))}</text>
       ${demos.map((d, k) => `<circle cx="${z.x + 20 + k * 22}" cy="${z.y + z.h - 22}" r="7" fill="#d8b15b"/>`).join('')}
-      ${cnt ? `<text x="${z.x + z.w - 12}" y="${z.y + z.h - 16}" text-anchor="end" fill="#3be3a1" font-family="Inter,sans-serif" font-size="11" font-weight="600">${cnt} session${cnt > 1 ? 's' : ''}</text>` : ''}</g>`; }).join('')}
+      ${cnt ? `<text x="${z.x + z.w - 12}" y="${z.y + z.h - 16}" text-anchor="end" fill="#3be3a1" font-family="Inter,sans-serif" font-size="11" font-weight="600">${cnt > 1 ? tr('{n} sessions', { n: cnt }) : tr('1 session')}</text>` : ''}</g>`; }).join('')}
     <g><circle cx="455" cy="282" r="0"/></g></svg>`;
-  $('#zoneLegend').innerHTML = `<div class="small" style="display:flex;gap:1rem;flex-wrap:wrap"><span><span style="display:inline-block;width:.6rem;height:.6rem;border-radius:50%;background:#d8b15b"></span> Demo station</span><span style="color:var(--live)">● Sessions remaining today</span></div>` +
-    zs.filter(z => DATA.demos.some(d => d.zone === z.id)).map(z => `<div class="demo-chips"><span class="small" style="min-width:7.5rem">${esc(z.label)}</span>${DATA.demos.filter(d => d.zone === z.id).map(d => `<button class="demo-chip" data-action="open-demo" data-id="${d.id}">${ic(d.icon)}${esc(DEMO_SHORT[d.id])}</button>`).join('')}</div>`).join('');
+  $('#zoneLegend').innerHTML = `<div class="small" style="display:flex;gap:1rem;flex-wrap:wrap"><span><span style="display:inline-block;width:.6rem;height:.6rem;border-radius:50%;background:#d8b15b"></span> ${tr('Demo station')}</span><span style="color:var(--live)">● ${tr('Sessions remaining today')}</span></div>` +
+    zs.filter(z => DATA.demos.some(d => d.zone === z.id)).map(z => `<div class="demo-chips"><span class="small" style="min-width:7.5rem">${esc(z.label)}</span>${DATA.demos.filter(d => d.zone === z.id).map(d => `<button class="demo-chip" data-action="open-demo" data-id="${d.id}">${ic(d.icon)}${esc(tr(DEMO_SHORT[d.id]))}</button>`).join('')}</div>`).join('');
 }
 
 /* =====================================================================
    ASK VIEW (side panel; chat itself is a shared component)
    ===================================================================== */
 function renderAskSide() {
-  $('#askSide').innerHTML = DATA.askTopics.map(g => `<div class="glass topic-group"><h4>${ic(g.icon)}${esc(g.title)}</h4>${g.qs.map(q => `<button class="topic-q" data-action="ask" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>`).join('') +
-    `<div class="glass topic-group"><h4>${ic('info')}How this assistant works</h4><p class="small" style="font-size:.8rem;line-height:1.55;color:var(--text-2)">This booth assistant answers from the content and course catalogue in this application using transparent matching rules, so it also works without a connection. Personalised journeys use an AI course recommender. No conversation is stored.</p></div>` +
-    `<div class="glass topic-group ask-journey"><h4>${ic('journey')}My AI Journey</h4><p class="small">Build your journey in under 2 minutes and take home a personalised Agentic AI Passport.</p>${state.journey ? `<button class="btn btn-gold btn-sm" data-action="nav" data-view="journey">View my journey</button>` : `<button class="btn btn-gold btn-sm" data-action="start-journey">Start My AI Journey</button>`}</div>`;
+  $('#askSide').innerHTML = DATA.askTopics.map(g => `<div class="glass topic-group"><h4>${ic(g.icon)}${esc(g.title)}</h4>${g.qs.map(q => `<button class="topic-q" data-action="ask" data-q="${esc(q)}">${esc(tr(q))}</button>`).join('')}</div>`).join('') +
+    `<div class="glass topic-group"><h4>${ic('info')}${tr('How this assistant works')}</h4><p class="small" style="font-size:.8rem;line-height:1.55;color:var(--text-2)">${tr('This booth assistant answers from the content and course catalogue in this application using transparent matching rules, so it also works without a connection. Personalised journeys use an AI course recommender. No conversation is stored.')}</p></div>` +
+    `<div class="glass topic-group ask-journey"><h4>${ic('journey')}${tr('My AI Journey')}</h4><p class="small">${tr('Build your journey in under 2 minutes and take home a personalised Agentic AI Passport.')}</p>${state.journey ? `<button class="btn btn-gold btn-sm" data-action="nav" data-view="journey">${tr('View my journey')}</button>` : `<button class="btn btn-gold btn-sm" data-action="start-journey">${tr('Start My AI Journey')}</button>`}</div>`;
 }
 
 /* =====================================================================
@@ -803,10 +811,10 @@ function renderAskSide() {
    ===================================================================== */
 const blocksHTML = blocks => blocks.map(([t, v]) => t === 'p' ? `<p>${esc(v)}</p>` : t === 'ul' ? `<ul>${v.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="note">${esc(v)}</p>`).join('');
 function renderAbout() {
-  const sections = [['agent', 'What is Agentic AI?', R.agentic()], ['layers', 'Generative AI and Agentic AI', R.genVsAgentic()], ['gov', 'GDRFA at GITEX', R.about()], ['shield', 'Your privacy at this kiosk', R.privacy()]];
-  $('#aboutRoot').innerHTML = `<div class="xp">${pageHead('About', 'About Agentic AI', 'Your interactive guide to the Agentic AI future.')}
-    <div class="ab-grid">${sections.map(([i, t, r]) => `<section class="ab-card"><h3><span class="xp-ic">${ic(i)}</span>${esc(t)}</h3>${blocksHTML(r.blocks)}${i === 'shield' ? `<button class="btn btn-ghost btn-sm ab-reset" data-action="reset">${ic('reset')} Reset experience</button>` : ''}</section>`).join('')}</div>
-    <div class="ab-actions"><button class="btn btn-gold" data-action="nav" data-view="ask">${ic('chat')} Talk to AI</button><button class="btn btn-ghost" data-action="nav" data-view="experiences">${ic('stack')} Explore Experiences</button></div></div>`;
+  const sections = [['agent', tr('What is Agentic AI?'), R.agentic()], ['layers', tr('Generative AI and Agentic AI'), R.genVsAgentic()], ['gov', tr('GDRFA at GITEX'), R.about()], ['shield', tr('Your privacy at this kiosk'), R.privacy()]];
+  $('#aboutRoot').innerHTML = `<div class="xp">${pageHead(tr('About'), tr('About Agentic AI'), tr('Your interactive guide to the Agentic AI future.'))}
+    <div class="ab-grid">${sections.map(([i, t, r]) => `<section class="ab-card"><h3><span class="xp-ic">${ic(i)}</span>${esc(t)}</h3>${blocksHTML(r.blocks)}${i === 'shield' ? `<button class="btn btn-ghost btn-sm ab-reset" data-action="reset">${ic('reset')} ${tr('Reset experience')}</button>` : ''}</section>`).join('')}</div>
+    <div class="ab-actions"><button class="btn btn-gold" data-action="nav" data-view="ask">${ic('chat')} ${tr('Talk to AI')}</button><button class="btn btn-ghost" data-action="nav" data-view="experiences">${ic('stack')} ${tr('Explore Experiences')}</button></div></div>`;
 }
 
 /* =====================================================================
@@ -816,7 +824,7 @@ let lastFocus = null;
 function showOverlay(id) { const o = $('#' + id); if (!o.classList.contains('open')) { lastFocus = document.activeElement; o.classList.add('open'); } const f = o.querySelector('.modal-close, [data-autofocus], .btn-primary, .btn'); if (f) setTimeout(() => f.focus({ preventScroll: true }), 30); }
 function hideOverlay(id) { const o = $('#' + id); if (!o.classList.contains('open')) return; o.classList.remove('open'); if (lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true }); }
 function openModal({ colors, icon, title, labels = '', body, single = false }) {
-  $('#modalBox').innerHTML = `<button class="icon-btn modal-close" data-action="close-modal" aria-label="Close">${ic('close')}</button>
+  $('#modalBox').innerHTML = `<button class="icon-btn modal-close" data-action="close-modal" aria-label="${esc(tr('Close'))}">${ic('close')}</button>
     <div class="modal-art">${artSVG(colors, 2, 'bg')}<div class="ma-content"><div class="ma-ic">${ic(icon)}</div><div><div class="card-meta" style="margin-bottom:.55rem">${labels}</div><h2 id="modalTitle">${esc(title)}</h2></div></div></div>
     <div class="modal-body${single ? ' single' : ''}">${body}</div>`;
   showOverlay('modal');
@@ -826,31 +834,31 @@ function openTrack(id) {
   const t = getTrack(id); if (!t) return;
   const demos = DATA.demos.filter(d => d.tracks.includes(id)), sess = sessionsWithStatus().filter(s => s.track === id);
   openModal({ colors: t.colors, icon: t.icon, title: t.title, labels: `${levelPill(t.level)}<span class="pill">${esc(t.duration)}</span>`, body: `
-    <div><section><h4>Overview</h4><p>${esc(t.desc)}</p></section>
-      <section><h4>Modules</h4><ul class="steps-list">${t.modules.map(m => `<li>${esc(m)}</li>`).join('')}</ul></section>
-      <section><h4>You will be able to</h4><ul>${t.outcomes.map(o => `<li>${esc(o)}</li>`).join('')}</ul></section>
+    <div><section><h4>${tr('Overview')}</h4><p>${esc(t.desc)}</p></section>
+      <section><h4>${tr('Modules')}</h4><ul class="steps-list">${t.modules.map(m => `<li>${esc(m)}</li>`).join('')}</ul></section>
+      <section><h4>${tr('You will be able to')}</h4><ul>${t.outcomes.map(o => `<li>${esc(o)}</li>`).join('')}</ul></section>
 </div>
-    <div><div class="side-box"><dl class="kv"><dt>Level</dt><dd>${esc(t.level)}</dd><dt>Duration</dt><dd>${esc(t.duration)}</dd><dt>Best for</dt><dd>${t.interests.map(i => esc(byId(DATA.interests, i).label)).join(', ')}</dd></dl></div>
-      ${demos.length ? `<div class="side-box"><h4>Related demos</h4><div class="q-list">${demos.map(d => `<button class="chip" data-action="open-demo" data-id="${d.id}">${ic(d.icon)}${esc(d.title)}</button>`).join('')}</div></div>` : ''}
-      ${sess.length ? `<div class="side-box"><h4>Related sessions</h4><div class="q-list">${sess.map(s => `<button class="chip" data-action="open-session" data-id="${s.id}">${ic('sessions')}${fmtTime(s.start)} · ${esc(s.title)}</button>`).join('')}</div></div>` : ''}
-      <div class="modal-actions"><button class="btn btn-gold" data-action="personalize" data-id="${t.id}">${ic('journey')} Personalize My Journey</button><button class="btn btn-ghost" data-action="ask" data-q="Tell me about the ${esc(t.title)} track">${ic('ask')} Ask Cleared for Takeoff</button></div></div>
-    <div class="full"><section><h4>Recommended courses by level</h4>${coursesByLevelHTML(t.id)}</section></div>` });
+    <div><div class="side-box"><dl class="kv"><dt>${tr('Level')}</dt><dd>${esc(tr(t.level))}</dd><dt>${tr('Duration')}</dt><dd>${esc(t.duration)}</dd><dt>${tr('Best for')}</dt><dd>${t.interests.map(i => esc(byId(DATA.interests, i).label)).join(tr(', '))}</dd></dl></div>
+      ${demos.length ? `<div class="side-box"><h4>${tr('Related demos')}</h4><div class="q-list">${demos.map(d => `<button class="chip" data-action="open-demo" data-id="${d.id}">${ic(d.icon)}${esc(d.title)}</button>`).join('')}</div></div>` : ''}
+      ${sess.length ? `<div class="side-box"><h4>${tr('Related sessions')}</h4><div class="q-list">${sess.map(s => `<button class="chip" data-action="open-session" data-id="${s.id}">${ic('sessions')}${fmtTime(s.start)} · ${esc(s.title)}</button>`).join('')}</div></div>` : ''}
+      <div class="modal-actions"><button class="btn btn-gold" data-action="personalize" data-id="${t.id}">${ic('journey')} ${tr('Personalize My Journey')}</button><button class="btn btn-ghost" data-action="ask" data-q="Tell me about the ${esc(byId(DATA_EN.tracks, t.id).title)} track" data-label="${esc(tr('Tell me about the {t} track', { t: t.title }))}">${ic('ask')} ${tr('Ask Cleared for Takeoff')}</button></div></div>
+    <div class="full"><section><h4>${tr('Recommended courses by level')}</h4>${coursesByLevelHTML(t.id)}</section></div>` });
 }
 function coursesByLevelHTML(trackId) {
   return `<div class="level-cols">${RULES.LEVELS.map(l => {
     const list = CATALOG.courses.filter(c => c.tracks.includes(trackId) && c.level === l);
-    return `<div class="level-col"><div class="level-col-head">${LEVEL_LABEL[l]}</div>${list.length ? list.map(courseRow).join('') : '<p class="small">See the neighbouring levels.</p>'}</div>`;
+    return `<div class="level-col"><div class="level-col-head">${tr(LEVEL_LABEL[l])}</div>${list.length ? list.map(courseRow).join('') : `<p class="small">${tr('See the neighbouring levels.')}</p>`}</div>`;
   }).join('')}</div>`;
 }
 function openCourse(id) {
   const c = getCourse(id); if (!c) return;
   const tracks = c.tracks.map(getTrack).filter(Boolean);
-  openModal({ colors: (tracks[0] || DATA.tracks[0]).colors, icon: 'tracks', title: c.title, labels: `<span class="pill${c.level === 'advanced' ? ' gold' : ''}">${LEVEL_LABEL[c.level]}</span><span class="pill">${esc(c.provider)}</span>`, body: `
-    <div><section><h4>About this course</h4><p>${esc(c.summary)}</p></section>
-      <section><h4>Details</h4><dl class="kv"><dt>Provider</dt><dd>${esc(c.provider)}</dd>${c.category ? `<dt>Category</dt><dd>${esc(c.category)}</dd>` : ''}<dt>Level</dt><dd>${LEVEL_LABEL[c.level]}${'providerLevel' in c && c.providerLevel !== LEVEL_LABEL[c.level] ? ` <span class="small">(${c.providerLevel ? `${esc(c.provider)} lists it as ${esc(c.providerLevel)}` : `no level stated by ${esc(c.provider)}`})</span>` : ''}</dd><dt>Format</dt><dd>${esc(c.format)}</dd><dt>Effort</dt><dd>≈ ${fmtHours(c.hours)}</dd><dt>Access</dt><dd>${COST_LABEL[c.cost] || 'See provider'}</dd>${c.verifiedOn ? `<dt>Checked</dt><dd>${esc(new Date(c.verifiedOn + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }))}</dd>` : ''}</dl></section>
-      <section><h4>Part of these tracks</h4><div class="chips">${relTrackChips(c.tracks)}</div></section></div>
-    <div><div class="side-box course-qr"><h4>Open on your phone</h4><canvas id="courseQr" width="300" height="300" aria-label="QR code linking to ${esc(c.title)}"></canvas><p class="small">${esc(c.url.replace(/^https?:\/\//, ''))}</p><a class="btn btn-ghost btn-sm" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">${ic('arrow')} Open the course page</a></div>
-      <p class="disclaimer">${ic('info')}<span>External course by ${esc(c.provider)}. Content, pricing and certificates are set by the provider and may change; GDRFA does not operate this course.</span></p></div>` });
+  openModal({ colors: (tracks[0] || DATA.tracks[0]).colors, icon: 'tracks', title: c.title, labels: `<span class="pill${c.level === 'advanced' ? ' gold' : ''}">${tr(LEVEL_LABEL[c.level])}</span><span class="pill">${esc(c.provider)}</span>`, body: `
+    <div><section><h4>${tr('About this course')}</h4><p>${esc(c.summary)}</p>${I18N.lang === 'ar' ? `<p class="small">${tr('The course is taught in English unless its description says otherwise.')}</p>` : ''}</section>
+      <section><h4>${tr('Details')}</h4><dl class="kv"><dt>${tr('Provider')}</dt><dd>${esc(c.provider)}</dd>${c.category ? `<dt>${tr('Category')}</dt><dd>${esc(tr(c.category))}</dd>` : ''}<dt>${tr('Level')}</dt><dd>${tr(LEVEL_LABEL[c.level])}${'providerLevel' in c && c.providerLevel !== LEVEL_LABEL[c.level] ? ` <span class="small">(${c.providerLevel ? tr('{p} lists it as {l}', { p: esc(c.provider), l: esc(tr(c.providerLevel)) }) : tr('no level stated by {p}', { p: esc(c.provider) })})</span>` : ''}</dd><dt>${tr('Format')}</dt><dd>${esc(tr(c.format))}</dd><dt>${tr('Effort')}</dt><dd>≈ ${fmtHours(c.hours)}</dd><dt>${tr('Access')}</dt><dd>${tr(COST_LABEL[c.cost] || 'See provider')}</dd>${c.verifiedOn ? `<dt>${tr('Checked')}</dt><dd>${esc(new Date(c.verifiedOn + 'T12:00:00Z').toLocaleDateString(LOCALE(), { day: 'numeric', month: 'short', year: 'numeric' }))}</dd>` : ''}</dl></section>
+      <section><h4>${tr('Part of these tracks')}</h4><div class="chips">${relTrackChips(c.tracks)}</div></section></div>
+    <div><div class="side-box course-qr"><h4>${tr('Open on your phone')}</h4><canvas id="courseQr" width="300" height="300" aria-label="${esc(tr('QR code linking to {t}', { t: c.title }))}"></canvas><p class="small" dir="ltr">${esc(c.url.replace(/^https?:\/\//, ''))}</p><a class="btn btn-ghost btn-sm" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">${ic('arrow')} ${tr('Open the course page')}</a></div>
+      <p class="disclaimer">${ic('info')}<span>${tr('External course by {p}. Content, pricing and certificates are set by the provider and may change; GDRFA does not operate this course.', { p: esc(c.provider) })}</span></p></div>` });
   const cv = $('#courseQr');
   try { const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 300, 300); QR.draw(x, QR.encode(c.url), 0, 0, 300); }
   catch (e) { cv.replaceWith(Object.assign(document.createElement('p'), { textContent: c.url })); }
@@ -858,44 +866,44 @@ function openCourse(id) {
 function openDemo(id) {
   const d = getDemo(id); if (!d) return;
   openModal({ colors: d.colors, icon: d.icon, title: d.title, labels: `<span class="pill ${d.live ? 'live' : 'gold'}">${esc(d.status)}</span><span class="pill">${ic('pin')}${esc(zone(d.zone).label)}</span>`, body: `
-    <div><section><h4>Overview</h4><p>${esc(d.overview)}</p></section>
-      <section><h4>Business challenge</h4><p>${esc(d.challenge)}</p></section>
-      <section><h4>How the technology works</h4><ul class="steps-list">${d.how.map(h => `<li>${esc(h)}</li>`).join('')}</ul></section>
-      <section><h4>Potential benefits</h4><ul>${d.benefits.map(b => `<li>${esc(b)}</li>`).join('')}</ul></section></div>
-    <div><div class="side-box"><dl class="kv"><dt>Location</dt><dd>${esc(zone(d.zone).label)}</dd><dt>Format</dt><dd>${esc(d.status)}</dd></dl></div>
-      <div class="side-box"><h4>Related learning tracks</h4><div class="q-list">${relTrackChips(d.tracks)}</div></div>
-      <div class="side-box"><h4>Ask the AI assistant</h4><div class="q-list">${d.questions.map(q => `<button class="chip" data-action="ask" data-q="${esc(q)}">${ic('ask')}${esc(q)}</button>`).join('')}</div></div>
-      ${d.live || DATA.meta.demosAreIllustrative ? `<p class="disclaimer">${ic('alert')}<span>${d.live ? 'Running at the booth now. Your name, email and photo never leave this kiosk; only your answers are used to recommend courses.' : 'Illustrative capability shown for demonstration and discussion. It does not necessarily represent a deployed GDRFA service.'}</span></p>` : ''}</div>` });
+    <div><section><h4>${tr('Overview')}</h4><p>${esc(d.overview)}</p></section>
+      <section><h4>${tr('Business challenge')}</h4><p>${esc(d.challenge)}</p></section>
+      <section><h4>${tr('How the technology works')}</h4><ul class="steps-list">${d.how.map(h => `<li>${esc(h)}</li>`).join('')}</ul></section>
+      <section><h4>${tr('Potential benefits')}</h4><ul>${d.benefits.map(b => `<li>${esc(b)}</li>`).join('')}</ul></section></div>
+    <div><div class="side-box"><dl class="kv"><dt>${tr('Location')}</dt><dd>${esc(zone(d.zone).label)}</dd><dt>${tr('Format')}</dt><dd>${esc(d.status)}</dd></dl></div>
+      <div class="side-box"><h4>${tr('Related learning tracks')}</h4><div class="q-list">${relTrackChips(d.tracks)}</div></div>
+      <div class="side-box"><h4>${tr('Ask the AI assistant')}</h4><div class="q-list">${d.questions.map(q => `<button class="chip" data-action="ask" data-q="${esc(q)}">${ic('ask')}${esc(tr(q))}</button>`).join('')}</div></div>
+      ${d.live || DATA.meta.demosAreIllustrative ? `<p class="disclaimer">${ic('alert')}<span>${d.live ? tr('Running at the booth now. Your name, email and photo never leave this kiosk; only your answers are used to recommend courses.') : tr('Illustrative capability shown for demonstration and discussion. It does not necessarily represent a deployed GDRFA service.')}</span></p>` : ''}</div>` });
 }
 function openSession(id) {
   const s = sessWithStatus(id); if (!s) return;
   const att = state.attended === s.id, d = getDemo(s.demo), t = getTrack(s.track);
-  openModal({ colors: t.colors, icon: 'sessions', title: s.title, labels: `${statusPill(s)}<span class="pill">${esc(s.type)}</span>${sample(DATA.meta.sessionsAreSample, 'Sample schedule')}`, body: `
-    <div><section><h4>About this session</h4><p>${esc(s.desc)}</p></section>
-      <section><h4>Agenda</h4><ul class="steps-list">${s.agenda.map(a => `<li>${esc(a)}</li>`).join('')}</ul></section>
-      <section><h4>Related</h4><div class="chips"><button class="chip" data-action="open-track" data-id="${t.id}">${ic(t.icon)}${esc(t.title)}</button><button class="chip" data-action="open-demo" data-id="${d.id}">${ic(d.icon)}${esc(d.title)}</button></div></section></div>
-    <div><div class="side-box"><dl class="kv"><dt>Time</dt><dd>${sessRange(s)}</dd><dt>Status</dt><dd>${s.status === 'live' ? 'Live now' : s.status === 'upcoming' ? `Starts in ${Math.max(1, Math.round((s.start - Date.now()) / 60000))} min` : 'Completed'}</dd><dt>Location</dt><dd>${esc(zone(s.zone).label)}</dd><dt>Host</dt><dd>${esc(s.host)}${DATA.meta.sessionsAreSample ? ' (sample)' : ''}</dd><dt>Format</dt><dd>${esc(s.type)} · ${s.mins} min</dd>${s.seats ? `<dt>Seats</dt><dd>${s.seats} per group</dd>` : ''}</dl></div>
-      <div class="modal-actions"><button class="btn ${att ? 'btn-ghost' : 'btn-gold'}" data-action="mark-attended" data-id="${s.id}">${ic('check')} ${att ? 'Attended — added to passport' : 'I attended this session'}</button><button class="btn btn-ghost" data-action="ask" data-q="Tell me about ${esc(s.title)}">${ic('ask')} Ask Cleared for Takeoff</button></div>
-      ${DATA.meta.sessionsAreSample ? `<p class="disclaimer">${ic('alert')}<span>Session times and hosts are sample data.</span></p>` : ''}</div>` });
+  openModal({ colors: t.colors, icon: 'sessions', title: s.title, labels: `${statusPill(s)}<span class="pill">${esc(tr(s.type))}</span>${sample(DATA.meta.sessionsAreSample, tr('Sample schedule'))}`, body: `
+    <div><section><h4>${tr('About this session')}</h4><p>${esc(s.desc)}</p></section>
+      <section><h4>${tr('Agenda')}</h4><ul class="steps-list">${s.agenda.map(a => `<li>${esc(a)}</li>`).join('')}</ul></section>
+      <section><h4>${tr('Related')}</h4><div class="chips"><button class="chip" data-action="open-track" data-id="${t.id}">${ic(t.icon)}${esc(t.title)}</button><button class="chip" data-action="open-demo" data-id="${d.id}">${ic(d.icon)}${esc(d.title)}</button></div></section></div>
+    <div><div class="side-box"><dl class="kv"><dt>${tr('Time')}</dt><dd>${sessRange(s)}</dd><dt>${tr('Status')}</dt><dd>${s.status === 'live' ? tr('Live now') : s.status === 'upcoming' ? tr('Starts in {m} min', { m: Math.max(1, Math.round((s.start - Date.now()) / 60000)) }) : tr('Completed')}</dd><dt>${tr('Location')}</dt><dd>${esc(zone(s.zone).label)}</dd><dt>${tr('Host')}</dt><dd>${esc(s.host)}${DATA.meta.sessionsAreSample ? ' ' + tr('(sample)') : ''}</dd><dt>${tr('Format')}</dt><dd>${esc(tr(s.type))} · ${tr('{m} min', { m: s.mins })}</dd>${s.seats ? `<dt>${tr('Seats')}</dt><dd>${tr('{n} per group', { n: s.seats })}</dd>` : ''}</dl></div>
+      <div class="modal-actions"><button class="btn ${att ? 'btn-ghost' : 'btn-gold'}" data-action="mark-attended" data-id="${s.id}">${ic('check')} ${att ? tr('Attended — added to passport') : tr('I attended this session')}</button><button class="btn btn-ghost" data-action="ask" data-q="Tell me about ${esc(byId(DATA_EN.sessions, s.id).title)}" data-label="${esc(tr('Tell me about {t}', { t: s.title }))}">${ic('ask')} ${tr('Ask Cleared for Takeoff')}</button></div>
+      ${DATA.meta.sessionsAreSample ? `<p class="disclaimer">${ic('alert')}<span>${tr('Session times and hosts are sample data.')}</span></p>` : ''}</div>` });
 }
 function openNews(id) {
   const n = getNews(id); if (!n) return; const t = getTrack(n.track);
-  openModal({ colors: CAT_COLORS[n.cat], icon: 'news', title: n.title, labels: `<span class="pill">${esc(CAT_LABEL[n.cat])}</span>${sample(DATA.meta.newsIsSample, 'Sample content · not live news')}`, body: `
-    <div><section><h4>Summary</h4><p>${esc(n.summary)}</p></section><section><h4>Key points</h4><ul>${n.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul></section></div>
-    <div><div class="side-box"><dl class="kv"><dt>Category</dt><dd>${esc(CAT_LABEL[n.cat])}</dd><dt>Published</dt><dd>${daysAgo(n.days)}</dd><dt>Reading</dt><dd>${n.mins} min</dd><dt>Source</dt><dd>Cleared for Takeoff Editorial</dd></dl></div>
-      <div class="side-box"><h4>Learn more</h4><div class="q-list"><button class="chip" data-action="open-track" data-id="${t.id}">${ic(t.icon)}${esc(t.title)}</button></div></div>
-      <div class="modal-actions"><button class="btn btn-ghost" data-action="ask" data-q="Tell me more about ${esc(n.title)}">${ic('ask')} Ask Cleared for Takeoff about this</button></div>
-      ${DATA.meta.newsIsSample ? `<p class="disclaimer">${ic('alert')}<span>Curated illustrative summary created for this prototype. It is not a live news article and has no external source link.</span></p>` : ''}</div>` });
+  openModal({ colors: CAT_COLORS[n.cat], icon: 'news', title: n.title, labels: `<span class="pill">${esc(tr(CAT_LABEL[n.cat]))}</span>${sample(DATA.meta.newsIsSample, tr('Sample content · not live news'))}`, body: `
+    <div><section><h4>${tr('Summary')}</h4><p>${esc(n.summary)}</p></section><section><h4>${tr('Key points')}</h4><ul>${n.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul></section></div>
+    <div><div class="side-box"><dl class="kv"><dt>${tr('Category')}</dt><dd>${esc(tr(CAT_LABEL[n.cat]))}</dd><dt>${tr('Published')}</dt><dd>${daysAgo(n.days)}</dd><dt>${tr('Reading')}</dt><dd>${tr('{m} min', { m: n.mins })}</dd><dt>${tr('Source')}</dt><dd>${tr('Cleared for Takeoff Editorial')}</dd></dl></div>
+      <div class="side-box"><h4>${tr('Learn more')}</h4><div class="q-list"><button class="chip" data-action="open-track" data-id="${t.id}">${ic(t.icon)}${esc(t.title)}</button></div></div>
+      <div class="modal-actions"><button class="btn btn-ghost" data-action="ask" data-q="Tell me more about ${esc(byId(DATA_EN.news, n.id).title)}" data-label="${esc(tr('Tell me more about {t}', { t: n.title }))}">${ic('ask')} ${tr('Ask Cleared for Takeoff about this')}</button></div>
+      ${DATA.meta.newsIsSample ? `<p class="disclaimer">${ic('alert')}<span>${tr('Curated illustrative summary created for this prototype. It is not a live news article and has no external source link.')}</span></p>` : ''}</div>` });
 }
 function openQRDest() {
   const p = state.passport, j = state.journey; if (!p || !j) return;
   const live = /^https?:/.test(p.qrText) && !p.qrText.startsWith('https://example.com');
-  openModal({ colors: ['#b8862b', '#46d2ff'], icon: 'qr', title: 'Your journey on your phone', labels: live ? '' : '<span class="demo-label">Offline preview</span>', single: true, body: `
-    <div class="phone"><div class="phone-screen"><div class="phone-bar">${ic('shield')}<span>${esc(p.qrText.split('#')[0])}</span></div>
-      <div class="phone-c"><div class="eyebrow">Cleared for Takeoff · My Journey</div><h4>${esc(j.primary.title)}</h4><p class="small" style="color:var(--text-2)">${esc(j.levelName)} level · ${esc(j.code)}</p>
+  openModal({ colors: ['#b8862b', '#46d2ff'], icon: 'qr', title: tr('Your journey on your phone'), labels: live ? '' : `<span class="demo-label">${tr('Offline preview')}</span>`, single: true, body: `
+    <div class="phone"><div class="phone-screen"><div class="phone-bar">${ic('shield')}<span dir="ltr">${esc(p.qrText.split('#')[0])}</span></div>
+      <div class="phone-c"><div class="eyebrow">${tr('Cleared for Takeoff · My Journey')}</div><h4>${esc(j.primary.title)}</h4><p class="small" style="color:var(--text-2)">${tr('{l} level', { l: esc(j.levelName) })} · ${esc(j.code)}</p>
       ${j.stages.map((s, i) => `<div class="pst"><span class="stage-num" style="width:1.6rem;height:1.6rem;font-size:.8rem">${i + 1}</span><div><b>${esc(s.label.toUpperCase())}</b>${s.courses.map(c => esc(c.title)).join(' · ')}</div></div>`).join('')}
       </div></div></div>
-    <p class="disclaimer" style="justify-content:center">${ic('info')}<span>${live ? 'Scanning the passport QR code opens this page on the visitor’s phone, with links to every recommended course.' : 'The page is opened from disk, so the QR code uses a placeholder address. Deploy the app (or set PUBLIC_BASE_URL) for working links.'} The link contains only the journey code, track, level and course codes — never a name, email or photo.</span></p>` });
+    <p class="disclaimer" style="justify-content:center">${ic('info')}<span>${live ? tr('Scanning the passport QR code opens this page on the visitor’s phone, with links to every recommended course.') : tr('The page is opened from disk, so the QR code uses a placeholder address. Deploy the app (or set PUBLIC_BASE_URL) for working links.')} ${tr('The link contains only the journey code, track, level and course codes — never a name, email or photo.')}</span></p>` });
 }
 
 /* =====================================================================
@@ -910,119 +918,152 @@ const TOPIC_TRACK = [[['agent', 'agents', 'agentic'], 'agentic'], [['security', 
 const detectRole = t => Object.keys(ROLE_WORDS).find(r => kw(t, ROLE_WORDS[r]));
 
 const R = {
-  welcome: () => ({ blocks: [P('Hello! Welcome to Agentic AI: Cleared for Takeoff — I’m your AI guide to the GDRFA booth. Ask me about Agentic AI, today’s sessions or the demos around you — or let me build your personalised learning journey.')], actions: [{ label: 'Start My AI Journey', action: 'start-journey', gold: true }] }),
-  greet: () => ({ blocks: [P('Hello and welcome to the GDRFA booth at GITEX! I can explain Agentic AI, show you today’s sessions and demos, recommend a learning track, or create your Agentic AI Passport.')], follow: DATA.defaultSuggestions }),
-  thanks: () => ({ blocks: [P('You’re welcome! Enjoy the booth — and don’t forget to collect your Agentic AI Passport before you leave.')], actions: [{ label: 'Create my passport', action: 'start-journey', gold: true }], follow: ['What sessions are happening today?', 'What demos are available at the GDRFA booth?'] }),
-  agentic: () => ({ blocks: [P('Agentic AI describes AI systems that can pursue a goal with a degree of autonomy. Instead of only answering a question, an agent plans the steps, uses tools and data, takes actions and checks the result — while people set the goals and stay in control.'),
-    UL(['Perceive — understand the request and its context', 'Plan — break the goal into steps', 'Act — use tools, systems and data', 'Reflect — check results and ask a human when unsure']),
-    P('In government, that could mean an assistant that not only explains a service, but also pre-checks an application and tells you exactly what is missing (illustrative example).')],
-    actions: [{ label: 'Agentic AI Foundations track', action: 'open-track', id: 'agentic' }, { label: 'See the Knowledge Assistant demo', action: 'open-demo', id: 'knowledge' }],
+  welcome: () => ({ blocks: [P(tr('Hello! Welcome to Agentic AI: Cleared for Takeoff — I’m your AI guide to the GDRFA booth. Ask me about Agentic AI, today’s sessions or the demos around you — or let me build your personalised learning journey.'))], actions: [{ label: tr('Start My AI Journey'), action: 'start-journey', gold: true }] }),
+  greet: () => ({ blocks: [P(tr('Hello and welcome to the GDRFA booth at GITEX! I can explain Agentic AI, show you today’s sessions and demos, recommend a learning track, or create your Agentic AI Passport.'))], follow: DATA.defaultSuggestions }),
+  thanks: () => ({ blocks: [P(tr('You’re welcome! Enjoy the booth — and don’t forget to collect your Agentic AI Passport before you leave.'))], actions: [{ label: tr('Create my passport'), action: 'start-journey', gold: true }], follow: ['What sessions are happening today?', 'What demos are available at the GDRFA booth?'] }),
+  agentic: () => ({ blocks: [P(tr('Agentic AI describes AI systems that can pursue a goal with a degree of autonomy. Instead of only answering a question, an agent plans the steps, uses tools and data, takes actions and checks the result — while people set the goals and stay in control.')),
+    UL([tr('Perceive — understand the request and its context'), tr('Plan — break the goal into steps'), tr('Act — use tools, systems and data'), tr('Reflect — check results and ask a human when unsure')]),
+    P(tr('In government, that could mean an assistant that not only explains a service, but also pre-checks an application and tells you exactly what is missing (illustrative example).'))],
+    actions: [{ label: tr('Agentic AI Foundations track'), action: 'open-track', id: 'agentic' }, { label: tr('See the Knowledge Assistant demo'), action: 'open-demo', id: 'knowledge' }],
     follow: ['How is Agentic AI different from Generative AI?', 'What demos are available at the GDRFA booth?', 'Which learning track is right for me?'] }),
-  genVsAgentic: () => ({ blocks: [P('Generative AI creates content — text, images or code — in response to a prompt. Agentic AI uses generative models as a building block and adds goals, planning, memory and tool use, so it can complete multi-step tasks.'),
-    UL(['Generative AI: answers and creates', 'Agentic AI: plans, acts and checks its own work', 'Both: need good data, clear guardrails and human oversight'])],
-    actions: [{ label: 'Agentic AI Foundations', action: 'open-track', id: 'agentic' }], follow: ['What is Agentic AI?', 'Can I build my own AI agent at the booth?', 'What are the latest AI developments in government?'] }),
+  genVsAgentic: () => ({ blocks: [P(tr('Generative AI creates content — text, images or code — in response to a prompt. Agentic AI uses generative models as a building block and adds goals, planning, memory and tool use, so it can complete multi-step tasks.')),
+    UL([tr('Generative AI: answers and creates'), tr('Agentic AI: plans, acts and checks its own work'), tr('Both: need good data, clear guardrails and human oversight')])],
+    actions: [{ label: getTrack('agentic').title, action: 'open-track', id: 'agentic' }], follow: ['What is Agentic AI?', 'Can I build my own AI agent at the booth?', 'What are the latest AI developments in government?'] }),
   news(t) {
     const map = [[['government', 'public', 'gov'], 'gov'], [['research', 'study', 'studies', 'publication', 'publications', 'paper', 'papers'], 'research'], [['event', 'events', 'conference', 'conferences', 'gitex'], 'events'], [['emerging', 'future', 'quantum', 'twin', 'twins', 'edge'], 'emerging'], [['agentic', 'agent', 'agents'], 'agentic']];
     const cat = (map.find(([k]) => kw(t, k)) || [])[1];
     const items = DATA.news.filter(n => !cat || n.cat === cat).sort((a, b) => a.days - b.days).slice(0, 3);
-    return { blocks: [P(cat ? `Here are the latest ${CAT_LABEL[cat]} highlights from the Cleared for Takeoff feed:` : 'Here are the latest highlights from the Cleared for Takeoff feed:'), UL(items.map(n => `${n.title} — ${n.summary.split('. ')[0].replace(/\.$/, '')}.`)), ...(DATA.meta.newsIsSample ? [NOTE('Curated sample content — not live news.')] : [])],
-      actions: [{ label: 'Open Latest AI News', action: 'nav', view: 'news' }, { label: 'Read: ' + items[0].title.slice(0, 38) + '…', action: 'open-news', id: items[0].id }],
+    return { blocks: [P(cat ? tr('Here are the latest {c} highlights from the Cleared for Takeoff feed:', { c: tr(CAT_LABEL[cat]) }) : tr('Here are the latest highlights from the Cleared for Takeoff feed:')), UL(items.map(n => `${n.title} — ${firstSentence(n.summary)}`)), ...(DATA.meta.newsIsSample ? [NOTE(tr('Curated sample content — not live news.'))] : [])],
+      actions: [{ label: tr('Open Latest AI News'), action: 'nav', view: 'news' }, { label: tr('Read: {t}', { t: items[0].title.slice(0, 38) + '…' }), action: 'open-news', id: items[0].id }],
       follow: ['What is Agentic AI?', 'What demos are available at the GDRFA booth?', 'Which learning track is right for me?'] };
   },
-  demos: () => ({ blocks: [P('There are six experiences around the GDRFA booth:'), UL(DATA.demos.map(d => `${d.title} — ${zone(d.zone).label} · ${d.status}`)), ...(DATA.meta.demosAreIllustrative ? [NOTE('Illustrative capabilities for demonstration; not all are deployed GDRFA services.')] : [])],
-    actions: [{ label: 'Explore Demos', action: 'nav', view: 'demos' }, { label: 'Open Knowledge Assistant', action: 'open-demo', id: 'knowledge' }],
+  demos: () => ({ blocks: [P(tr('There are six experiences around the GDRFA booth:')), UL(DATA.demos.map(d => `${d.title} — ${zone(d.zone).label} · ${d.status}`)), ...(DATA.meta.demosAreIllustrative ? [NOTE(tr('Illustrative capabilities for demonstration; not all are deployed GDRFA services.'))] : [])],
+    actions: [{ label: tr('Explore Demos'), action: 'nav', view: 'demos' }, { label: tr('Open Knowledge Assistant'), action: 'open-demo', id: 'knowledge' }],
     follow: ['How does the knowledge assistant avoid wrong answers?', 'How is privacy protected in the border experience?', 'Where is the Innovation Studio?'] }),
   sessions(t) {
     const ss = sessionsWithStatus(), types = ['workshop', 'keynote', 'panel', 'talk', 'showcase'], ty = types.find(x => kw(t, [x, x + 's']));
     const list = ty ? ss.filter(s => s.type.toLowerCase() === ty) : ss;
     const live = list.find(s => s.status === 'live'), up = list.filter(s => s.status === 'upcoming').slice(0, 3), blocks = [];
-    if (live) blocks.push(P(`Live now: “${live.title}” — ${sessRange(live)} at ${zone(live.zone).label}.`)); else if (ty) blocks.push(P(`No ${ty} is running right now.`));
-    if (up.length) blocks.push(P(ty ? `Upcoming ${ty}s:` : 'Coming up next:'), UL(up.map(s => `${fmtTime(s.start)} · ${s.title} — ${zone(s.zone).label}`)));
-    if (!live && !up.length) blocks.push(P(`All ${ty || 'session'}s have finished for today — but every demo is still open to explore.`));
-    if (DATA.meta.sessionsAreSample) blocks.push(NOTE('Sample schedule.'));
+    if (live) blocks.push(P(tr('Live now: “{t}” — {r} at {z}.', { t: live.title, r: sessRange(live), z: zone(live.zone).label }))); else if (ty) blocks.push(P(tr('No {ty} is running right now.', { ty: tr(ty) })));
+    if (up.length) blocks.push(P(ty ? tr('Upcoming {ty}s:', { ty: tr(ty) }) : tr('Coming up next:')), UL(up.map(s => `${fmtTime(s.start)} · ${s.title} — ${zone(s.zone).label}`)));
+    if (!live && !up.length) blocks.push(P(ty ? tr('All {ty}s have finished for today — but every demo is still open to explore.', { ty: tr(ty) }) : tr('All sessions have finished for today — but every demo is still open to explore.')));
+    if (DATA.meta.sessionsAreSample) blocks.push(NOTE(tr('Sample schedule.')));
     const first = up[0] || live;
-    return { blocks, actions: [{ label: 'Open Live Sessions', action: 'nav', view: 'sessions' }, ...(first ? [{ label: 'Details: ' + first.title.slice(0, 30) + (first.title.length > 30 ? '…' : ''), action: 'open-session', id: first.id }] : [])],
-      follow: [first ? 'Tell me about ' + first.title : 'What demos are available at the GDRFA booth?', 'When is the next workshop?', 'Which learning track is right for me?'] };
+    return { blocks, actions: [{ label: tr('Open Live Sessions'), action: 'nav', view: 'sessions' }, ...(first ? [{ label: tr('Details: {t}', { t: first.title.slice(0, 30) + (first.title.length > 30 ? '…' : '') }), action: 'open-session', id: first.id }] : [])],
+      follow: [first ? ['Tell me about ' + byId(DATA_EN.sessions, first.id).title, tr('Tell me about {t}', { t: first.title })] : 'What demos are available at the GDRFA booth?', 'When is the next workshop?', 'Which learning track is right for me?'] };
   },
-  where: () => ({ blocks: [P('The booth is organised into five areas:'), UL(DATA.booth.zones.map(z => `${z.label}${DATA.demos.filter(d => d.zone === z.id).length ? ' — ' + DATA.demos.filter(d => d.zone === z.id).map(d => DEMO_SHORT[d.id]).join(', ') : ' — talks, keynotes and panels'}`))],
-    actions: [{ label: 'Open booth map', action: 'nav', view: 'sessions' }], follow: ['What sessions are happening today?', 'What demos are available at the GDRFA booth?'] }),
+  where: () => ({ blocks: [P(tr('The booth is organised into five areas:')), UL(DATA.booth.zones.map(z => `${z.label}${DATA.demos.filter(d => d.zone === z.id).length ? ' — ' + DATA.demos.filter(d => d.zone === z.id).map(d => tr(DEMO_SHORT[d.id])).join(tr(', ')) : ' — ' + tr('talks, keynotes and panels')}`))],
+    actions: [{ label: tr('Open booth map'), action: 'nav', view: 'sessions' }], follow: ['What sessions are happening today?', 'What demos are available at the GDRFA booth?'] }),
   recoAsk(t) {
     const topic = TOPIC_TRACK.find(([k]) => kw(t, k));
-    if (topic) { const tr = getTrack(topic[1]); return { blocks: [P(`For that topic, I recommend “${tr.title}” (${tr.level}, ${tr.duration}). ${tr.desc}`), UL(tr.modules.slice(0, 3))], actions: [{ label: 'Explore ' + tr.title, action: 'open-track', id: tr.id }, { label: 'Personalise my journey', action: 'start-journey', gold: true }], follow: ['Which learning track is right for me?', 'What sessions are happening today?'] }; }
-    return { blocks: [P('Happy to help you choose! Tell me a little about yourself — which of these describes you best? Or build a full personalised roadmap with the AI Journey.')],
-      actions: [{ label: 'Personalise with the AI Journey', action: 'start-journey', gold: true }],
+    if (topic) { const trk = getTrack(topic[1]); return { blocks: [P(tr('For that topic, I recommend “{t}” ({l}, {d}). {desc}', { t: trk.title, l: tr(trk.level), d: trk.duration, desc: trk.desc })), UL(trk.modules.slice(0, 3))], actions: [{ label: tr('Explore {t}', { t: trk.title }), action: 'open-track', id: trk.id }, { label: tr('Personalise my journey'), action: 'start-journey', gold: true }], follow: ['Which learning track is right for me?', 'What sessions are happening today?'] }; }
+    return { blocks: [P(tr('Happy to help you choose! Tell me a little about yourself — which of these describes you best? Or build a full personalised roadmap with the AI Journey.'))],
+      actions: [{ label: tr('Personalise with the AI Journey'), action: 'start-journey', gold: true }],
       follow: ['I’m a government employee', 'I’m a technology professional', 'I’m a student', 'I’m a business leader'] };
   },
   recoRole(role) {
-    const [a, b] = ROLE_RECO[role].map(getTrack), label = byId(DATA.roles, role).label.toLowerCase();
-    return { blocks: [P(`As a ${label}, I’d suggest starting with “${a.title}” (${a.level}) and following up with “${b.title}”.`),
-      UL([`${a.title}: ${a.desc}`, `${b.title}: ${b.desc}`]), P('For a roadmap tailored to your experience and interests, try the AI Journey — it takes under two minutes.')],
-      actions: [{ label: a.title, action: 'open-track', id: a.id }, { label: b.title, action: 'open-track', id: b.id }, { label: 'Start My AI Journey', action: 'start-journey', gold: true }],
+    const [a, b] = ROLE_RECO[role].map(getTrack), label = byId(DATA.roles, role).label;
+    return { blocks: [P(tr('As a {r}, I’d suggest starting with “{a}” ({l}) and following up with “{b}”.', { r: I18N.lang === 'ar' ? label : label.toLowerCase(), a: a.title, l: tr(a.level), b: b.title })),
+      UL([`${a.title}: ${a.desc}`, `${b.title}: ${b.desc}`]), P(tr('For a roadmap tailored to your experience and interests, try the AI Journey — it takes under two minutes.'))],
+      actions: [{ label: a.title, action: 'open-track', id: a.id }, { label: b.title, action: 'open-track', id: b.id }, { label: tr('Start My AI Journey'), action: 'start-journey', gold: true }],
       follow: ['What sessions are happening today?', 'What is the Agentic AI Passport?'] };
   },
-  tracksList: () => ({ blocks: [P('Cleared for Takeoff offers six learning tracks:'), UL(DATA.tracks.map(t => `${t.title} — ${t.level}`))], actions: [{ label: 'View Learning Tracks', action: 'nav', view: 'tracks' }, { label: 'Find my track', action: 'start-journey', gold: true }], follow: ['Which learning track is right for me?', 'Tell me about the Cybersecurity in the AI Era track'] }),
-  passport: () => ({ blocks: [P('The Agentic AI Passport is a personalised digital pass created at the end of your AI Journey. It shows your name, your photo or avatar, your recommended learning track, your level — Explorer, Practitioner or Innovator — any session you attended, and a QR code that opens your course list on your phone.'), P('You can download it as an image and see yourself welcomed on the big screen.'), NOTE(ppSaveMode() === 'off' ? 'Your name and photo stay on this kiosk and are cleared on reset. It is a keepsake, not an official document.' : `If you tick “Save my passport”, GDRFA keeps it for ${ppDays()} days so the QR code opens it again on your phone, and you can delete it there at any time. Otherwise your name and photo stay on this kiosk and are cleared on reset. It is a keepsake, not an official document.`)],
-    actions: state.passport ? [{ label: 'View my passport', action: 'nav', view: 'journey' }] : [{ label: 'Create my passport', action: 'start-journey', gold: true }], follow: ['How does Cleared for Takeoff personalise my journey?', 'Is my data stored?'] }),
-  bigscreen: () => ({ blocks: [P('After creating your passport, tap “Show on Big Screen” to see an 8-second welcome animation with your avatar, your name and your learning track. You will always be asked to confirm first, because it may be visible to people nearby.')], actions: [{ label: 'Start My AI Journey', action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Is my data stored?'] }),
-  journey: () => ({ blocks: [P('Your AI Journey is built from three answers: your role, your experience with AI and your interests. An AI recommender matches them to a primary learning track and picks real courses for your level from a curated catalogue:'), UL(['Discover — a topic to explore, introductory courses and a demo to visit', 'Learn — core courses and a session to join', 'Practice — hands-on courses or labs', 'Innovate — a stretch course and a practical next step for your work']), NOTE('Only your three answers are used — never your name, email or photo. If the AI service is unavailable, transparent rules on this kiosk build the journey instead.')],
-    actions: [{ label: 'Start My AI Journey', action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Which learning track is right for me?'] }),
-  privacy: () => ({ blocks: [P('Privacy first:'), UL([...(ppSaveMode() === 'off' ? ['Your name, email and photo stay in this kiosk’s memory and are never sent anywhere'] : [ppSaveMode() === 'always' ? 'When you create your Agentic AI Passport, it is saved with GDRFA so its QR code keeps working' : 'Your name, email and photo stay in this kiosk’s memory unless you tick “Save my passport” when you create it', `A saved passport (name, email, organization, passport image and learning journey) is kept by GDRFA for ${ppDays()} days so its QR code keeps working; the GDRFA booth team can see it, and you can delete it at any time from your phone`]), 'To recommend courses, only your role, AI experience and interests are sent to the AI course recommender', ...(aiAvatarOn() ? ['If you choose the AI 3D Traveler avatar and tap “Create my 3D traveler”, your photo is sent to an external AI service to create it. Neither the service nor this kiosk keeps the photo'] : []), 'Nothing is saved to browser storage', `Everything on this kiosk is cleared when you press Reset, or after ${CONFIG.idleResetSeconds} seconds of inactivity`])], follow: ['What is the Agentic AI Passport?', 'How does Cleared for Takeoff personalise my journey?'] }),
-  about: () => ({ blocks: [P('GDRFA — the General Directorate of Residency and Foreigners Affairs in Dubai — oversees residency, entry permits and related services. At GITEX, the booth explores how Agentic AI could make such services more proactive and seamless.'), NOTE('For official services and information, please use GDRFA’s official channels. This assistant is a demo.')], follow: ['What demos are available at the GDRFA booth?', 'What is Agentic AI?'] }),
-  help: () => ({ blocks: [P('I’m the booth assistant for Agentic AI: Cleared for Takeoff. I answer from the booth’s content and course catalogue, and I can help you:'), UL(['Understand Agentic AI and Generative AI', 'Find today’s sessions and booth demos', 'Choose a learning track', 'Create your personalised AI Journey and Passport'])], follow: DATA.defaultSuggestions }),
+  tracksList: () => ({ blocks: [P(tr('Cleared for Takeoff offers six learning tracks:')), UL(DATA.tracks.map(t => `${t.title} — ${tr(t.level)}`))], actions: [{ label: tr('View Learning Tracks'), action: 'nav', view: 'tracks' }, { label: tr('Find my track'), action: 'start-journey', gold: true }], follow: ['Which learning track is right for me?', 'Tell me about the Cybersecurity in the AI Era track'] }),
+  passport: () => ({ blocks: [P(tr('The Agentic AI Passport is a personalised digital pass created at the end of your AI Journey. It shows your name, your photo or avatar, your recommended learning track, your level — Explorer, Practitioner or Innovator — any session you attended, and a QR code that opens your course list on your phone.')), P(tr('You can download it as an image and see yourself welcomed on the big screen.')), NOTE(ppSaveMode() === 'off' ? tr('Your name and photo stay on this kiosk and are cleared on reset. It is a keepsake, not an official document.') : ppSaveMode() === 'always' ? tr('Your passport is saved with GDRFA for {d} days so the QR code opens it again on your phone, and you can delete it there at any time. It is a keepsake, not an official document.', { d: ppDays() }) : tr('If you tick “Save my passport”, GDRFA keeps it for {d} days so the QR code opens it again on your phone, and you can delete it there at any time. Otherwise your name and photo stay on this kiosk and are cleared on reset. It is a keepsake, not an official document.', { d: ppDays() }))],
+    actions: state.passport ? [{ label: tr('View my passport'), action: 'nav', view: 'journey' }] : [{ label: tr('Create my passport'), action: 'start-journey', gold: true }], follow: ['How does Cleared for Takeoff personalise my journey?', 'Is my data stored?'] }),
+  bigscreen: () => ({ blocks: [P(tr('After creating your passport, tap “Show on Big Screen” to see an 8-second welcome animation with your avatar, your name and your learning track. You will always be asked to confirm first, because it may be visible to people nearby.'))], actions: [{ label: tr('Start My AI Journey'), action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Is my data stored?'] }),
+  journey: () => ({ blocks: [P(tr('Your AI Journey is built from three answers: your role, your experience with AI and your interests. An AI recommender matches them to a primary learning track and picks real courses for your level from a curated catalogue:')), UL([tr('Discover — a topic to explore, introductory courses and a demo to visit'), tr('Learn — core courses and a session to join'), tr('Practice — hands-on courses or labs'), tr('Innovate — a stretch course and a practical next step for your work')]), NOTE(tr('Only your three answers are used — never your name, email or photo. If the AI service is unavailable, transparent rules on this kiosk build the journey instead.'))],
+    actions: [{ label: tr('Start My AI Journey'), action: 'start-journey', gold: true }], follow: ['What is the Agentic AI Passport?', 'Which learning track is right for me?'] }),
+  privacy: () => ({ blocks: [P(tr('Privacy first:')), UL([...(ppSaveMode() === 'off' ? [tr('Your name, email and photo stay in this kiosk’s memory and are never sent anywhere')] : [ppSaveMode() === 'always' ? tr('When you create your Agentic AI Passport, it is saved with GDRFA so its QR code keeps working') : tr('Your name, email and photo stay in this kiosk’s memory unless you tick “Save my passport” when you create it'), tr('A saved passport (name, email, organization, passport image and learning journey) is kept by GDRFA for {d} days so its QR code keeps working; the GDRFA booth team can see it, and you can delete it at any time from your phone', { d: ppDays() })]), tr('To recommend courses, only your role, AI experience and interests are sent to the AI course recommender'), ...(aiAvatarOn() ? [tr('If you choose the AI 3D Traveler avatar and tap “Create my 3D traveler”, your photo is sent to an external AI service to create it. Neither the service nor this kiosk keeps the photo')] : []), tr('Nothing is saved to browser storage'), tr('Everything on this kiosk is cleared when you press Reset, or after {s} seconds of inactivity', { s: CONFIG.idleResetSeconds })])], follow: ['What is the Agentic AI Passport?', 'How does Cleared for Takeoff personalise my journey?'] }),
+  about: () => ({ blocks: [P(tr('GDRFA — the General Directorate of Residency and Foreigners Affairs in Dubai — oversees residency, entry permits and related services. At GITEX, the booth explores how Agentic AI could make such services more proactive and seamless.')), NOTE(tr('For official services and information, please use GDRFA’s official channels. This assistant is a demo.'))], follow: ['What demos are available at the GDRFA booth?', 'What is Agentic AI?'] }),
+  help: () => ({ blocks: [P(tr('I’m the booth assistant for Agentic AI: Cleared for Takeoff. I answer from the booth’s content and course catalogue, and I can help you:')), UL([tr('Understand Agentic AI and Generative AI'), tr('Find today’s sessions and booth demos'), tr('Choose a learning track'), tr('Create your personalised AI Journey and Passport')])], follow: DATA.defaultSuggestions }),
   demo(d, t) {
     const where = kw(t, ['where', 'location', 'find', 'located']);
-    const blocks = where ? [P(`${d.title} is in ${zone(d.zone).label}. ${d.overview}`)] : [P(`${d.title} — ${zone(d.zone).label} · ${d.status}.`), P(d.overview), P('How it works:'), UL(d.how)];
-    if (!d.live && DATA.meta.demosAreIllustrative) blocks.push(NOTE('Illustrative capability — not necessarily a deployed GDRFA service.'));
-    return { blocks, actions: [{ label: 'Open demo details', action: 'open-demo', id: d.id }, { label: getTrack(d.tracks[0]).title, action: 'open-track', id: d.tracks[0] }], follow: d.questions.filter(q => norm(q) !== t).slice(0, 3) };
+    const blocks = where ? [P(tr('{t} is in {z}. {o}', { t: d.title, z: zone(d.zone).label, o: d.overview }))] : [P(`${d.title} — ${zone(d.zone).label} · ${d.status}.`), P(d.overview), P(tr('How it works:')), UL(d.how)];
+    if (!d.live && DATA.meta.demosAreIllustrative) blocks.push(NOTE(tr('Illustrative capability — not necessarily a deployed GDRFA service.')));
+    return { blocks, actions: [{ label: tr('Open demo details'), action: 'open-demo', id: d.id }, { label: getTrack(d.tracks[0]).title, action: 'open-track', id: d.tracks[0] }], follow: d.questions.filter(q => norm(q) !== t).slice(0, 3) };
   },
   session(s0) {
-    const s = sessWithStatus(s0.id), st = s.status === 'live' ? 'Live now' : s.status === 'upcoming' ? 'Upcoming' : 'Completed';
-    return { blocks: [P(`“${s.title}” — ${s.type}, ${sessRange(s)} at ${zone(s.zone).label} (${st}).`), P(s.desc), UL(s.agenda), ...(DATA.meta.sessionsAreSample ? [NOTE('Sample schedule.')] : [])],
-      actions: [{ label: 'Session details', action: 'open-session', id: s.id }, { label: getTrack(s.track).title, action: 'open-track', id: s.track }], follow: ['What sessions are happening today?', 'What demos are available at the GDRFA booth?'] };
+    const s = sessWithStatus(s0.id), st = s.status === 'live' ? tr('Live now') : s.status === 'upcoming' ? tr('Upcoming') : tr('Completed');
+    return { blocks: [P(tr('“{t}” — {ty}, {r} at {z} ({st}).', { t: s.title, ty: tr(s.type), r: sessRange(s), z: zone(s.zone).label, st })), P(s.desc), UL(s.agenda), ...(DATA.meta.sessionsAreSample ? [NOTE(tr('Sample schedule.'))] : [])],
+      actions: [{ label: tr('Session details'), action: 'open-session', id: s.id }, { label: getTrack(s.track).title, action: 'open-track', id: s.track }], follow: ['What sessions are happening today?', 'What demos are available at the GDRFA booth?'] };
   },
-  track: tr => ({ blocks: [P(`“${tr.title}” — ${tr.level} · ${tr.duration}.`), P(tr.desc), P('Recommended courses:'), UL(RULES.LEVELS.map(l => `${LEVEL_LABEL[l]}: ${CATALOG.courses.filter(c => c.tracks.includes(tr.id) && c.level === l).map(c => `${c.title} (${c.provider})`).join('; ') || 'see the neighbouring levels'}`))],
-    actions: [{ label: 'Explore track', action: 'open-track', id: tr.id }, { label: 'Personalise my journey', action: 'personalize', id: tr.id, gold: true }], follow: ['Which learning track is right for me?', 'What sessions are happening today?'] }),
-  newsItem: n => ({ blocks: [P(n.title), P(n.summary), UL(n.points), ...(DATA.meta.newsIsSample ? [NOTE('Curated sample content — not live news.')] : [])], actions: [{ label: 'Open article summary', action: 'open-news', id: n.id }], follow: ['What are the latest AI developments in government?', 'What is Agentic AI?'] }),
+  track: trk => ({ blocks: [P(tr('“{t}” — {l} · {d}.', { t: trk.title, l: tr(trk.level), d: trk.duration })), P(trk.desc), P(tr('Recommended courses:')), UL(RULES.LEVELS.map(l => `${tr(LEVEL_LABEL[l])}: ${CATALOG.courses.filter(c => c.tracks.includes(trk.id) && c.level === l).map(c => `${c.title} (${c.provider})`).join('; ') || tr('see the neighbouring levels')}`))],
+    actions: [{ label: tr('Explore track'), action: 'open-track', id: trk.id }, { label: tr('Personalise my journey'), action: 'personalize', id: trk.id, gold: true }], follow: ['Which learning track is right for me?', 'What sessions are happening today?'] }),
+  newsItem: n => ({ blocks: [P(n.title), P(n.summary), UL(n.points), ...(DATA.meta.newsIsSample ? [NOTE(tr('Curated sample content — not live news.'))] : [])], actions: [{ label: tr('Open article summary'), action: 'open-news', id: n.id }], follow: ['What are the latest AI developments in government?', 'What is Agentic AI?'] }),
   courses(t) {
     const lvlWord = [['beginner', ['beginner', 'beginners', 'new', 'start', 'basics', 'introductory']], ['intermediate', ['intermediate', 'some experience']], ['advanced', ['advanced', 'expert', 'experts', 'deep']]].find(([, w]) => kw(t, w));
     const topic = TOPIC_TRACK.find(([k]) => kw(t, k));
-    const tr = getTrack(topic ? topic[1] : 'agentic');
+    const trk = getTrack(topic ? topic[1] : 'agentic');
     const levels = lvlWord ? [lvlWord[0]] : RULES.LEVELS;
-    const list = levels.map(l => [l, CATALOG.courses.filter(c => c.tracks.includes(tr.id) && c.level === l)]);
-    return { blocks: [P(`Courses for ${tr.title}${lvlWord ? ` at ${lvlWord[0]} level` : ''}:`), UL(list.flatMap(([l, cs]) => cs.map(c => `${c.title} — ${c.provider} (${LEVEL_LABEL[l]}, ≈${fmtHours(c.hours)})`))), P('Tap a course in the Learning Tracks screen to get a QR code for your phone, or build a personalised journey.')],
-      actions: [{ label: 'Open ' + tr.title, action: 'open-track', id: tr.id }, { label: 'Personalise my journey', action: 'personalize', id: tr.id, gold: true }], follow: ['Which learning track is right for me?', 'What is Agentic AI?'] };
+    const list = levels.map(l => [l, CATALOG.courses.filter(c => c.tracks.includes(trk.id) && c.level === l)]);
+    return { blocks: [P(lvlWord ? tr('Courses for {t} at {l} level:', { t: trk.title, l: tr(lvlWord[0]) }) : tr('Courses for {t}:', { t: trk.title })), UL(list.flatMap(([l, cs]) => cs.map(c => `${c.title} — ${c.provider} (${tr(LEVEL_LABEL[l])}, ≈${fmtHours(c.hours)})`))), P(tr('Tap a course in the Learning Tracks screen to get a QR code for your phone, or build a personalised journey.'))],
+      actions: [{ label: tr('Open {t}', { t: trk.title }), action: 'open-track', id: trk.id }, { label: tr('Personalise my journey'), action: 'personalize', id: trk.id, gold: true }], follow: ['Which learning track is right for me?', 'What is Agentic AI?'] };
   },
-  fallback: () => ({ blocks: [P('I don’t have a confident answer to that in my demo knowledge base yet. I can help with Agentic AI basics, today’s sessions, the booth demos, learning tracks or your personalised journey.')], follow: DATA.defaultSuggestions })
+  fallback: () => ({ blocks: [P(tr('I don’t have a confident answer to that in my demo knowledge base yet. I can help with Agentic AI basics, today’s sessions, the booth demos, learning tracks or your personalised journey.'))], follow: DATA.defaultSuggestions })
 };
+/* Questions are matched in English (the booth content's own words), and answered in the kiosk's language. */
 function matchEntity(t) {
   const typeBonus = { demo: kw(t, ['demo', 'demos']) ? 3 : 0, session: kw(t, ['session', 'sessions', 'talk']) ? 3 : 0, track: kw(t, ['track', 'tracks', 'course']) ? 3 : 0, news: kw(t, ['news', 'article']) ? 3 : 0 };
   const cands = [
-    ...DATA.demos.map(d => ({ type: 'demo', item: d, keys: d.keywords })),
-    ...DATA.sessions.map(s => ({ type: 'session', item: s, keys: s.keywords })),
-    ...DATA.tracks.map(tr => ({ type: 'track', item: tr, keys: { agentic: ['agentic ai foundations', 'foundations'], gov: ['ai for government services', 'government services track'], cyber: ['cybersecurity', 'cyber security', 'cyber', 'deepfake', 'deepfakes'], cx: ['customer experience'], data: ['data & analytics', 'data and analytics', 'data analytics'], emerging: ['emerging technology', 'emerging tech', 'quantum', 'digital twin', 'digital twins'] }[tr.id] })),
-    ...DATA.news.map(n => ({ type: 'news', item: n, keys: [] }))
+    ...DATA_EN.demos.map(d => ({ type: 'demo', item: d, keys: d.keywords })),
+    ...DATA_EN.sessions.map(s => ({ type: 'session', item: s, keys: s.keywords })),
+    ...DATA_EN.tracks.map(trk => ({ type: 'track', item: trk, keys: { agentic: ['agentic ai foundations', 'foundations'], gov: ['ai for government services', 'government services track'], cyber: ['cybersecurity', 'cyber security', 'cyber', 'deepfake', 'deepfakes'], cx: ['customer experience'], data: ['data & analytics', 'data and analytics', 'data analytics'], emerging: ['emerging technology', 'emerging tech', 'quantum', 'digital twin', 'digital twins'] }[trk.id] })),
+    ...DATA_EN.news.map(n => ({ type: 'news', item: n, keys: [] }))
   ];
   let best = null, bestS = 0;
-  cands.forEach((c, i) => {
-    let s = t.includes(norm(c.item.title)) ? 20 : 0;
-    c.keys.forEach(k => { if (t.includes(' ' + k + ' ')) s += 2 * k.split(' ').length; });
-    if (s) s += typeBonus[c.type];
-    if (s > bestS) { bestS = s; best = c; }
+  cands.forEach(c => {
+    let sc = t.includes(norm(c.item.title)) ? 20 : 0;
+    c.keys.forEach(k => { if (t.includes(' ' + k + ' ')) sc += 2 * k.split(' ').length; });
+    if (sc) sc += typeBonus[c.type];
+    if (sc > bestS) { bestS = sc; best = c; }
   });
   if (!best || bestS < 2) return null;
-  return best.type === 'demo' ? R.demo(best.item, t) : best.type === 'session' ? R.session(best.item) : best.type === 'track' ? R.track(best.item) : R.newsItem(best.item);
+  return replyFor(best.type, best.item.id, t);
 }
+function replyFor(type, id, t) { return type === 'demo' ? R.demo(getDemo(id), t) : type === 'session' ? R.session(getSession(id)) : type === 'track' ? R.track(getTrack(id)) : R.newsItem(getNews(id)); }
 const STOP = new Set('a an the and or of to in on for is are was be with what which who how when where why can i me my you your it this that about tell more do does at from by as we our'.split(' '));
 function searchAnswer(t) {
   const toks = t.trim().split(' ').filter(w => w.length > 2 && !STOP.has(w)); if (!toks.length) return null;
-  const docs = [...DATA.demos.map(d => ['demo', d, d.title + ' ' + d.overview]), ...DATA.sessions.map(s => ['session', s, s.title + ' ' + s.desc]), ...DATA.tracks.map(tr => ['track', tr, tr.title + ' ' + tr.desc + ' ' + tr.modules.join(' ')]), ...DATA.news.map(n => ['news', n, n.title + ' ' + n.summary])];
+  const docs = [...DATA_EN.demos.map(d => ['demo', d, d.title + ' ' + d.overview]), ...DATA_EN.sessions.map(s => ['session', s, s.title + ' ' + s.desc]), ...DATA_EN.tracks.map(trk => ['track', trk, trk.title + ' ' + trk.desc + ' ' + trk.modules.join(' ')]), ...DATA_EN.news.map(n => ['news', n, n.title + ' ' + n.summary])];
   let best = null, bestS = 0;
-  docs.forEach(([type, item, text]) => { const d = norm(text); const s = toks.filter(w => d.includes(' ' + w + ' ') || d.includes(' ' + w.replace(/s$/, '') + ' ')).length; if (s > bestS) { bestS = s; best = [type, item]; } });
+  docs.forEach(([type, item, text]) => { const d = norm(text); const sc = toks.filter(w => d.includes(' ' + w + ' ') || d.includes(' ' + w.replace(/s$/, '') + ' ')).length; if (sc > bestS) { bestS = sc; best = [type, item]; } });
   if (bestS < 2) return null;
-  const [type, item] = best; return type === 'demo' ? R.demo(item, t) : type === 'session' ? R.session(item) : type === 'track' ? R.track(item) : R.newsItem(item);
+  return replyFor(best[0], best[1].id, t);
+}
+/* A question typed in Arabic is routed by the English words its Arabic phrases stand for (the answer itself comes back in Arabic). */
+const arNorm = s => String(s).replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+const AR_BRIDGE = [
+  [/شكر/, 'thanks'], [/الفرق|يختلف|مقارنه|مقابل/, 'difference'], [/التوليدي/, 'generative'],
+  [/(ما|ماذا) (هو |هي |المقصود ب|يعني )?(الذكاء الاصطناعي الوكيل|بالذكاء الاصطناعي الوكيل|الوكيل|الوكلاء|وكلاء الذكاء الاصطناعي)|(عرف|اشرح|عرّف) الذكاء الاصطناعي الوكيل/, 'what is agentic ai'],
+  [/جواز/, 'passport'], [/الشاشه الكبيره/, 'big screen'],
+  [/رحلتي|رحله التعلم|خارطه الطريق|تخصيص|مخصصه|يخصص/, 'my journey personalise'],
+  [/دوره|دورات|شهاده|شهادات/, 'courses'], [/مبتدئ|المبتدئين|البدايه/, 'beginner'], [/متوسط/, 'intermediate'], [/متقدم|خبير/, 'advanced'],
+  [/موظف حكومي|القطاع العام|اعمل في الحكومه|موظفه حكوميه/, 'government employee'], [/مطور|مبرمج|مهندس|متخصص في التقنيه|تقنيه المعلومات/, 'developer'],
+  [/طالب|طالبه|ادرس|جامعه/, 'student'], [/مدير|قائد|رئيس تنفيذي|مؤسس/, 'manager'],
+  [/ابدا|انصح|تنصح|توصي|اقترح|ماذا اتعلم|المناسب لي|يناسبني|اي مسار/, 'which track right for me recommend start'],
+  [/الخصوصيه|بياناتي|تخزين|تحفظ|تحتفظ|محفوظه/, 'privacy my data stored'],
+  [/ورشه|ورش/, 'workshop'], [/كلمه رئيسيه|الكلمه الافتتاحيه/, 'keynote'], [/جلسه حواريه|نقاش/, 'panel'],
+  [/جلسه|جلسات|محاضره|محاضرات|جدول|برنامج اليوم|اليوم|الان|مباشر/, 'sessions today'],
+  [/عرض|عروض|العروض|تجارب|التجارب|الجناح/, 'demos booth'],
+  [/اخبار|الاخبار|احدث|اخر|تطورات|توجهات|ابحاث|منشورات/, 'news latest'], [/حكوم/, 'government'],
+  [/اين|منطقه|المناطق|خريطه|موقع/, 'where'], [/مسار|مسارات|تعلم|التعلم/, 'track learning'],
+  [/وكيل|وكلاء/, 'agentic agents'], [/اقامه|تاشيره|تاشيرات|الاداره العامه/, 'gdrfa residency visa'],
+  [/ماذا تستطيع|من انت|ساعدني|مساعده|كيف تعمل/, 'help what can you do'],
+  [/مساعد المعرفه/, 'knowledge assistant'], [/المنافذ|الحدود|السفر|البوابات الذكيه|المطار/, 'border travel smart gates'], [/اتمته/, 'service automation'],
+  [/استوديو الابتكار|الاستوديو/, 'innovation studio'], [/التحليلات|لوحه المعلومات|التنبؤ/, 'analytics forecasting'],
+  [/الامن السيبراني|السيبراني|التزييف العميق/, 'cybersecurity'], [/تجربه المتعاملين/, 'customer experience'], [/البيانات/, 'data analytics'],
+  [/التقنيات الناشئه|المستقبل|الكم/, 'emerging technology'], [/اول وكيل|بناء وكيل|ابني وكيل|ابن وكيل/, 'first agent build own ai agent'],
+  [/جاهزون للاقلاع|هذا التطبيق|هذه التجربه|هذا الجهاز/, 'this kiosk cleared for takeoff']
+];
+function bridgeAr(q) {
+  if (!/[؀-ۿ]/.test(q)) return q;
+  const a = arNorm(q), words = AR_BRIDGE.filter(([re]) => re.test(a)).map(([, w]) => w);
+  if (/^(مرحب|السلام عليكم|اهلا|صباح الخير|مساء الخير)/.test(a.trim()) && a.trim().split(/\s+/).length <= 3) words.unshift('hello');
+  return q + ' ' + words.join(' ');
 }
 function answer(q) {
-  const t = norm(q), words = t.trim().split(' ');
+  const t = norm(bridgeAr(q)), words = t.trim().split(' ');
   if (/^ (hi|hello|hey|salam|salaam|marhaba|good morning|good afternoon|good evening)\b/.test(t) && words.length <= 4) return R.greet();
   if (kw(t, ['thank', 'thanks', 'thank you', 'shukran'])) return R.thanks();
   if (kw(t, ['difference', 'different', 'vs', 'versus', 'compared', 'compare']) && kw(t, ['generative', 'genai', 'gen ai', 'llm', 'chatgpt', 'chatbot', 'chatbots'])) return R.genVsAgentic();
@@ -1050,14 +1091,15 @@ function answer(q) {
 
 function chatInit() {
   const node = $('#chatTpl').content.firstElementChild.cloneNode(true); hydrateIcons(node); $('#chatLarge').appendChild(node);
-  $('#chatForm').addEventListener('submit', e => { e.preventDefault(); const v = $('#chatInput').value; if (state.chat.busy) { toast('One moment — the assistant is still answering.'); return; } $('#chatInput').value = ''; updateSend(); sendQuestion(v); });
+  $('#chatForm').addEventListener('submit', e => { e.preventDefault(); const v = $('#chatInput').value; if (state.chat.busy) { toast(tr('One moment — the assistant is still answering.')); return; } $('#chatInput').value = ''; updateSend(); sendQuestion(v); });
   $('#chatInput').addEventListener('input', updateSend);
   chatWelcome();
 }
 function updateSend() { $('#chatSend').disabled = state.chat.busy || !$('#chatInput').value.trim(); }
 function scrollChat() { const l = $('#chatLog'); if (l) l.scrollTop = l.scrollHeight; }
 function chatWelcome() { state.chat.epoch++; state.chat.busy = false; $('#chatLog').innerHTML = ''; appendBot(R.welcome(), false, state.chat.epoch); setSuggestions(DATA.defaultSuggestions); updateSend(); }
-function setSuggestions(list) { $('#chatSuggest').innerHTML = (list || []).map(q => `<button class="chip" data-action="ask" data-q="${esc(q)}" data-inchat="1">${esc(q)}</button>`).join(''); }
+/* a suggestion is an English question (how it is matched) shown in the kiosk's language; [question, label] gives its label */
+function setSuggestions(list) { state.chat.follow = list || []; $('#chatSuggest').innerHTML = state.chat.follow.map(x => { const [q, label] = Array.isArray(x) ? x : [x, tr(x)]; return `<button class="chip" data-action="ask" data-q="${esc(q)}" data-label="${esc(label)}" data-inchat="1">${esc(label)}</button>`; }).join(''); }
 async function streamInto(el, text, animate, epoch) {
   if (!animate || REDUCED) { el.textContent = text; return; }
   for (let i = 0; i < text.length; i += 4) { if (epoch !== state.chat.epoch) return; el.textContent = text.slice(0, i + 4); scrollChat(); await wait(14); }
@@ -1078,14 +1120,14 @@ async function appendBot(reply, animate, epoch) {
   }
   scrollChat();
 }
-async function sendQuestion(raw) {
+async function sendQuestion(raw, label) {
   const q = cleanText(raw, 240);
   if (!q) return;
-  if (state.chat.busy) { toast('One moment — the assistant is still answering.'); return; }
+  if (state.chat.busy) { toast(tr('One moment — the assistant is still answering.')); return; }
   const epoch = state.chat.epoch; state.chat.busy = true; updateSend();
-  const u = document.createElement('div'); u.className = 'msg user'; u.textContent = q; $('#chatLog').appendChild(u);
+  const u = document.createElement('div'); u.className = 'msg user'; u.textContent = cleanText(label, 240) || q; $('#chatLog').appendChild(u);
   setSuggestions([]);
-  const typing = document.createElement('div'); typing.className = 'msg bot typing'; typing.setAttribute('aria-label', 'The assistant is typing'); typing.innerHTML = '<i></i><i></i><i></i>'; $('#chatLog').appendChild(typing); scrollChat();
+  const typing = document.createElement('div'); typing.className = 'msg bot typing'; typing.setAttribute('aria-label', tr('The assistant is typing')); typing.innerHTML = '<i></i><i></i><i></i>'; $('#chatLog').appendChild(typing); scrollChat();
   const reply = answer(q);
   await wait(REDUCED ? 150 : 900);
   if (epoch !== state.chat.epoch) return;
@@ -1104,12 +1146,14 @@ async function sendQuestion(raw) {
    Only the three answers are sent — never name, email or photo.
    ===================================================================== */
 const STAGES = RULES.STAGES;
-const LEVEL_LABEL = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
-const COST_LABEL = { free: 'Free', membership: 'Membership', varies: 'Free and paid options' };
+const LEVEL_LABEL = { beginner: _t('Beginner'), intermediate: _t('Intermediate'), advanced: _t('Advanced') };
+const COST_LABEL = { free: _t('Free'), membership: _t('Membership'), varies: _t('Free and paid options') };
+const STAGE_LABEL = { discover: _t('Discover'), learn: _t('Learn'), practice: _t('Practice'), innovate: _t('Innovate') };
+const firstSentence = t => String(t).split(/(?<=[.؟!])\s/)[0].replace(/\.$/, '') + '.';
 const getCourse = id => byId(CATALOG.courses, id);
-const fmtHours = h => h < 1 ? `${Math.round(h * 60)} min` : `${h} h`;
+const fmtHours = h => h < 1 ? tr('{m} min', { m: Math.round(h * 60) }) : tr('{h} h', { h });
 const sessionStatusList = () => sessionsWithStatus().map(s => ({ id: s.id, status: s.status }));
-const rulesCtx = () => ({ content: DATA, catalog: CATALOG, sessions: sessionStatusList() });
+const rulesCtx = () => ({ content: DATA, catalog: CATALOG, sessions: sessionStatusList(), lang: I18N.lang });
 const profileFromWizard = w => ({ role: w.role, experience: w.experience, interests: [...w.interests], ...(w.focusTrack ? { focusTrack: w.focusTrack } : {}) });
 
 async function requestPlan(profile) {
@@ -1118,7 +1162,7 @@ async function requestPlan(profile) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), CONFIG.aiTimeoutMs + 5000);
   try {
-    const res = await fetch('api/recommend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...profile, sessions: sessionStatusList() }), signal: ctrl.signal });
+    const res = await fetch('api/recommend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...profile, sessions: sessionStatusList(), lang: I18N.lang }), signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const { plan } = RULES.sanitizePlan(data.plan, profile, rulesCtx());
@@ -1135,10 +1179,10 @@ function hydratePlan(plan, profile, source) {
     const demo = getDemo(s.experienceId), sess = sessions.find(x => x.id === s.experienceId);
     const exp = demo ? { kind: 'demo', id: demo.id, title: demo.title, meta: zone(demo.zone).label }
       : { kind: 'session', id: sess.id, title: sess.title, meta: `${fmtTime(sess.start)} · ${zone(sess.zone).label}` };
-    return { key: s.stage, label: cap(s.stage), topic: s.topic, courses: s.courseIds.map(getCourse).filter(Boolean), why: s.why, exp, next: s.nextStep };
+    return { key: s.stage, label: tr(STAGE_LABEL[s.stage]), topic: s.topic, courses: s.courseIds.map(getCourse).filter(Boolean), why: s.why, exp, next: s.nextStep };
   });
   return {
-    profile, plan, source, primary: getTrack(plan.primaryTrack), secondary: getTrack(plan.secondaryTrack),
+    profile, plan, source, lang: I18N.lang, primary: getTrack(plan.primaryTrack), secondary: getTrack(plan.secondaryTrack),
     level: lvl, levelName: DATA.levels[lvl], stages, summary: plan.summary,
     code: 'CFT-' + hashStr(JSON.stringify(plan) + Date.now()).toString(36).toUpperCase().slice(0, 5).padStart(5, '0')
   };
@@ -1146,32 +1190,32 @@ function hydratePlan(plan, profile, source) {
 function journeyLink(j, saved) {
   const base = CONFIG.publicBaseUrl || (CONFIG.served ? location.origin + location.pathname.replace(/[^/]*$/, '') : 'https://example.com/cleared-for-takeoff/');
   // p = the saved passport (reference ~ private key); the rest still opens the course list if the saved copy is gone
-  const q = new URLSearchParams({ ...(saved ? { p: `${saved.ref}~${saved.key.replace(/-/g, '')}` } : { j: j.code }), v: '1', t: j.primary.id, l: String(j.level), c: j.stages.map(s => s.courses.map(c => c.ref).join('.')).join('-') });
+  const q = new URLSearchParams({ ...(saved ? { p: `${saved.ref}~${saved.key.replace(/-/g, '')}` } : { j: j.code }), v: '1', t: j.primary.id, l: String(j.level), c: j.stages.map(s => s.courses.map(c => c.ref).join('.')).join('-'), ...(I18N.lang === 'ar' ? { lg: 'ar' } : {}) });
   return base.replace(/\/?$/, '/') + 'journey.html#' + q.toString();
 }
 function courseRow(c) {
-  return `<button class="course-btn" data-action="open-course" data-id="${c.id}">${ic('tracks')}<span><b>${esc(c.title)}</b><em>${esc(c.provider)} · ${LEVEL_LABEL[c.level]} · ≈${fmtHours(c.hours)}</em></span>${ic('qr')}</button>`;
+  return `<button class="course-btn" data-action="open-course" data-id="${c.id}">${ic('tracks')}<span><b>${esc(c.title)}</b><em>${esc(c.provider)} · ${tr(LEVEL_LABEL[c.level])} · ≈${fmtHours(c.hours)}</em></span>${ic('qr')}</button>`;
 }
 function roadmapHTML(j) {
   return `<div class="roadmap">${j.stages.map((s, i) => `
     <div class="stage ${s.key}"><div class="stage-head"><div class="stage-num">${i + 1}</div><h4>${s.label}</h4></div>
-      <div><div class="stage-sec">Recommended topic</div><div class="stage-topic">${esc(s.topic)}</div></div>
-      <div><div class="stage-sec">Recommended courses</div>${s.courses.map(courseRow).join('')}<p class="why">${esc(s.why)}</p></div>
-      <div><div class="stage-sec">Suggested ${s.exp.kind}</div><button class="exp-btn" data-action="open-${s.exp.kind}" data-id="${s.exp.id}">${ic(s.exp.kind === 'demo' ? 'demos' : 'sessions')}<span>${esc(s.exp.title)}<em class="small" style="display:block;font-style:normal">${esc(s.exp.meta)}</em></span></button></div>
-      <div><div class="stage-sec">Practical next step</div><div class="next-step">${esc(s.next)}</div></div>
+      <div><div class="stage-sec">${tr('Recommended topic')}</div><div class="stage-topic">${esc(s.topic)}</div></div>
+      <div><div class="stage-sec">${tr('Recommended courses')}</div>${s.courses.map(courseRow).join('')}<p class="why">${esc(s.why)}</p></div>
+      <div><div class="stage-sec">${s.exp.kind === 'demo' ? tr('Suggested demo') : tr('Suggested session')}</div><button class="exp-btn" data-action="open-${s.exp.kind}" data-id="${s.exp.id}">${ic(s.exp.kind === 'demo' ? 'demos' : 'sessions')}<span>${esc(s.exp.title)}<em class="small" style="display:block;font-style:normal">${esc(s.exp.meta)}</em></span></button></div>
+      <div><div class="stage-sec">${tr('Practical next step')}</div><div class="next-step">${esc(s.next)}</div></div>
     </div>`).join('')}</div>`;
 }
 function journeySummaryHTML(j) {
-  return `<div class="j-summary"><div class="level-badge"><small>Level</small><b>${esc(j.levelName)}</b></div><div style="flex:1;min-width:16rem"><div class="eyebrow">${ic('spark')} Your personalised learning journey · ${esc(j.code)}</div><div class="source-line">${j.source === 'ai' ? `<span class="pill ai-pill">${ic('spark')}Personalised for you by AI</span>` : `<span class="pill">${ic('shield')}Courses matched on this kiosk</span>`}</div><h3>${esc(j.primary.title)} <span>· ${esc(j.levelName)}</span></h3><p>${esc(j.summary)}</p></div></div>`;
+  return `<div class="j-summary"><div class="level-badge"><small>${tr('Level')}</small><b>${esc(j.levelName)}</b></div><div style="flex:1;min-width:16rem"><div class="eyebrow">${ic('spark')} ${tr('Your personalised learning journey')} · ${esc(j.code)}</div><div class="source-line">${j.source === 'ai' ? `<span class="pill ai-pill">${ic('spark')}${tr('Personalised for you by AI')}</span>` : `<span class="pill">${ic('shield')}${tr('Courses matched on this kiosk')}</span>`}</div><h3>${esc(j.primary.title)} <span>· ${esc(j.levelName)}</span></h3><p>${esc(j.summary)}</p></div></div>`;
 }
 
 /* =====================================================================
    WIZARD
    ===================================================================== */
-const WIZ_STEPS = ['About You', 'Interests', 'Generate', 'Your Journey', 'Passport'];
+const WIZ_STEPS = [_t('About You'), _t('Interests'), _t('Generate'), _t('Your Journey'), _t('Passport')];
 function openWizard(opts = {}) {
   const w = state.wizard;
-  if (opts.trackId) { const tr = getTrack(opts.trackId); w.interests = Array.from(new Set([...w.interests, ...tr.interests])); w.focusTrack = tr.id; }
+  if (opts.trackId) { const trk = getTrack(opts.trackId); w.interests = Array.from(new Set([...w.interests, ...trk.interests])); w.focusTrack = trk.id; }
   w.step = opts.step || 1; w.open = true;
   hideOverlay('modal'); $('#wizard').classList.add('open'); renderWizard(); updateGlobe();
 }
@@ -1179,32 +1223,32 @@ function closeWizard() { stopCamera(); state.wizard.open = false; state.wizard.t
 function wizGo(step) { stopCamera(); state.wizard.step = step; renderWizard(); $('#wizBody').scrollTop = 0; }
 function renderWizard() {
   const w = state.wizard, cur = Math.min(w.step, 5);
-  $('#wizStepper').innerHTML = WIZ_STEPS.map((l, i) => `${i ? '<span class="stp-line"></span>' : ''}<div class="stp ${i + 1 === cur ? 'on' : i + 1 < cur ? 'ok' : ''}"><i>${i + 1 < cur ? '✓' : i + 1}</i><span>${l}</span></div>`).join('');
+  $('#wizStepper').innerHTML = WIZ_STEPS.map((l, i) => `${i ? '<span class="stp-line"></span>' : ''}<div class="stp ${i + 1 === cur ? 'on' : i + 1 < cur ? 'ok' : ''}"><i>${i + 1 < cur ? '✓' : i + 1}</i><span>${tr(l)}</span></div>`).join('');
   const body = $('#wizBody'), foot = $('#wizFoot');
   if (w.step === 1) {
-    body.innerHTML = `<div class="q-title">Tell us about yourself</div><p class="q-sub">Two quick questions so we can tailor your journey. Nothing is stored.</p>
-      <div class="stage-sec">What best describes your role?</div><div class="opt-grid c5">${DATA.roles.map(r => `<button class="opt${w.role === r.id ? ' sel' : ''}" data-action="wiz-role" data-id="${r.id}" aria-pressed="${w.role === r.id}">${ic(r.icon)}<b>${esc(r.label)}</b><span>${esc(r.desc)}</span></button>`).join('')}</div>
-      <div class="stage-sec">What is your experience with AI?</div><div class="opt-grid c3">${DATA.experience.map(e => `<button class="opt${w.experience === e.id ? ' sel' : ''}" data-action="wiz-exp" data-id="${e.id}" aria-pressed="${w.experience === e.id}">${ic(e.icon)}<b>${esc(e.label)}</b><span>${esc(e.desc)}</span></button>`).join('')}</div>`;
-    foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-close">Cancel</button><span class="spacer"></span><span class="hint">${w.role && w.experience ? 'Great — next, your interests' : 'Select one option in each group'}</span><button class="btn btn-primary" data-action="wiz-next" ${w.role && w.experience ? '' : 'disabled'}>Continue ${ic('arrow')}</button>`;
+    body.innerHTML = `<div class="q-title">${tr('Tell us about yourself')}</div><p class="q-sub">${tr('Two quick questions so we can tailor your journey. Nothing is stored.')}</p>
+      <div class="stage-sec">${tr('What best describes your role?')}</div><div class="opt-grid c5">${DATA.roles.map(r => `<button class="opt${w.role === r.id ? ' sel' : ''}" data-action="wiz-role" data-id="${r.id}" aria-pressed="${w.role === r.id}">${ic(r.icon)}<b>${esc(r.label)}</b><span>${esc(r.desc)}</span></button>`).join('')}</div>
+      <div class="stage-sec">${tr('What is your experience with AI?')}</div><div class="opt-grid c3">${DATA.experience.map(e => `<button class="opt${w.experience === e.id ? ' sel' : ''}" data-action="wiz-exp" data-id="${e.id}" aria-pressed="${w.experience === e.id}">${ic(e.icon)}<b>${esc(e.label)}</b><span>${esc(e.desc)}</span></button>`).join('')}</div>`;
+    foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-close">${tr('Cancel')}</button><span class="spacer"></span><span class="hint">${w.role && w.experience ? tr('Great — next, your interests') : tr('Select one option in each group')}</span><button class="btn btn-primary" data-action="wiz-next" ${w.role && w.experience ? '' : 'disabled'}>${tr('Continue')} ${ic('arrow')}</button>`;
   } else if (w.step === 2) {
-    body.innerHTML = `<div class="q-title">Choose your interests</div><p class="q-sub">Select as many as you like — your roadmap adapts to every choice.</p>
+    body.innerHTML = `<div class="q-title">${tr('Choose your interests')}</div><p class="q-sub">${tr('Select as many as you like — your roadmap adapts to every choice.')}</p>
       <div class="opt-grid c4">${DATA.interests.map(i => { const on = w.interests.includes(i.id); return `<button class="opt${on ? ' sel' : ''}" data-action="wiz-interest" data-id="${i.id}" aria-pressed="${on}">${ic(i.icon)}<b>${esc(i.label)}</b><span>${esc(i.desc)}</span></button>`; }).join('')}</div>`;
-    foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-back">${ic('chevL')} Back</button><span class="spacer"></span><span class="hint">${w.interests.length ? `${w.interests.length} selected` : 'Select at least one interest'}</span><button class="btn btn-gold" data-action="wiz-generate" ${w.interests.length ? '' : 'disabled'}>${ic('spark')} Generate My Learning Journey</button>`;
+    foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-back">${ic('chevL')} ${tr('Back')}</button><span class="spacer"></span><span class="hint">${w.interests.length ? tr('{n} selected', { n: w.interests.length }) : tr('Select at least one interest')}</span><button class="btn btn-gold" data-action="wiz-generate" ${w.interests.length ? '' : 'disabled'}>${ic('spark')} ${tr('Generate My Learning Journey')}</button>`;
   } else if (w.step === 3) {
-    const lines = ['Understanding your interests…', 'Identifying relevant AI opportunities…', 'Building your personalized learning journey…'];
+    const lines = [tr('Understanding your interests…'), tr('Identifying relevant AI opportunities…'), tr('Building your personalized learning journey…')];
     body.innerHTML = `<div class="processing"><div class="proc-radar" aria-hidden="true"></div><div class="proc-lines" role="status">${lines.map((l, i) => `<div class="proc-line" id="pl${i}"><span class="st"></span>${l}</div>`).join('')}</div></div>`;
-    foot.innerHTML = `<span class="hint">${CONFIG.served && CONFIG.aiEnabled ? 'AI is choosing courses for your level — only your three answers are shared.' : 'Matching your answers to courses, demos and sessions on this kiosk…'}</span>`;
+    foot.innerHTML = `<span class="hint">${CONFIG.served && CONFIG.aiEnabled ? tr('AI is choosing courses for your level — only your three answers are shared.') : tr('Matching your answers to courses, demos and sessions on this kiosk…')}</span>`;
     runProcessing();
   } else if (w.step === 4) {
     const j = state.journey;
     body.innerHTML = journeySummaryHTML(j) + roadmapHTML(j);
-    foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-edit">${ic('chevL')} Edit answers</button><span class="spacer"></span><button class="btn btn-ghost" data-action="wiz-save">Save & view journey</button><button class="btn btn-gold" data-action="wiz-passport">${ic('passport')} Create My Agentic AI Passport</button>`;
+    foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-edit">${ic('chevL')} ${tr('Edit answers')}</button><span class="spacer"></span><button class="btn btn-ghost" data-action="wiz-save">${tr('Save & view journey')}</button><button class="btn btn-gold" data-action="wiz-passport">${ic('passport')} ${tr('Create My Agentic AI Passport')}</button>`;
   } else if (w.step === 5) {
     renderPassportForm();
   } else {
     body.innerHTML = `<div class="passport-wrap" style="margin-top:0">${passportPreviewHTML('ppCanvasWiz')}${passportActionsHTML(true)}</div>`;
     paintPassport($('#ppCanvasWiz'));
-    foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-step" data-id="5">${ic('chevL')} Edit passport</button><span class="spacer"></span><button class="btn btn-primary" data-action="wiz-done">Done ${ic('check')}</button>`;
+    foot.innerHTML = `<button class="btn btn-ghost" data-action="wiz-step" data-id="5">${ic('chevL')} ${tr('Edit passport')}</button><span class="spacer"></span><button class="btn btn-primary" data-action="wiz-done">${tr('Done')} ${ic('check')}</button>`;
   }
   hydrateIcons(body);
 }
@@ -1233,38 +1277,38 @@ async function runProcessing() {
 /* ---------- passport form ---------- */
 function renderPassportForm() {
   const d = state.draft, e = d.errors;
-  $('#wizBody').innerHTML = `<div class="q-title">Create Your Agentic AI Passport</div><p class="q-sub">A personalised keepsake of your journey — with a QR code and a moment on the big screen.</p>
+  $('#wizBody').innerHTML = `<div class="q-title">${tr('Create Your Agentic AI Passport')}</div><p class="q-sub">${tr('A personalised keepsake of your journey — with a QR code and a moment on the big screen.')}</p>
     <div class="pp-form"><div>
-      <div class="field${e.name ? ' err' : ''}"><label for="ppName">Full name</label><input id="ppName" maxlength="50" autocomplete="off" value="${esc(d.name)}" placeholder="e.g. Aisha Al Mansoori"><div class="msg-err">${esc(e.name || '')}</div></div>
-      <div class="field${e.email ? ' err' : ''}"><label for="ppEmail">Email address</label><input id="ppEmail" type="email" maxlength="80" autocomplete="off" inputmode="email" value="${esc(d.email)}" placeholder="name@example.com"><div class="msg-err">${esc(e.email || '')}</div></div>
-      <div class="field"><label for="ppOrg">Organization <span>(optional)</span></label><input id="ppOrg" maxlength="50" autocomplete="off" value="${esc(d.org)}" placeholder="Your organization"><div class="msg-err"></div></div>
-      ${ppSaveMode() === 'always' ? `<div class="pp-consent pp-auto">${ic('shield')}<span><b>Your passport is saved so its QR code keeps working</b>${esc(consentBody())}</span></div>` : ppSaveMode() !== 'off' ? `<label class="pp-consent${e.save ? ' err' : ''}"><input type="checkbox" id="ppSave"${d.save ? ' checked' : ''}><span><b>Save my passport so I can open it again later${ppSaveMode() === 'required' ? '' : ' <em>(optional)</em>'}</b>${esc(consentBody())}</span></label>${e.save ? `<div class="msg-err pp-consent-err">${esc(e.save)}</div>` : ''}` : ''}
-      <div class="privacy">${ic('shield')}<span><b>Privacy notice:</b> ${ppSaveMode() === 'off' ? `your name, email and photo stay in this kiosk’s memory only — they are never uploaded or saved, and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.` : ppSaveMode() === 'required' || ppSaveMode() === 'always' ? 'your passport is saved with GDRFA as described above, and this kiosk forgets you on reset.' : `unless you tick “Save my passport”, your name, email and photo stay in this kiosk’s memory only and are cleared on reset or after ${CONFIG.idleResetSeconds} seconds of inactivity.`} Your email is never printed on the passport or included in the QR code.${aiAvatarOn() ? ' If you choose the AI 3D Traveler, your photo is sent to an external AI service only when you tap “Create my 3D traveler”, and is not kept there.' : ''}</span></div>
+      <div class="field${e.name ? ' err' : ''}"><label for="ppName">${tr('Full name')}</label><input id="ppName" maxlength="50" autocomplete="off" value="${esc(d.name)}" placeholder="${esc(tr('e.g. Aisha Al Mansoori'))}"><div class="msg-err">${esc(e.name ? tr(e.name) : '')}</div></div>
+      <div class="field${e.email ? ' err' : ''}"><label for="ppEmail">${tr('Email address')}</label><input id="ppEmail" type="email" maxlength="80" autocomplete="off" inputmode="email" dir="ltr" value="${esc(d.email)}" placeholder="name@example.com"><div class="msg-err">${esc(e.email ? tr(e.email) : '')}</div></div>
+      <div class="field"><label for="ppOrg">${tr('Organization')} <span>${tr('(optional)')}</span></label><input id="ppOrg" maxlength="50" autocomplete="off" value="${esc(d.org)}" placeholder="${esc(tr('Your organization'))}"><div class="msg-err"></div></div>
+      ${ppSaveMode() === 'always' ? `<div class="pp-consent pp-auto">${ic('shield')}<span><b>${tr('Your passport is saved so its QR code keeps working')}</b>${esc(consentBody())}</span></div>` : ppSaveMode() !== 'off' ? `<label class="pp-consent${e.save ? ' err' : ''}"><input type="checkbox" id="ppSave"${d.save ? ' checked' : ''}><span><b>${tr('Save my passport so I can open it again later')}${ppSaveMode() === 'required' ? '' : ` <em>${tr('(optional)')}</em>`}</b>${esc(consentBody())}</span></label>${e.save ? `<div class="msg-err pp-consent-err">${esc(tr(e.save))}</div>` : ''}` : ''}
+      <div class="privacy">${ic('shield')}<span><b>${tr('Privacy notice:')}</b> ${ppSaveMode() === 'off' ? tr('your name, email and photo stay in this kiosk’s memory only — they are never uploaded or saved, and are cleared on reset or after {s} seconds of inactivity.', { s: CONFIG.idleResetSeconds }) : ppSaveMode() === 'required' || ppSaveMode() === 'always' ? tr('your passport is saved with GDRFA as described above, and this kiosk forgets you on reset.') : tr('unless you tick “Save my passport”, your name, email and photo stay in this kiosk’s memory only and are cleared on reset or after {s} seconds of inactivity.', { s: CONFIG.idleResetSeconds })} ${tr('Your email is never printed on the passport or included in the QR code.')}${aiAvatarOn() ? ' ' + tr('If you choose the AI 3D Traveler, your photo is sent to an external AI service only when you tap “Create my 3D traveler”, and is not kept there.') : ''}</span></div>
     </div><div>
-      <div class="stage-sec">Choose your avatar</div>
-      <div class="tabs" role="tablist">${[['preset', 'spark', 'Select avatar'], ['upload', 'upload', 'Upload photo'], ['camera', 'camera', 'Use camera'], ...(aiAvatarOn() ? [['ai', 'rocket', 'AI 3D Traveler']] : [])].map(([id, icn, l]) => `<button class="tab${d.tab === id ? ' active' : ''}" role="tab" aria-selected="${d.tab === id}" data-action="ava-tab" data-id="${id}">${ic(icn)}${l}</button>`).join('')}</div>
+      <div class="stage-sec">${tr('Choose your avatar')}</div>
+      <div class="tabs" role="tablist">${[['preset', 'spark', _t('Select avatar')], ['upload', 'upload', _t('Upload photo')], ['camera', 'camera', _t('Use camera')], ...(aiAvatarOn() ? [['ai', 'rocket', _t('AI 3D Traveler')]] : [])].map(([id, icn, l]) => `<button class="tab${d.tab === id ? ' active' : ''}" role="tab" aria-selected="${d.tab === id}" data-action="ava-tab" data-id="${id}">${ic(icn)}${tr(l)}</button>`).join('')}</div>
       <div id="avaPanel"></div>
-      <div class="ava-preview"><canvas id="avaPreview" width="240" height="240" aria-label="Selected avatar preview"></canvas><p id="avaPreviewText"></p></div>
+      <div class="ava-preview"><canvas id="avaPreview" width="240" height="240" aria-label="${esc(tr('Selected avatar preview'))}"></canvas><p id="avaPreviewText"></p></div>
     </div></div>`;
   const cb = $('#ppSave'); if (cb) cb.addEventListener('change', () => { state.draft.save = cb.checked; if (state.draft.errors.save) { state.draft.errors.save = ''; cb.closest('.pp-consent').classList.remove('err'); const m = $('.pp-consent-err'); if (m) m.remove(); } });
   ['ppName', 'ppEmail', 'ppOrg'].forEach(id => $('#' + id).addEventListener('input', ev => { const k = { ppName: 'name', ppEmail: 'email', ppOrg: 'org' }[id]; state.draft[k] = ev.target.value; if (state.draft.errors[k]) { state.draft.errors[k] = ''; ev.target.closest('.field').classList.remove('err'); ev.target.closest('.field').querySelector('.msg-err').textContent = ''; } }));
   renderAvaPanel();
-  $('#wizFoot').innerHTML = `<button class="btn btn-ghost" data-action="wiz-step" data-id="4">${ic('chevL')} Back to journey</button><span class="spacer"></span><span class="hint">Takes about 30 seconds</span><button class="btn btn-gold" data-action="pp-generate">${ic('passport')} Generate Passport</button>`;
+  $('#wizFoot').innerHTML = `<button class="btn btn-ghost" data-action="wiz-step" data-id="4">${ic('chevL')} ${tr('Back to journey')}</button><span class="spacer"></span><span class="hint">${tr('Takes about 30 seconds')}</span><button class="btn btn-gold" data-action="pp-generate">${ic('passport')} ${tr('Generate Passport')}</button>`;
 }
 function renderAvaPanel() {
   const d = state.draft, panel = $('#avaPanel'); if (!panel) return;
   stopCamera();
   if (d.tab === 'preset') {
-    panel.innerHTML = `<div class="ava-grid">${DATA.avatars.map(a => `<div><button class="ava-opt${d.avatar.kind === 'preset' && d.avatar.id === a.id ? ' sel' : ''}" data-action="ava-pick" data-id="${a.id}" aria-label="Avatar ${esc(a.name)}"><canvas width="160" height="160" data-ava="${a.id}"></canvas></button><div class="ava-name">${esc(a.name)}</div></div>`).join('')}</div>`;
+    panel.innerHTML = `<div class="ava-grid">${DATA.avatars.map(a => `<div><button class="ava-opt${d.avatar.kind === 'preset' && d.avatar.id === a.id ? ' sel' : ''}" data-action="ava-pick" data-id="${a.id}" aria-label="${esc(tr('Avatar {n}', { n: a.name }))}"><canvas width="160" height="160" data-ava="${a.id}"></canvas></button><div class="ava-name">${esc(a.name)}</div></div>`).join('')}</div>`;
     $$('canvas[data-ava]', panel).forEach(c => paintAvatarInto(c, { kind: 'preset', id: c.dataset.ava }));
   } else if (d.tab === 'ai' && aiAvatarOn()) {
     renderAiPanel(panel);
   } else if (d.tab === 'upload') {
-    panel.innerHTML = `<button class="upload-zone" data-action="ava-upload">${ic('upload')}<b>Choose a photo from this device</b><span class="small">JPG, PNG or WebP · up to 10 MB · ${ppSaveMode() === 'off' ? 'processed locally, never uploaded' : 'processed on this device; saved only as part of your passport, if you choose to save it'}</span></button>`;
+    panel.innerHTML = `<button class="upload-zone" data-action="ava-upload">${ic('upload')}<b>${tr('Choose a photo from this device')}</b><span class="small">${tr('JPG, PNG or WebP · up to 10 MB')} · ${ppSaveMode() === 'off' ? tr('processed locally, never uploaded') : tr('processed on this device; saved only as part of your passport, if you choose to save it')}</span></button>`;
   } else {
     const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    panel.innerHTML = `<div class="cam-box" id="camBox"><video id="camVideo" playsinline muted hidden></video><div class="cam-msg" id="camMsg">${supported ? 'Tap “Start camera” to take a photo. Your browser will ask for permission; ' + (ppSaveMode() === 'off' ? 'the image stays on this device.' : 'the image stays on this device unless you save your passport.') : 'Camera capture is not supported in this browser. Please upload a photo or choose an avatar instead.'}</div></div>
-      <div class="cam-actions" id="camActions">${supported ? `<button class="btn btn-primary" data-action="cam-start">${ic('camera')} Start camera</button>` : `<button class="btn btn-ghost" data-action="ava-tab" data-id="preset">Choose an avatar</button>`}</div>`;
+    panel.innerHTML = `<div class="cam-box" id="camBox"><video id="camVideo" playsinline muted hidden></video><div class="cam-msg" id="camMsg">${supported ? tr('Tap “Start camera” to take a photo. Your browser will ask for permission;') + ' ' + (ppSaveMode() === 'off' ? tr('the image stays on this device.') : tr('the image stays on this device unless you save your passport.')) : tr('Camera capture is not supported in this browser. Please upload a photo or choose an avatar instead.')}</div></div>
+      <div class="cam-actions" id="camActions">${supported ? `<button class="btn btn-primary" data-action="cam-start">${ic('camera')} ${tr('Start camera')}</button>` : `<button class="btn btn-ghost" data-action="ava-tab" data-id="preset">${tr('Choose an avatar')}</button>`}</div>`;
   }
   hydrateIcons(panel);
   updateAvaPreview();
@@ -1272,51 +1316,51 @@ function renderAvaPanel() {
 function updateAvaPreview() {
   const c = $('#avaPreview'); if (!c) return; const av = state.draft.avatar;
   paintAvatarInto(c, av);
-  $('#avaPreviewText').innerHTML = av.kind === 'photo' && av.ai ? '<b>Your 3D traveler</b><br>Created by AI from your photo. Shown on your passport and, only if you confirm, on the big screen.' : av.kind === 'photo' ? '<b>Your photo</b><br>Shown on your passport and, only if you confirm, on the big screen.' : `<b>${esc((byId(DATA.avatars, av.id) || DATA.avatars[0]).name)} avatar</b><br>A privacy-friendly alternative to a real photo.`;
+  $('#avaPreviewText').innerHTML = av.kind === 'photo' && av.ai ? `<b>${tr('Your 3D traveler')}</b><br>${tr('Created by AI from your photo. Shown on your passport and, only if you confirm, on the big screen.')}` : av.kind === 'photo' ? `<b>${tr('Your photo')}</b><br>${tr('Shown on your passport and, only if you confirm, on the big screen.')}` : `<b>${esc(tr('{n} avatar', { n: (byId(DATA.avatars, av.id) || DATA.avatars[0]).name }))}</b><br>${tr('A privacy-friendly alternative to a real photo.')}`;
 }
 let camStream = null;
 async function startCamera() {
   const msg = $('#camMsg'), video = $('#camVideo');
   try {
-    msg.textContent = 'Requesting camera permission…';
+    msg.textContent = tr('Requesting camera permission…');
     camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } }, audio: false });
     if (!$('#camVideo')) { stopCamera(); return; }
     video.srcObject = camStream; video.hidden = false; await video.play(); msg.textContent = '';
-    $('#camActions').innerHTML = `<button class="btn btn-gold" data-action="cam-capture">${ic('camera')} Capture photo</button><button class="btn btn-ghost" data-action="cam-stop">Cancel</button>`;
+    $('#camActions').innerHTML = `<button class="btn btn-gold" data-action="cam-capture">${ic('camera')} ${tr('Capture photo')}</button><button class="btn btn-ghost" data-action="cam-stop">${tr('Cancel')}</button>`;
   } catch (err) {
     stopCamera();
     const name = err && err.name;
-    msg.textContent = name === 'NotAllowedError' ? 'Camera permission was declined. You can upload a photo or choose an avatar instead.' : name === 'NotFoundError' ? 'No camera was found on this device. Please upload a photo or choose an avatar.' : 'The camera could not be started on this device. Please upload a photo or choose an avatar.';
-    if ($('#camActions')) $('#camActions').innerHTML = `<button class="btn btn-ghost" data-action="cam-start">Try again</button>${state.draft.tab === 'ai' ? '<button class="btn btn-ghost" data-action="ava-upload">Upload instead</button>' : '<button class="btn btn-ghost" data-action="ava-tab" data-id="upload">Upload instead</button>'}`;
+    msg.textContent = name === 'NotAllowedError' ? tr('Camera permission was declined. You can upload a photo or choose an avatar instead.') : name === 'NotFoundError' ? tr('No camera was found on this device. Please upload a photo or choose an avatar.') : tr('The camera could not be started on this device. Please upload a photo or choose an avatar.');
+    if ($('#camActions')) $('#camActions').innerHTML = `<button class="btn btn-ghost" data-action="cam-start">${tr('Try again')}</button>${state.draft.tab === 'ai' ? `<button class="btn btn-ghost" data-action="ava-upload">${tr('Upload instead')}</button>` : `<button class="btn btn-ghost" data-action="ava-tab" data-id="upload">${tr('Upload instead')}</button>`}`;
   }
 }
 function stopCamera() { if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; } const v = $('#camVideo'); if (v) { v.srcObject = null; } }
 function capturePhoto() {
-  const v = $('#camVideo'); if (!v || !v.videoWidth) { toast('Camera is not ready yet — please try again.'); return; }
+  const v = $('#camVideo'); if (!v || !v.videoWidth) { toast(tr('Camera is not ready yet — please try again.')); return; }
   const S = 512, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
   const s = Math.max(S / v.videoWidth, S / v.videoHeight); x.translate(S, 0); x.scale(-1, 1);
   x.drawImage(v, (S - v.videoWidth * s) / 2, (S - v.videoHeight * s) / 2, v.videoWidth * s, v.videoHeight * s);
   stopCamera();
   if (state.draft.tab === 'ai') { aiSetSource(c); return; }
-  setPhotoFromCanvas(c, () => { $('#camBox').innerHTML = `<canvas width="512" height="512" id="camShot" style="width:100%;height:100%;object-fit:cover"></canvas>`; $('#camShot').getContext('2d').drawImage(c, 0, 0); $('#camActions').innerHTML = `<button class="btn btn-ghost" data-action="ava-tab" data-id="camera">${ic('camera')} Retake</button>`; });
+  setPhotoFromCanvas(c, () => { $('#camBox').innerHTML = `<canvas width="512" height="512" id="camShot" style="width:100%;height:100%;object-fit:cover"></canvas>`; $('#camShot').getContext('2d').drawImage(c, 0, 0); $('#camActions').innerHTML = `<button class="btn btn-ghost" data-action="ava-tab" data-id="camera">${ic('camera')} ${tr('Retake')}</button>`; });
 }
 function setPhotoFromCanvas(c, done) {
   const img = new Image();
-  img.onload = () => { state.draft.avatar = { kind: 'photo', img }; updateAvaPreview(); if (done) done(); toast(ppSaveMode() === 'off' ? 'Photo added — it stays on this device only.' : 'Photo added.'); };
-  img.onerror = () => toast('That image could not be processed. Please try another photo.');
+  img.onload = () => { state.draft.avatar = { kind: 'photo', img }; updateAvaPreview(); if (done) done(); toast(ppSaveMode() === 'off' ? tr('Photo added — it stays on this device only.') : tr('Photo added.')); };
+  img.onerror = () => toast(tr('That image could not be processed. Please try another photo.'));
   img.src = c.toDataURL('image/jpeg', .9);
 }
 function handleFile(file) {
   if (!file) return;
-  if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) { toast('Please choose a JPG, PNG or WebP image.'); return; }
-  if (file.size > 10 * 1024 * 1024) { toast('That image is larger than 10 MB. Please choose a smaller photo.'); return; }
+  if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) { toast(tr('Please choose a JPG, PNG or WebP image.')); return; }
+  if (file.size > 10 * 1024 * 1024) { toast(tr('That image is larger than 10 MB. Please choose a smaller photo.')); return; }
   const url = URL.createObjectURL(file), img = new Image();
   img.onload = () => {
     const S = 512, c = document.createElement('canvas'); c.width = c.height = S; coverDraw(c.getContext('2d'), img, 0, 0, S, S); URL.revokeObjectURL(url);
     if (state.draft.tab === 'ai') { aiSetSource(c); return; }
-    setPhotoFromCanvas(c, () => { const p = $('#avaPanel .upload-zone'); if (p) p.querySelector('b').textContent = 'Photo selected — tap to choose a different one'; });
+    setPhotoFromCanvas(c, () => { const p = $('#avaPanel .upload-zone'); if (p) p.querySelector('b').textContent = tr('Photo selected — tap to choose a different one'); });
   };
-  img.onerror = () => { URL.revokeObjectURL(url); toast('That image could not be opened. Please try another photo.'); };
+  img.onerror = () => { URL.revokeObjectURL(url); toast(tr('That image could not be opened. Please try another photo.')); };
   img.src = url;
 }
 /* ---------- AI 3D Traveler avatar ----------
@@ -1324,26 +1368,26 @@ function handleFile(file) {
    (fal.ai, see server/avatar.js). The photo goes to the AI service only when the visitor taps "Create"
    after seeing the notice (approved by GDRFA); the result becomes their avatar ({ kind: 'photo', ai: true }) for the passport and the big screen. */
 const aiAvatarOn = () => !!(CONFIG.served && CONFIG.avatarAi && CONFIG.avatarAi.enabled);
-const AI_LINES = ['Scanning your features…', 'Issuing your digital passport…', 'Opening the smart gate…', 'Rendering your 3D traveler…'];
+const AI_LINES = [_t('Scanning your features…'), _t('Issuing your digital passport…'), _t('Opening the smart gate…'), _t('Rendering your 3D traveler…')];
 let aiCtrl = null, aiTicker = 0;
 function renderAiPanel(panel) {
   const a = state.draft.ai, supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
   const shot = a.result || a.source;
   const box = a.busy
-    ? `<div class="cam-box ai-box"><img src="${shot}" alt="" class="ai-dim"><div class="cam-msg ai-wait"><span class="spinner" aria-hidden="true"></span><span id="aiLine">${AI_LINES[0]}</span><small>About 15 seconds</small></div></div>`
+    ? `<div class="cam-box ai-box"><img src="${shot}" alt="" class="ai-dim"><div class="cam-msg ai-wait"><span class="spinner" aria-hidden="true"></span><span id="aiLine">${tr(AI_LINES[0])}</span><small>${tr('About 15 seconds')}</small></div></div>`
     : shot
-      ? `<div class="cam-box ai-box"><img src="${shot}" alt="${a.result ? 'Your 3D traveler' : 'Your photo'}">${a.result ? '<span class="ai-badge">AI 3D Traveler</span>' : ''}</div>`
-      : `<div class="cam-box" id="camBox"><video id="camVideo" playsinline muted hidden></video><div class="cam-msg" id="camMsg">${supported ? 'Take a selfie and AI turns you into a 3D traveler of the future. Tap “Start camera”; your browser will ask for permission.' : 'Camera capture is not supported in this browser. Please upload a photo instead.'}</div></div>`;
+      ? `<div class="cam-box ai-box"><img src="${shot}" alt="${esc(a.result ? tr('Your 3D traveler') : tr('Your photo'))}">${a.result ? `<span class="ai-badge">${tr('AI 3D Traveler')}</span>` : ''}</div>`
+      : `<div class="cam-box" id="camBox"><video id="camVideo" playsinline muted hidden></video><div class="cam-msg" id="camMsg">${supported ? tr('Take a selfie and AI turns you into a 3D traveler of the future. Tap “Start camera”; your browser will ask for permission.') : tr('Camera capture is not supported in this browser. Please upload a photo instead.')}</div></div>`;
   const actions = a.busy
     ? ''
     : a.result
-      ? `<button class="btn btn-ghost" data-action="ai-retake">${ic('camera')} Start again</button>`
+      ? `<button class="btn btn-ghost" data-action="ai-retake">${ic('camera')} ${tr('Start again')}</button>`
       : a.source
-        ? `<button class="btn btn-ghost" data-action="ai-retake">${ic('camera')} Retake</button><button class="btn btn-gold" data-action="ai-create">${ic('rocket')} Create my 3D traveler</button>`
-        : `${supported ? `<button class="btn btn-primary" data-action="cam-start">${ic('camera')} Start camera</button>` : ''}<button class="btn btn-ghost" data-action="ava-upload">${ic('upload')} Upload photo</button>`;
-  panel.innerHTML = `<div class="pp-consent pp-auto ai-consent">${ic('shield')}<span><b>Your photo is sent to an external AI service</b>When you tap “Create my 3D traveler”, your photo is used only to create your 3D avatar. It is not kept by that service, and this kiosk clears it for the next visitor.</span></div>
+        ? `<button class="btn btn-ghost" data-action="ai-retake">${ic('camera')} ${tr('Retake')}</button><button class="btn btn-gold" data-action="ai-create">${ic('rocket')} ${tr('Create my 3D traveler')}</button>`
+        : `${supported ? `<button class="btn btn-primary" data-action="cam-start">${ic('camera')} ${tr('Start camera')}</button>` : ''}<button class="btn btn-ghost" data-action="ava-upload">${ic('upload')} ${tr('Upload photo')}</button>`;
+  panel.innerHTML = `<div class="pp-consent pp-auto ai-consent">${ic('shield')}<span><b>${tr('Your photo is sent to an external AI service')}</b>${tr('When you tap “Create my 3D traveler”, your photo is used only to create your 3D avatar. It is not kept by that service, and this kiosk clears it for the next visitor.')}</span></div>
     ${box}<div class="cam-actions" id="camActions">${actions}</div>${a.error ? `<div class="msg-err ai-err" role="alert">${esc(a.error)}</div>` : ''}`;
-  if (a.busy) { let i = 0; clearInterval(aiTicker); aiTicker = setInterval(() => { const l = $('#aiLine'); if (!l) { clearInterval(aiTicker); return; } l.textContent = AI_LINES[++i % AI_LINES.length]; }, 3500); }
+  if (a.busy) { let i = 0; clearInterval(aiTicker); aiTicker = setInterval(() => { const l = $('#aiLine'); if (!l) { clearInterval(aiTicker); return; } l.textContent = tr(AI_LINES[++i % AI_LINES.length]); }, 3500); }
 }
 function aiSetSource(c) {
   const a = state.draft.ai;
@@ -1360,10 +1404,10 @@ async function aiCreate() {
   try {
     const res = await fetch('api/avatar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: a.source, consent: true, style: 'digital-traveler' }), signal: ctrl.signal });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok || !body.image) throw new Error(body.error || 'Your 3D traveler could not be created. Please try again.');
+    if (!res.ok || !body.image) throw new Error(I18N.lang === 'ar' || !body.error ? tr('Your 3D traveler could not be created. Please try again.') : body.error);
     image = body.image;
   } catch (e) {
-    error = e.name === 'AbortError' ? 'This is taking too long. Please try again, or choose another option.' : e.message;
+    error = e.name === 'AbortError' ? tr('This is taking too long. Please try again, or choose another option.') : e.message;
   } finally { clearTimeout(timer); clearInterval(aiTicker); if (aiCtrl === ctrl) aiCtrl = null; }
   if (state.draft !== draft) return; // the kiosk was reset meanwhile: drop the result
   a.busy = false;
@@ -1372,10 +1416,10 @@ async function aiCreate() {
   img.onload = () => {
     if (state.draft !== draft) return;
     a.result = image;
-    if (draft.tab === 'ai') { draft.avatar = { kind: 'photo', img, ai: true }; renderAvaPanel(); toast('Your 3D traveler is ready.'); }
-    else toast('Your 3D traveler is ready — open the AI 3D Traveler tab to use it.');
+    if (draft.tab === 'ai') { draft.avatar = { kind: 'photo', img, ai: true }; renderAvaPanel(); toast(tr('Your 3D traveler is ready.')); }
+    else toast(tr('Your 3D traveler is ready — open the AI 3D Traveler tab to use it.'));
   };
-  img.onerror = () => { if (state.draft !== draft) return; a.error = 'The avatar could not be displayed. Please try again.'; if (draft.tab === 'ai') renderAvaPanel(); };
+  img.onerror = () => { if (state.draft !== draft) return; a.error = tr('The avatar could not be displayed. Please try again.'); if (draft.tab === 'ai') renderAvaPanel(); };
   img.src = image;
 }
 function aiCancel() { if (aiCtrl) { aiCtrl.abort(); aiCtrl = null; } clearInterval(aiTicker); }
@@ -1383,9 +1427,9 @@ function aiCancel() { if (aiCtrl) { aiCtrl.abort(); aiCtrl = null; } clearInterv
 function validateDraft() {
   const d = state.draft, errors = {};
   d.name = cleanText(d.name, 50); d.email = cleanText(d.email, 80); d.org = cleanText(d.org, 50);
-  if (d.name.length < 2) errors.name = 'Please enter your name (at least 2 characters).';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) errors.email = 'Please enter a valid email address.';
-  if (ppSaveMode() === 'required' && !d.save) errors.save = 'Please agree to save your passport to create it.';
+  if (d.name.length < 2) errors.name = _t('Please enter your name (at least 2 characters).');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) errors.email = _t('Please enter a valid email address.');
+  if (ppSaveMode() === 'required' && !d.save) errors.save = _t('Please agree to save your passport to create it.');
   d.errors = errors; return !Object.keys(errors).length;
 }
 function buildPassport(prev) {
@@ -1408,11 +1452,11 @@ function sendEvent(type, fields = {}) {
 const ppWantSave = () => ppSaveMode() === 'always' || (ppSaveMode() !== 'off' && state.draft.save);
 function ppSaveMode() { const c = CONFIG.passport; return CONFIG.served && c && c.storage && c.storage.available ? c.save : 'off'; }
 const ppDays = () => (CONFIG.passport && CONFIG.passport.retentionDays) || 180;
-function consentBody() { return ` GDRFA keeps your name, email, organization, passport image (with your photo or avatar) and learning journey for ${ppDays()} days, and the GDRFA booth team can see them. You can delete them at any time from your passport page on your phone.`; }
+function consentBody() { return ' ' + tr('GDRFA keeps your name, email, organization, passport image (with your photo or avatar) and learning journey for {d} days, and the GDRFA booth team can see them. You can delete them at any time from your passport page on your phone.', { d: ppDays() }); }
 function passportPayload(p) {
   const j = p.journey;
   return {
-    ref: p.number, avatarSource: p.avatar && p.avatar.ai ? 'ai' : p.avatar && p.avatar.kind === 'photo' ? 'photo' : 'preset', consent: true, consentText: (ppSaveMode() === 'always' ? 'Saved automatically; the visitor was shown this notice before creating the passport: Your passport is saved so its QR code keeps working.' : 'Save my passport so I can open it again later.') + consentBody(),
+    ref: p.number, avatarSource: p.avatar && p.avatar.ai ? 'ai' : p.avatar && p.avatar.kind === 'photo' ? 'photo' : 'preset', consent: true, consentText: (ppSaveMode() === 'always' ? 'Saved automatically; the visitor was shown this notice before creating the passport: ' + tr('Your passport is saved so its QR code keeps working') + '.' : tr('Save my passport so I can open it again later') + '.') + consentBody() + (I18N.lang === 'ar' ? ' [shown in Arabic]' : ''),
     visitor: { name: p.name, email: p.email, org: p.org },
     journey: { track: j.primary.id, secondary: j.secondary ? j.secondary.id : null, level: j.level, summary: j.summary, source: j.source,
       stages: j.stages.map(s => ({ key: s.key, topic: s.topic, next: s.next, courses: s.courses.map(c => c.ref) })) },
@@ -1450,12 +1494,12 @@ function syncSavedPassport() {
         await ppFetch('PUT', 'api/passports/' + p.saved.ref, { ...passportPayload(p), image: await passportImage(p) }, p.saved.key);
       } else if (!want && p.saved) {
         await ppFetch('DELETE', 'api/passports/' + p.saved.ref, null, p.saved.key).catch(e => { if (e.status !== 404) throw e; });
-        p.saved = null; toast('Your saved passport was deleted.');
+        p.saved = null; toast(tr('Your saved passport was deleted.'));
       }
       p.saveError = null;
     } catch (e) {
       p.saveError = e.name === 'AbortError' ? 'The server took too long to answer.' : (e.message || 'Saving failed');
-      toast('Your passport couldn’t be saved. The QR code still opens your courses.');
+      toast(tr('Your passport couldn’t be saved. The QR code still opens your courses.'));
     }
     if (state.passport === p) { p.qrText = journeyLink(p.journey, p.saved); refreshPassportViews(); }
   });
@@ -1635,6 +1679,8 @@ function ppChip(x, a, b, w, h) {
   x.beginPath(); x.arc(a + w / 2, cy, r, 0, 7); x.stroke();
 }
 /* two 44-character lines in the passport machine-readable style (a keepsake: not a valid travel-document MRZ) */
+/* the passport is a bilingual document: its data fields are always printed in English, whatever the kiosk language */
+const ppLevelEn = j => DATA_EN.levels[j.level];
 function passportMRZ(p) {
   const j = p.journey;
   const latin = s => String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z ]/g, ' ').trim().split(/\s+/).filter(Boolean);
@@ -1642,7 +1688,7 @@ function passportMRZ(p) {
   const d = p.date, ymd = String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
   const num = p.number.replace(/[^A-Za-z0-9]/g, '').toUpperCase().padEnd(9, '<').slice(0, 9);
   const l1 = ('P<ARE' + name).padEnd(44, '<').slice(0, 44);
-  const l2 = (num + '<' + ymd + '<' + j.levelName.toUpperCase().slice(0, 3) + '<' + latin(j.primary.id).join('').slice(0, 12) + '<<GDRFA').padEnd(44, '<').slice(0, 44);
+  const l2 = (num + '<' + ymd + '<' + ppLevelEn(j).toUpperCase().slice(0, 3) + '<' + latin(j.primary.id).join('').slice(0, 12) + '<<GDRFA').padEnd(44, '<').slice(0, 44);
   return [l1, l2];
 }
 function drawPassport(cv, p) {
@@ -1701,14 +1747,14 @@ function drawPassport(cv, p) {
   // identity details
   label('Name', 'الاسم', C0, 306); valueWrap(isArabic(p.name) ? p.name : p.name.toUpperCase(), C0, 350, 40, 610, 700, 1, 32, 28);
   label('Organization', 'الجهة', C0, 402); valueWrap(p.org ? (isArabic(p.org) ? p.org : p.org.toUpperCase()) : '—', C0, 440, 28, 610, 600, .5, 24, 22);
-  label('Learning Track', 'المسار التعليمي', C0, 492); value(j.primary.title.toUpperCase(), C0, 530, 28, 610, 600, .5);
-  label('Level', 'المستوى', C0, 582); value(j.levelName.toUpperCase(), C0, 620, 28, 300, 700, 2);
+  label('Learning Track', 'المسار التعليمي', C0, 492); value(byId(DATA_EN.tracks, j.primary.id).title.toUpperCase(), C0, 530, 28, 610, 600, .5);
+  label('Level', 'المستوى', C0, 582); value(ppLevelEn(j).toUpperCase(), C0, 620, 28, 300, 700, 2);
   const dt = p.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
   label('Date of Issue', 'تاريخ الإصدار', C1, 582); value(dt, C1, 620, 28, 300, 600, 1.5);
   label('Issuing Authority', 'جهة الإصدار', C0, 672); value('GDRFA', C0, 710, 28, 300, 700, 2);
   // endorsements: the level, and the session attended when there is one
-  ppLevelStamp(x, 985, 728, j.levelName, R);
-  const att = state.attended ? getSession(state.attended) : null;
+  ppLevelStamp(x, 985, 728, ppLevelEn(j), R);
+  const att = state.attended ? byId(DATA_EN.sessions, state.attended) : null;
   if (att) ppSessionStamp(x, 1345, 655, att, dt, R);
   // machine-readable zone on a calmer strip of the same paper
   x.fillStyle = 'rgba(229,243,255,.62)'; x.fillRect(41, 840, W - 82, H - 881);
@@ -1736,27 +1782,27 @@ function paintPassport(cv) {
 }
 /* the passport page, with its QR code beside it rather than printed on the page */
 function passportPreviewHTML(id) {
-  return `<div class="pp-preview"><canvas class="passport-canvas" id="${id}" aria-label="Your Agentic AI Passport: ${esc(state.passport.name)}, ${esc(state.journey.primary.title)}, ${esc(state.journey.levelName)} level"></canvas>
+  return `<div class="pp-preview"><canvas class="passport-canvas" id="${id}" aria-label="${esc(tr('Your Agentic AI Passport: {n}, {t}, {l} level', { n: state.passport.name, t: state.journey.primary.title, l: state.journey.levelName }))}"></canvas>
     ${ppQrHTML(state.passport)}</div>`;
 }
 function ppQrHTML(p) {
-  const until = p.saved && p.saved.expiresAt ? new Date(p.saved.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-  const [title, line, label] = p.saved ? ['Scan to keep your passport', 'Opens your saved passport and courses on your phone. Bookmark the page or save the image to come back any time.', 'QR code that opens your saved passport']
-    : p.saveError ? ['Scan for your courses', 'Your passport couldn’t be saved, but this code still opens your course list on your phone.', 'QR code that opens your course list']
-    : ['Scan for your courses', 'Opens your personalised course list on your phone.', 'QR code that opens your course list'];
-  return `<div class="pp-qr"><canvas class="pp-qr-code" width="320" height="320" role="img" aria-label="${label}"></canvas><div><b>${title}</b><span>${line}</span><span class="pp-qr-no">Passport no. ${esc(p.number)}${p.saved ? ` · saved until ${esc(until)}` : ''}</span></div></div>`;
+  const until = p.saved && p.saved.expiresAt ? new Date(p.saved.expiresAt).toLocaleDateString(LOCALE(), { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const [title, line, label] = (p.saved ? [_t('Scan to keep your passport'), _t('Opens your saved passport and courses on your phone. Bookmark the page or save the image to come back any time.'), _t('QR code that opens your saved passport')]
+    : p.saveError ? [_t('Scan for your courses'), _t('Your passport couldn’t be saved, but this code still opens your course list on your phone.'), _t('QR code that opens your course list')]
+    : [_t('Scan for your courses'), _t('Opens your personalised course list on your phone.'), _t('QR code that opens your course list')]).map(x => tr(x));
+  return `<div class="pp-qr"><canvas class="pp-qr-code" width="320" height="320" role="img" aria-label="${esc(label)}"></canvas><div><b>${title}</b><span>${line}</span><span class="pp-qr-no">${tr('Passport no. {n}', { n: esc(p.number) })}${p.saved ? ' · ' + tr('saved until {d}', { d: esc(until) }) : ''}</span></div></div>`;
 }
 function passportActionsHTML(inWizard) {
-  return `<div class="glass pp-actions"><div class="eyebrow">${ic('check')} Passport ready</div><h3>Welcome, ${esc(state.passport.name.split(' ')[0])}!</h3><p>Your Agentic AI Passport for <b>${esc(state.journey.primary.title)}</b> at <b>${esc(state.journey.levelName)}</b> level. Download it, preview the QR destination or see yourself on the big screen.</p>
-    <button class="btn btn-primary" data-action="pp-download">${ic('download')} Download Passport</button>
-    <button class="btn btn-ghost" data-action="pp-view-journey">${ic('journey')} View My Learning Journey</button>
-    <button class="btn btn-gold" data-action="bs-confirm">${ic('screen')} Show on Big Screen</button>
-    <button class="btn btn-ghost" data-action="qr-open">${ic('qr')} Preview QR Destination</button>
-    <p class="small" style="margin:.3rem 0 0">${state.passport.saved ? 'Saved with GDRFA · scan the QR code to keep it on your phone · you can delete it there' : 'Keepsake · kept in this kiosk’s memory only · cleared on reset'}</p></div>`;
+  return `<div class="glass pp-actions"><div class="eyebrow">${ic('check')} ${tr('Passport ready')}</div><h3>${tr('Welcome, {n}!', { n: esc(state.passport.name.split(' ')[0]) })}</h3><p>${tr('Your Agentic AI Passport for {t} at {l} level. Download it, preview the QR destination or see yourself on the big screen.', { t: `<b>${esc(state.journey.primary.title)}</b>`, l: `<b>${esc(state.journey.levelName)}</b>` })}</p>
+    <button class="btn btn-primary" data-action="pp-download">${ic('download')} ${tr('Download Passport')}</button>
+    <button class="btn btn-ghost" data-action="pp-view-journey">${ic('journey')} ${tr('View My Learning Journey')}</button>
+    <button class="btn btn-gold" data-action="bs-confirm">${ic('screen')} ${tr('Show on Big Screen')}</button>
+    <button class="btn btn-ghost" data-action="qr-open">${ic('qr')} ${tr('Preview QR Destination')}</button>
+    <p class="small" style="margin:.3rem 0 0">${state.passport.saved ? tr('Saved with GDRFA · scan the QR code to keep it on your phone · you can delete it there') : tr('Keepsake · kept in this kiosk’s memory only · cleared on reset')}</p></div>`;
 }
 function downloadPassport() {
   if (!state.passport) return;
-  const fail = () => toast('Image export isn’t available in this browser — please take a photo of the screen instead.');
+  const fail = () => toast(tr('Image export isn’t available in this browser — please take a photo of the screen instead.'));
   fontsReady().then(() => {
     try {
       const cv = document.createElement('canvas'); drawPassport(cv, state.passport);
@@ -1766,7 +1812,7 @@ function downloadPassport() {
         const url = URL.createObjectURL(b), a = document.createElement('a');
         a.href = url; a.download = `Agentic-AI-Passport-${state.passport.name.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'Visitor'}.png`;
         document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
-        toast('Passport saved as a PNG image.');
+        toast(tr('Passport saved as a PNG image.'));
       }, 'image/png');
     } catch (e) { fail(); }
   });
@@ -1778,16 +1824,16 @@ function downloadPassport() {
 function renderJourney() {
   const j = state.journey, root = $('#journeyRoot');
   if (!j) {
-    root.innerHTML = `<div class="glass journey-hero"><div><div class="eyebrow">${ic('journey')} My AI Journey</div><h2>Shape your <span>Agentic AI</span> future</h2><p>Answer three quick questions about your role, experience and interests. Cleared for Takeoff will build a personalised roadmap — then create your Agentic AI Passport and see yourself on the big screen.</p>
-      <div class="modal-actions"><button class="btn btn-gold" data-action="start-journey">${ic('spark')} Start Your AI Journey</button><button class="btn btn-ghost" data-action="nav" data-view="tracks">Browse learning tracks</button></div></div>
-      <div class="stage-preview">${[['Discover', 'Explore a topic and visit a demo'], ['Learn', 'Resources and a live session'], ['Practice', 'A hands-on lab or exercise'], ['Innovate', 'Your practical next step']].map(([a, b], i) => `<div><span class="stage-num" style="margin-bottom:.6rem">${i + 1}</span><b>${a}</b><span>${b}</span></div>`).join('')}</div></div>`;
+    root.innerHTML = `<div class="glass journey-hero"><div><div class="eyebrow">${ic('journey')} ${tr('My AI Journey')}</div><h2>${tr('Shape your {a} future', { a: `<span>${tr('Agentic AI')}</span>` })}</h2><p>${tr('Answer three quick questions about your role, experience and interests. Cleared for Takeoff will build a personalised roadmap — then create your Agentic AI Passport and see yourself on the big screen.')}</p>
+      <div class="modal-actions"><button class="btn btn-gold" data-action="start-journey">${ic('spark')} ${tr('Start Your AI Journey')}</button><button class="btn btn-ghost" data-action="nav" data-view="tracks">${tr('Browse learning tracks')}</button></div></div>
+      <div class="stage-preview">${[[_t('Discover'), _t('Explore a topic and visit a demo')], [_t('Learn'), _t('Resources and a live session')], [_t('Practice'), _t('A hands-on lab or exercise')], [_t('Innovate'), _t('Your practical next step')]].map(([a, b], i) => `<div><span class="stage-num" style="margin-bottom:.6rem">${i + 1}</span><b>${tr(a)}</b><span>${tr(b)}</span></div>`).join('')}</div></div>`;
     return;
   }
-  root.innerHTML = `<div class="view-head"><div><div class="eyebrow">${ic('journey')} My AI Journey</div><h2>Your Learning Roadmap</h2></div><div class="chips"><button class="btn btn-ghost btn-sm" data-action="start-journey">${ic('reset')} Edit my answers</button></div></div>
+  root.innerHTML = `<div class="view-head"><div><div class="eyebrow">${ic('journey')} ${tr('My AI Journey')}</div><h2>${tr('Your Learning Roadmap')}</h2></div><div class="chips"><button class="btn btn-ghost btn-sm" data-action="start-journey">${ic('reset')} ${tr('Edit my answers')}</button></div></div>
     <div class="glass profile-bar">${journeySummaryHTML(j)}</div>
     <div style="margin-top:1rem">${roadmapHTML(j)}</div>
     ${state.passport ? `<div class="passport-wrap">${passportPreviewHTML('ppCanvasView')}${passportActionsHTML(false)}</div>` :
-      `<div class="cta-banner"><div class="dialog-ic" style="margin:0">${ic('passport')}</div><div><h3>Create Your Agentic AI Passport</h3><p>Add your name and a photo or avatar to get a downloadable passport with a personalised QR code.</p></div><button class="btn btn-gold" data-action="wiz-passport-open">${ic('passport')} Create Passport</button></div>`}`;
+      `<div class="cta-banner"><div class="dialog-ic" style="margin:0">${ic('passport')}</div><div><h3>${tr('Create Your Agentic AI Passport')}</h3><p>${tr('Add your name and a photo or avatar to get a downloadable passport with a personalised QR code.')}</p></div><button class="btn btn-gold" data-action="wiz-passport-open">${ic('passport')} ${tr('Create Passport')}</button></div>`}`;
   if (state.passport) paintPassport($('#ppCanvasView'));
 }
 
@@ -1823,7 +1869,7 @@ const bigscreen = (() => {
     const latin = /^[\u0000-ɏ\s'.-]+$/.test(p.name);
     (latin ? Array.from(p.name) : [p.name]).forEach((ch, i) => { const s = document.createElement('span'); s.textContent = ch === ' ' ? ' ' : ch; s.style.animationDelay = (2.6 + i * (latin ? .055 : 0)) + 's'; nm.appendChild(s); });
     $('#bsTrack').textContent = `${p.journey.primary.title} · ${p.journey.levelName}`;
-    $('#bsBrand').innerHTML = `<div class="logo-plate clear"><img src="assets/gdrfa-logo-light.png" alt=""></div><span>AGENTIC AI: CLEARED FOR TAKEOFF · GITEX 2026</span>`;
+    $('#bsBrand').innerHTML = `<div class="logo-plate clear"><img src="assets/gdrfa-logo-light.png" alt=""></div><span>${tr('AGENTIC AI: CLEARED FOR TAKEOFF · GITEX 2026')}</span>`;
     o.classList.remove('play', 'out'); void o.offsetWidth; o.classList.add('open', 'play');
     api.playing = true; updateGlobe();
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1835,9 +1881,56 @@ const bigscreen = (() => {
   return api;
 })();
 function confirmDialog({ icon = 'alert', title, text, ok, onOk }) {
-  $('#confirmBox').innerHTML = `<div class="dialog-ic">${ic(icon)}</div><h3 id="confirmTitle">${esc(title)}</h3><p>${esc(text)}</p><div class="modal-actions"><button class="btn btn-ghost" data-action="confirm-cancel">Cancel</button><button class="btn btn-gold" data-action="confirm-ok" data-autofocus>${esc(ok)}</button></div>`;
+  $('#confirmBox').innerHTML = `<div class="dialog-ic">${ic(icon)}</div><h3 id="confirmTitle">${esc(title)}</h3><p>${esc(text)}</p><div class="modal-actions"><button class="btn btn-ghost" data-action="confirm-cancel">${tr('Cancel')}</button><button class="btn btn-gold" data-action="confirm-ok" data-autofocus>${esc(ok)}</button></div>`;
   confirmDialog.onOk = onOk; showOverlay('confirm');
 }
+
+/* =====================================================================
+   LANGUAGE — English / Arabic (right to left). One switch changes the whole kiosk, Fekra included; a reset goes back
+   to the starting language (KIOSK_DEFAULT_LANG, or ?lang=ar in the address).
+   ===================================================================== */
+let START_LANG = 'en';
+function applyStatic(root = document) {
+  $$('[data-i18n]', root).forEach(el => { el.textContent = tr(el.dataset.i18n); });
+  $$('[data-i18n-aria]', root).forEach(el => el.setAttribute('aria-label', tr(el.dataset.i18nAria)));
+  $$('[data-i18n-title]', root).forEach(el => el.setAttribute('title', tr(el.dataset.i18nTitle)));
+  $$('[data-i18n-placeholder]', root).forEach(el => el.setAttribute('placeholder', tr(el.dataset.i18nPlaceholder)));
+  const h = $('#homeTitle'); if (h) h.innerHTML = tr('Cleared for {t}', { t: `<span>${tr('Takeoff.')}</span>` });
+  const w = $('#wizTitle'); if (w) w.innerHTML = tr('START YOUR {a}', { a: `<span>${tr('AI JOURNEY')}</span>` });
+  const other = I18N.lang === 'ar' ? 'en' : 'ar', hint = tr(other === 'ar' ? 'Switch to Arabic' : 'Switch to English');
+  $$('[data-action="lang"]').forEach(b => { b.textContent = other === 'ar' ? 'العربية' : 'English'; b.lang = other; b.title = hint; b.setAttribute('aria-label', hint); });
+}
+/* the journey's titles follow the language; its sentences were written in the language it was made in (rules-made ones are rewritten) */
+function relocalizeJourney() {
+  const j = state.journey; let plan = j.plan, lang = j.lang;
+  if (j.source === 'rules' && j.lang !== I18N.lang) {
+    const again = RULES.buildRulesPlan(j.profile, rulesCtx());
+    const same = again.primaryTrack === plan.primaryTrack && again.stages.every((st, i) => st.courseIds.join() === plan.stages[i].courseIds.join() && st.experienceId === plan.stages[i].experienceId);
+    if (same) { plan = { ...plan, summary: again.summary, stages: plan.stages.map((st, i) => ({ ...st, topic: again.stages[i].topic, why: again.stages[i].why, nextStep: again.stages[i].nextStep })) }; lang = I18N.lang; }
+  }
+  const nj = hydratePlan(plan, j.profile, j.source); nj.code = j.code; nj.lang = lang;
+  state.journey = nj;
+  if (state.passport) { state.passport.journey = nj; state.passport.qrText = journeyLink(nj, state.passport.saved); }
+}
+function setLang(lang, opts = {}) {
+  lang = lang === 'ar' ? 'ar' : 'en';
+  const changed = lang !== I18N.lang;
+  I18N.setLang(lang);
+  DATA = lang === 'ar' ? CONTENT_AR : DATA_EN; CATALOG = lang === 'ar' ? CATALOG_AR : CATALOG_EN;
+  document.documentElement.lang = lang; document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  applyStatic();
+  if (!changed && !opts.force) return;
+  if (state.journey) relocalizeJourney();
+  if (!opts.fromFekra && window.fekraSetLang) window.fekraSetLang(lang);
+  if (opts.render === false) return;
+  renderNav();
+  ['experiencesRoot', 'newsRoot', 'demosRoot', 'tracksRoot', 'sessionsRoot', 'journeyRoot', 'aboutRoot'].forEach(id => { $('#' + id).innerHTML = ''; });
+  if (state.view !== 'fekra' && RENDER[state.view]) RENDER[state.view]();
+  if (state.wizard.open && state.wizard.step !== 3) renderWizard();
+  if (!$('#chatLog .msg.user')) chatWelcome(); else setSuggestions(state.chat.follow);
+  NEWS.html = ''; renderTicker(); tickClock();
+}
+window.kioskSetLang = (lang, opts) => setLang(lang, opts);
 
 /* =====================================================================
    RESET + INACTIVITY
@@ -1848,12 +1941,13 @@ function resetExperience(silent) {
   $('#wizard').classList.remove('open');
   const keepView = state.view;
   state = freshState(); buildSchedule();
+  if (I18N.lang !== START_LANG) { setLang(START_LANG, { render: false, fromFekra: true }); renderNav(); NEWS.html = ''; renderTicker(); tickClock(); } // the next visitor starts in the kiosk's own language
   $('#chatInput').value = ''; chatWelcome();
   $('#fileInput').value = '';
   ['experiencesRoot', 'newsRoot', 'demosRoot', 'tracksRoot', 'sessionsRoot', 'journeyRoot', 'aboutRoot'].forEach(id => { $('#' + id).innerHTML = ''; });
   if (window.fekraReset) window.fekraReset(); // Fekra keeps its conversation only in the page
   navigate('home');
-  if (!silent) toast('Experience reset — all visitor data cleared. Ready for the next visitor!');
+  if (!silent) toast(tr('Experience reset — all visitor data cleared. Ready for the next visitor!'));
   return keepView;
 }
 let lastActivity = Date.now();
@@ -1869,7 +1963,7 @@ function idleTick() {
     if (idle >= IDLE_RESET && (state.view !== 'home' || $('#modal').classList.contains('open') || state.chat.busy)) { resetExperience(true); lastActivity = Date.now(); }
     return;
   }
-  if (idle >= IDLE_RESET) { resetExperience(true); lastActivity = Date.now(); toast('Session cleared after inactivity. Welcome to Agentic AI: Cleared for Takeoff!'); }
+  if (idle >= IDLE_RESET) { resetExperience(true); lastActivity = Date.now(); toast(tr('Session cleared after inactivity. Welcome to Agentic AI: Cleared for Takeoff!')); }
   else if (idle >= IDLE_WARN) { $('#idleCount').textContent = Math.ceil(IDLE_RESET - idle); if (!$('#idle').classList.contains('open')) showOverlay('idle'); }
 }
 
@@ -1884,16 +1978,17 @@ const ACTIONS = {
   personalize: d => openWizard({ trackId: d.id }),
   'open-track': d => openTrack(d.id), 'open-course': d => openCourse(d.id), 'open-demo': d => openDemo(d.id), 'open-session': d => openSession(d.id), 'open-news': d => openNews(d.id),
   'close-modal': () => hideOverlay('modal'),
-  ask: d => { if (d.inchat) { sendQuestion(d.q); return; } hideOverlay('modal'); if (state.wizard.open) closeWizard(); if (state.view !== 'ask') navigate('ask'); sendQuestion(d.q); },
+  ask: d => { const label = d.label || tr(d.q); if (d.inchat) { sendQuestion(d.q, label); return; } hideOverlay('modal'); if (state.wizard.open) closeWizard(); if (state.view !== 'ask') navigate('ask'); sendQuestion(d.q, label); },
   'chat-clear': () => chatWelcome(),
-  mic: () => toast('Voice input isn’t enabled in this demo — please type your question or tap a suggestion.'),
+  lang: () => setLang(I18N.lang === 'ar' ? 'en' : 'ar'),
+  mic: () => toast(tr('Voice input isn’t enabled in this demo — please type your question or tap a suggestion.')),
   reset: () => resetExperience(false),
   'idle-continue': () => { lastActivity = Date.now(); hideOverlay('idle'); },
   'news-filter': d => { state.newsFilter = d.filter; if (d.clear) { state.newsQuery = ''; $('#newsSearch').value = ''; } renderNewsResults(); },
   'track-filter': d => { state.trackFilter = d.filter; renderTracks(); },
   'session-filter': d => { state.sessionFilter = d.filter; renderSessionList(); },
   'zone-filter': d => { state.zoneFilter = state.zoneFilter === d.zone ? null : d.zone; renderSessionList(); },
-  'mark-attended': d => { state.attended = state.attended === d.id ? null : d.id; if (state.attended) sendEvent('session_attended', { session: d.id }); if (state.passport && state.passport.saved) syncSavedPassport(); toast(state.attended ? 'Session added to your Agentic AI Passport.' : 'Session removed from your passport.'); openSession(d.id); if (state.view === 'sessions') renderSessionList(); if (state.view === 'journey') renderJourney(); },
+  'mark-attended': d => { state.attended = state.attended === d.id ? null : d.id; if (state.attended) sendEvent('session_attended', { session: d.id }); if (state.passport && state.passport.saved) syncSavedPassport(); toast(state.attended ? tr('Session added to your Agentic AI Passport.') : tr('Session removed from your passport.')); openSession(d.id); if (state.view === 'sessions') renderSessionList(); if (state.view === 'journey') renderJourney(); },
   'wiz-close': () => closeWizard(),
   'wiz-role': d => { state.wizard.role = d.id; renderWizard(); },
   'wiz-exp': d => { state.wizard.experience = d.id; renderWizard(); },
@@ -1902,11 +1997,11 @@ const ACTIONS = {
   'wiz-back': () => wizGo(1),
   'wiz-generate': () => { if (state.wizard.interests.length) wizGo(3); },
   'wiz-edit': () => wizGo(1),
-  'wiz-save': () => { closeWizard(); navigate('journey'); toast('Your learning journey is ready.'); },
+  'wiz-save': () => { closeWizard(); navigate('journey'); toast(tr('Your learning journey is ready.')); },
   'wiz-passport': () => wizGo(5),
   'wiz-passport-open': () => openWizard({ step: 5 }),
   'wiz-step': d => wizGo(+d.id),
-  'wiz-done': () => { resetExperience(true); toast('Thank you! Your passport is ready on your phone. Ready for the next visitor.'); }, // public kiosk: clear everything for the next visitor
+  'wiz-done': () => { resetExperience(true); toast(tr('Thank you! Your passport is ready on your phone. Ready for the next visitor.')); }, // public kiosk: clear everything for the next visitor
   'ava-tab': d => { state.draft.tab = d.id; if (d.id === 'ai' && state.draft.ai.result && !(state.draft.avatar.kind === 'photo' && state.draft.avatar.ai)) { const img = new Image(); img.onload = () => { state.draft.avatar = { kind: 'photo', img, ai: true }; updateAvaPreview(); }; img.src = state.draft.ai.result; } $$('.tab').forEach(t => { const on = t.dataset.id === d.id; t.classList.toggle('active', on); t.setAttribute('aria-selected', on); }); renderAvaPanel(); },
   'ava-pick': d => { state.draft.avatar = { kind: 'preset', id: d.id }; $$('.ava-opt').forEach(b => b.classList.toggle('sel', b.dataset.id === d.id)); updateAvaPreview(); },
   'ava-upload': () => $('#fileInput').click(),
@@ -1919,7 +2014,7 @@ const ACTIONS = {
     if (!validateDraft()) { renderPassportForm(); const f = $('.field.err input, .pp-consent.err input'); if (f) f.focus(); return; }
     state.passport = buildPassport(state.passport);
     if (ppWantSave() || state.passport.saved) {
-      if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner" aria-hidden="true"></span> Saving your passport…`; }
+      if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${tr('Saving your passport…')}`; }
       await syncSavedPassport();
       if (state.wizard.step !== 5) return; // the visitor left meanwhile
     }
@@ -1928,7 +2023,7 @@ const ACTIONS = {
   'pp-download': () => downloadPassport(),
   'pp-view-journey': () => { if (state.wizard.open) closeWizard(); navigate('journey'); setTimeout(() => { const r = $('#journeyRoot .roadmap'); if (r) r.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' }); }, 80); },
   'qr-open': () => openQRDest(),
-  'bs-confirm': () => confirmDialog({ icon: 'screen', title: 'Show on the big screen?', text: `Your name (“${state.passport.name}”) and your ${state.passport.avatar.kind === 'photo' && !state.passport.avatar.ai ? 'photo' : 'avatar'} will be displayed full-screen for about 8 seconds and may be visible to people nearby. Nothing is recorded or saved.`, ok: 'Yes, show me', onOk: () => { bigscreen.play(); sendEvent('big_screen_shown'); } }),
+  'bs-confirm': () => confirmDialog({ icon: 'screen', title: tr('Show on the big screen?'), text: state.passport.avatar.kind === 'photo' && !state.passport.avatar.ai ? tr('Your name (“{n}”) and your photo will be displayed full-screen for about 8 seconds and may be visible to people nearby. Nothing is recorded or saved.', { n: state.passport.name }) : tr('Your name (“{n}”) and your avatar will be displayed full-screen for about 8 seconds and may be visible to people nearby. Nothing is recorded or saved.', { n: state.passport.name }), ok: tr('Yes, show me'), onOk: () => { bigscreen.play(); sendEvent('big_screen_shown'); } }),
   'bs-skip': () => bigscreen.stop(),
   'confirm-ok': () => { const fn = confirmDialog.onOk; confirmDialog.onOk = null; hideOverlay('confirm'); if (fn) fn(); },
   'confirm-cancel': () => { confirmDialog.onOk = null; hideOverlay('confirm'); }
@@ -1959,17 +2054,17 @@ document.addEventListener('visibilitychange', updateGlobe);
    no live or cached headlines exist; they are labelled as samples. */
 const NEWS = { data: null, loading: CONFIG.served, timer: 0, html: '' };
 const fmtNewsDate = (iso, lang) => { const d = new Date(iso), o = { day: 'numeric', month: 'short', timeZone: CONFIG.eventTimezone || undefined }; if (d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric'; return d.toLocaleDateString(lang === 'ar' ? 'ar-AE' : 'en-GB', o); };
-const fmtNewsUpdated = iso => { const d = new Date(iso), tz = CONFIG.eventTimezone || undefined, same = d.toLocaleDateString('en-GB', { timeZone: tz }) === new Date().toLocaleDateString('en-GB', { timeZone: tz }); return d.toLocaleString('en-GB', { ...(same ? {} : { day: 'numeric', month: 'short' }), hour: '2-digit', minute: '2-digit', timeZone: tz }); };
+const fmtNewsUpdated = iso => { const d = new Date(iso), tz = CONFIG.eventTimezone || undefined, same = d.toLocaleDateString('en-GB', { timeZone: tz }) === new Date().toLocaleDateString('en-GB', { timeZone: tz }); return d.toLocaleString(LOCALE(), { ...(same ? {} : { day: 'numeric', month: 'short' }), hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz }); };
 function tickerHTML() {
   const live = NEWS.data && NEWS.data.items && NEWS.data.items.length ? NEWS.data : null;
   if (live) {
-    const note = live.status === 'live' && live.updatedAt ? `<span class="tk-note tk-note-live">Live feed · updated ${esc(fmtNewsUpdated(live.updatedAt))}</span>`
-      : `<span class="tk-note">Cached headlines${live.updatedAt ? ` · last update ${esc(fmtNewsUpdated(live.updatedAt))}` : ''}</span>`;
+    const note = live.status === 'live' && live.updatedAt ? `<span class="tk-note tk-note-live">${tr('Live feed · updated {t}', { t: esc(fmtNewsUpdated(live.updatedAt)) })}</span>`
+      : `<span class="tk-note">${tr('Cached headlines')}${live.updatedAt ? ' · ' + tr('last update {t}', { t: esc(fmtNewsUpdated(live.updatedAt)) }) : ''}</span>`;
     return hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}>${live.items.map(n => `<a class="tk-item tk-live" href="${esc(n.url)}" target="_blank" rel="noopener noreferrer" lang="${n.lang === 'ar' ? 'ar' : 'en'}" dir="${n.lang === 'ar' ? 'rtl' : 'ltr'}"${hidden ? ' tabindex="-1"' : ''}><span class="tk-cat tk-b-${esc(n.bucket)}">${esc(n.label)}</span><span class="tk-h">${esc(n.title)}</span><span class="tk-meta">${esc(n.source)} · <time datetime="${esc(n.publishedAt)}">${esc(fmtNewsDate(n.publishedAt, n.lang))}</time></span></a><i class="tk-sep" aria-hidden="true"></i>`).join('')}${note}<i class="tk-sep" aria-hidden="true"></i></div>`;
   }
-  if (NEWS.loading) return hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}><span class="tk-note tk-note-wait">Loading the latest headlines…</span><i class="tk-sep" aria-hidden="true"></i></div>`;
+  if (NEWS.loading) return hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}><span class="tk-note tk-note-wait">${tr('Loading the latest headlines…')}</span><i class="tk-sep" aria-hidden="true"></i></div>`;
   const items = [...DATA.news].sort((a, b) => a.days - b.days);
-  return hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}>${items.map(n => `<button class="tk-item" data-action="open-news" data-id="${n.id}"${hidden ? ' tabindex="-1"' : ''}><span class="tk-cat">${esc(CAT_LABEL[n.cat])}</span>${esc(n.title)}</button><i class="tk-sep" aria-hidden="true"></i>`).join('')}${DATA.meta.newsIsSample ? '<span class="tk-note">Sample headlines</span><i class="tk-sep" aria-hidden="true"></i>' : ''}</div>`;
+  return hidden => `<div class="tk-run"${hidden ? ' aria-hidden="true"' : ''}>${items.map(n => `<button class="tk-item" data-action="open-news" data-id="${n.id}"${hidden ? ' tabindex="-1"' : ''}><span class="tk-cat">${esc(tr(CAT_LABEL[n.cat]))}</span>${esc(n.title)}</button><i class="tk-sep" aria-hidden="true"></i>`).join('')}${DATA.meta.newsIsSample ? `<span class="tk-note">${tr('Sample headlines')}</span><i class="tk-sep" aria-hidden="true"></i>` : ''}</div>`;
 }
 // a constant reading speed whatever the screen size or number of headlines
 function tickerPace() { const track = $('#tickerTrack'), run = track.firstElementChild; if (!run) return; const w = run.getBoundingClientRect().width, rem = parseFloat(getComputedStyle(document.documentElement).fontSize); if (w) track.style.animationDuration = `${(w / (rem * 4.6)).toFixed(1)}s`; }
@@ -2004,7 +2099,7 @@ function tickClock() {
   const d = new Date();
   const tz = CONFIG.eventTimezone || undefined;
   $('#clockTime').innerHTML = `${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz })}<small>${String(d.getSeconds()).padStart(2, '0')}</small>`;
-  $('#clockDate').textContent = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
+  $('#clockDate').textContent = d.toLocaleDateString(LOCALE(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
 }
 async function loadRuntimeConfig() {
   if (!CONFIG.served) return;
@@ -2013,11 +2108,14 @@ async function loadRuntimeConfig() {
     const res = await fetch('api/config', { cache: 'no-store', signal: ctrl.signal });
     if (!res.ok) return;
     const c = await res.json();
-    ['aiEnabled', 'aiTimeoutMs', 'publicBaseUrl', 'scheduleMode', 'eventTimezone', 'idleWarnSeconds', 'idleResetSeconds', 'fekra', 'passport', 'avatarAi'].forEach(k => { if (c[k] !== undefined) CONFIG[k] = c[k]; });
+    ['aiEnabled', 'aiTimeoutMs', 'publicBaseUrl', 'scheduleMode', 'eventTimezone', 'idleWarnSeconds', 'idleResetSeconds', 'fekra', 'passport', 'avatarAi', 'defaultLang'].forEach(k => { if (c[k] !== undefined) CONFIG[k] = c[k]; });
   } catch (e) { /* offline: keep defaults */ } finally { clearTimeout(timer); }
 }
 async function init() {
   await loadRuntimeConfig();
+  const asked = new URLSearchParams(location.search).get('lang');
+  START_LANG = asked === 'ar' || asked === 'en' ? asked : CONFIG.defaultLang === 'ar' ? 'ar' : 'en';
+  setLang(START_LANG, { render: false, force: true });
   buildSchedule();
   renderNav();
   hydrateIcons(document);

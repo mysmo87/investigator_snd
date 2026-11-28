@@ -7,11 +7,14 @@ cleared-for-takeoff/
   public/                 static kiosk (no build step)
     index.html, styles.css, app.js
     fekra.js, fekra.css   Fekra, the innovation assistant page
+    i18n.js               English → Arabic interface text, and the language switch's tr()
     journey.html/.js/.css phone page opened from the passport QR code
     staff.html/.js        GDRFA staff list of saved passports (CSV export)
     data/content.js       tracks, demos, sessions, news, journey rules  ← edit content here
     data/catalog.js       the course catalogue Claude may choose from   ← edit courses here
+    data/content-ar.js    Arabic text for content.js and the course descriptions
     shared/journey-rules.js  offline recommender + validator (browser and server)
+    shared/localize.js    builds the Arabic view of the content (browser and server)
     shared/globe-land.js  land mask for the Home globe (from Natural Earth, public domain)
     fonts/                Inter, self-hosted (SIL Open Font License, see Inter-OFL.txt)
   server/                 Node.js API + static server (one dependency: @anthropic-ai/sdk)
@@ -38,6 +41,27 @@ cleared-for-takeoff/
 5. Results are cached per profile (6 h by default). Calls are capped per hour (`AI_MAX_CALLS_PER_HOUR`), and the API is skipped for 60 s after three consecutive failures.
 
 The booth chat assistant is rule-based. It answers from `content.js` and the catalogue, so it also works without a connection. The course recommender and Fekra (below) are the only parts that call Claude.
+
+## English and Arabic
+
+The **العربية / English** button in the header (also in the journey builder) switches the whole kiosk between English and Arabic. Arabic is laid out right to left.
+
+- **What changes:**
+  - every screen, button and message
+  - the booth content: tracks, demos, sessions, news, booth areas, course descriptions
+  - the assistant's answers. Questions typed in Arabic are understood too: common Arabic words are matched to the same topics as the English.
+  - the learning journey: the AI recommender writes it in Arabic, and so do the offline rules
+  - Fekra, which also rewrites a drafted proposal in the new language
+  - the phone page the QR code opens, which has its own English/Arabic button
+- **What stays:**
+  - Course titles and providers keep their official names. The courses themselves are mostly taught in English, and the course details say so.
+  - The passport image stays bilingual, with Arabic and English labels and English data fields, as real passports print them.
+- **Starting language:** the kiosk starts in English. Set `KIOSK_DEFAULT_LANG=ar` to start in Arabic, or open the site with `?lang=ar`. A reset, or the idle timeout, returns to the starting language for the next visitor.
+- **Where the text lives:**
+  - `public/i18n.js` holds the interface text: English → Arabic, with the English as the key.
+  - `public/data/content-ar.js` holds the Arabic booth content, keyed by the ids in `content.js`.
+  - `test/i18n.test.js` fails if any string on screen has no Arabic translation, or if the Arabic content stops lining up with the English.
+- **Not translated:** the staff page, which is for GDRFA staff.
 
 ## Fekra (فكرة): the autonomous proposal builder
 
@@ -206,6 +230,7 @@ Setting **Root Directory** to `cleared-for-takeoff` also works; the app folder h
 | `AI_MAX_TOKENS` | No | `8000` | Output cap per call. |
 | `RATE_LIMIT_PER_MINUTE` | No | `30` | Per client IP. All kiosks behind one venue IP share this limit. |
 | `IDLE_WARN_SECONDS` / `IDLE_RESET_SECONDS` | No | `75` / `90` | Kiosk inactivity warning and auto-reset. |
+| `KIOSK_DEFAULT_LANG` | No | `en` | The kiosk's starting language, `en` or `ar`. Visitors can switch at any time; a reset returns to this. |
 | `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn` or `error` (JSON lines). |
 | `TRUST_PROXY` | No | `true` on Railway | Use `X-Forwarded-*` headers for client IP and HTTPS. |
 | `FEKRA_ENABLED` | No | `true` | Turns the Fekra assistant on or off (it also needs `ANTHROPIC_API_KEY`). |

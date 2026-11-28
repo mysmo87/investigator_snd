@@ -720,6 +720,7 @@
       fk.lang = fk.lang === 'ar' ? 'en' : 'ar';
       if (filled.overview(P()) || filled.problem(P())) requestUpdate({ mode: 'translate' }); // the proposal follows the chosen language
       render();
+      if (window.kioskSetLang) window.kioskSetLang(fk.lang, { fromFekra: true }); // the rest of the kiosk follows too
     },
     'fk-save': () => saveProposal({}),
     'fk-open': () => openDialog(),
@@ -763,7 +764,14 @@
 
   /* reset + inactivity hooks used by app.js; resume link (#fekra=REF~CODE) handled once the runtime config is loaded */
   window.fekraHasWork = () => hasIdea() || !!($('#fkInput') && $('#fkInput').value.trim());
-  window.fekraReset = () => { const e = fk.epoch + 1; clearInterval(researchTimer); clearTimeout(autosaveTimer); fk = fresh('en'); fk.epoch = e; if (built) { $('#fkInput').value = ''; render(); } };
+  window.fekraReset = () => { const e = fk.epoch + 1; clearInterval(researchTimer); clearTimeout(autosaveTimer); fk = fresh(window.I18N && window.I18N.lang === 'ar' ? 'ar' : 'en'); fk.epoch = e; if (built) { $('#fkInput').value = ''; render(); } };
+  /* the kiosk's language switch: Fekra changes with it, rewriting a drafted proposal in the new language */
+  window.fekraSetLang = lang => {
+    lang = lang === 'ar' ? 'ar' : 'en'; if (fk.lang === lang) return;
+    fk.lang = lang;
+    if (filled.overview(P()) || filled.problem(P())) requestUpdate({ mode: 'translate' });
+    if (built) render();
+  };
   window.fekraBoot = () => {
     const m = /#fekra=(FK-\d{6}-[A-Z0-9]{4})~([A-Z0-9]{12})/i.exec(location.hash || '');
     if (!m) return;
